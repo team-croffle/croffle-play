@@ -6,9 +6,9 @@ shared account, scores and saves, multiplayer rooms, and the SDK games talk to.
 
 [한국어](./README.ko.md)
 
-> Status: **design stage.** This repository currently holds tooling, workflows, and the design
-> record. See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) and
-> [docs/ROADMAP.md](./docs/ROADMAP.md).
+> Status: **early development.** The API and shell skeletons exist; the SDK, publishing, and
+> multiplayer follow the [roadmap](./docs/ROADMAP.md). Design record:
+> [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## How it fits together
 
@@ -50,8 +50,22 @@ Requires Node ≥ 24 and pnpm (Corepack).
 ```bash
 pnpm install        # installs dependencies and git hooks
 pnpm check          # secret-files · format · lint · typecheck · test · build
-pnpm dev:shell      # once apps/shell exists
-pnpm dev:api
+```
+
+Run the API and shell locally. Without Docker, the API can use an embedded Postgres (PGlite) with a
+dummy catalog:
+
+```bash
+cp apps/api/.env.example apps/api/.env   # set DATABASE_URL=pglite://memory and DB_SEED=true
+pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/games)
+pnpm dev:shell                           # http://localhost:3000
+```
+
+Full stack in containers (PostgreSQL, MinIO, API, shell):
+
+```bash
+cp infra/.env.example infra/.env         # replace the CHANGE_ME values
+docker compose -f infra/compose.yml --env-file infra/.env up --build
 ```
 
 Contribution rules for humans and agents: [AGENTS.md](./AGENTS.md).

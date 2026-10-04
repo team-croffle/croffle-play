@@ -32,14 +32,17 @@ are never checked in here.
 
 ### Current state
 
-- **No code yet.** Root tooling only: pnpm workspace, oxlint/oxfmt, lefthook
-  hooks, Changesets, GitHub workflows, PR/issue templates, docs, skills.
-- No git remote yet. Push, PR, and release steps do not apply until
-  `team-croffle/croffle-play` exists.
+- `apps/api` (NestJS 12 on Fastify, Drizzle, `/healthz`, `/v1/games`) and `apps/shell`
+  (Nuxt 4, catalog and game detail SSR) exist, with Dockerfiles and `infra/compose.yml`.
+  Everything else in the layout below is still planned.
+- API tests run the real migrations on in-memory PGlite; `DATABASE_URL=pglite://memory` also runs
+  the API locally without Docker (development only).
+- Remote: `team-croffle/croffle-play` (public). `master` is protected by a ruleset: PRs only,
+  rebase merge, required checks `CI result`, `TruffleHog`, `Gitleaks`.
 - `docs/ARCHITECTURE.md` is the design record (Korean); `docs/ROADMAP.md`
   the public roadmap. `README.md` describes the _target_ product.
-- Game asset domain `croffle-play.link` is registered (Cloudflare). The
-  platform domain is not decided yet.
+- Game asset domain `croffle-play.link` is registered (Cloudflare). Platform domain:
+  `play.croffledev.kr` (code reads it from env only).
 
 ### Planned layout
 
@@ -60,10 +63,11 @@ are never checked in here.
 ### Stack
 
 - Node ≥ 24, pnpm (Corepack, version pinned in `package.json`), TypeScript.
-- Shell: Nuxt (SSR for catalog/detail pages). API: NestJS. Rooms: WebSocket
-  server (framework undecided: Colyseus vs. custom — see roadmap).
-- Data: PostgreSQL. Storage: **S3 API only** (MinIO on the home server now;
-  R2/S3 later without code changes).
+- Shell: Nuxt (SSR for catalog/detail pages). API: NestJS on Fastify. Rooms: custom
+  WebSocket server (`ws`, relay only).
+- Data: PostgreSQL via Drizzle (migrations in `apps/api/drizzle`). Storage: **S3 API
+  only** (MinIO on the home server now; R2/S3 later without code changes).
+- Validation: valibot (env, protocol messages, manifests). Identity: Logto (OIDC).
 - Edge: Cloudflare in front (DNS, cache, Tunnel), Traefik on the server, nginx
   for the game domain mapping (`<id>.croffle-play.link/<ver>/` →
   `games/<id>/<ver>/`).
@@ -192,7 +196,8 @@ Changing any of these requires a decision entry in `.ai/history/`.
 - `*.ts` files stay under 300 lines (oxlint `max-lines`); split modules.
 - `apps/api`, `apps/rooms`: `typescript/consistent-type-imports` is off there
   on purpose — NestJS DI needs runtime imports for constructor parameters.
-  Do not re-enable it.
+  Do not re-enable it. Inject with explicit tokens (`@Inject(TOKEN)`): tests
+  (vitest) and dev (tsx) do not emit decorator metadata.
 - Shell (Nuxt): no game-specific code, no per-game branches. Anything a game
   needs goes through the protocol → adapter → API path.
 - Protocol/SDK: every message type is defined once in `packages/protocol`;

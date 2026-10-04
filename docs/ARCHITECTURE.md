@@ -213,3 +213,16 @@ play-game-template/   GitHub 템플릿 저장소 (별도)
 2. **게임 템플릿 + mock 호스트** — 팀원이 플랫폼과 병렬로 게임 개발을 시작할 수 있다.
 3. **셸 + API 최소 기능** — 카탈로그, iframe 실행, 로그인.
 4. **publish 파이프라인** — 처음엔 수동 업로드, 게임 3~4개쯤에서 자동화.
+
+## 10. 기술 스택 (확정)
+
+| 영역          | 선택                                                       | 이유                                                 |
+| ------------- | ---------------------------------------------------------- | ---------------------------------------------------- |
+| API           | NestJS + Fastify                                           | 모듈 구조, 가벼운 HTTP 계층                          |
+| DB            | PostgreSQL + Drizzle (SQL 마이그레이션 `apps/api/drizzle`) | 스키마가 코드, 생성된 SQL을 그대로 리뷰·적용         |
+| 테스트 DB     | PGlite (WASM Postgres)                                     | Docker 없이 실제 마이그레이션으로 테스트·로컬 실행   |
+| 셸            | Nuxt (SSR) + Nitro 서버 라우트                             | 카탈로그 SEO, 브라우저는 API를 직접 부르지 않음(BFF) |
+| 검증          | valibot                                                    | env·프로토콜·매니페스트 공용, SDK 번들 크기가 작다   |
+| IdP           | Logto (OIDC, 셀프호스팅)                                   | 가볍고 Postgres 사용, 표준 OIDC라 교체 비용 낮음     |
+| 룸 서버       | 자체 `ws` 서버 (중계만)                                    | 메시지 형식을 protocol 패키지가 직접 통제            |
+| 플랫폼 도메인 | `play.croffledev.kr` (env로만 참조)                        | 게임 도메인 `croffle-play.link`와 다른 등록 도메인   |
