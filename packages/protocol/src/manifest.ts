@@ -73,7 +73,20 @@ export function sdkRangeMajor(range: string): number | null {
   return major === undefined ? null : Number(major);
 }
 
-export const gameManifestSchema = v.object({
+/** Game server images must come from the team's registry, pinned to a tag or digest. */
+export const SERVER_IMAGE_PREFIX = 'ghcr.io/team-croffle/';
+
+export const serverImageSchema = v.pipe(
+  v.string(),
+  v.startsWith(SERVER_IMAGE_PREFIX, `Server images must come from ${SERVER_IMAGE_PREFIX}`),
+  v.regex(
+    /^ghcr\.io\/team-croffle\/[a-z0-9._-]+(?:\/[a-z0-9._-]+)*(?::[\w][\w.-]{0,127}|@sha256:[a-f0-9]{64})$/,
+    'Server images need an explicit tag or sha256 digest',
+  ),
+  v.check((img) => !img.endsWith(':latest'), "Server images must not use the 'latest' tag"),
+);
+
+const manifestObject = v.object({
   id: gameIdSchema,
   name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(60)),
   version: semverSchema,
@@ -89,9 +102,22 @@ export const gameManifestSchema = v.object({
     v.object({
       /** Version of the client↔server protocol this build speaks. */
       protocol: semverSchema,
+      /** Container image of the game server (Tier 2, approval required). */
+      image: v.optional(serverImageSchema),
     }),
   ),
 });
+
+export const gameManifestSchema = v.pipe(
+  manifestObject,
+  v.forward(
+    v.check(
+      (m) => !m.needsServer || Boolean(m.server?.image),
+      'needsServer requires server.protocol and server.image',
+    ),
+    ['server'],
+  ),
+);
 
 export type GameManifest = v.InferOutput<typeof gameManifestSchema>;
 export type GameManifestInput = v.InferInput<typeof gameManifestSchema>;

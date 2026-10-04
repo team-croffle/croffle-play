@@ -13,6 +13,7 @@ export const capabilities = [
   'leaderboard',
   'token',
   'rooms',
+  'server',
 ] as const;
 
 export type Capability = (typeof capabilities)[number];
@@ -29,4 +30,5 @@ export const requiredCapability: Record<RequestType, Capability | null> = {
   getLeaderboard: 'leaderboard',
   getToken: 'token',
   getRoomsUrl: 'rooms',
+  getServerInfo: 'server',
 };
