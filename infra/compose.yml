@@ -1,0 +1,87 @@
+# Local / single-server stack. From the repository root:
+#   cp infra/.env.example infra/.env   # then edit
+#   docker compose -f infra/compose.yml --env-file infra/.env up --build
+# Images are built from this checkout; on the server, set API_IMAGE / SHELL_IMAGE
+# to GHCR tags instead.
+
+name: croffle-play
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-play}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-play}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks: [data-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    networks: [storage-net]
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    image: ${API_IMAGE:-croffle-play/api:local}
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-play}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-play}
+      DB_SEED: ${DB_SEED:-false}
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3001:3001'
+    networks: [platform-net, data-net, storage-net]
+
+  shell:
+    image: ${SHELL_IMAGE:-croffle-play/shell:local}
+    build:
+      context: ..
+      dockerfile: apps/shell/Dockerfile
+    restart: unless-stopped
+    environment:
+      NUXT_API_BASE: http://api:3001
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3000:3000'
+    networks: [platform-net]
+
+volumes:
+  pg-data:
+  minio-data:
+
+networks:
+  # Platform services talk to each other here.
+  platform-net:
+  # Database: API only. Game servers never join this network.
+  data-net:
+  # Object storage: API (and the game-domain edge, later) only.
+  storage-net:
