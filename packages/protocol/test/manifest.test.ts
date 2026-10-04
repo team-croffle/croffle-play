@@ -72,9 +72,32 @@ describe('parseManifest', () => {
     ]);
   });
 
-  it('accepts a server protocol', () => {
-    expect(parseManifest({ ...valid, needsServer: true, server: { protocol: '2.1.0' } }).ok).toBe(
-      true,
-    );
+  it('requires a pinned team image when the game needs a server', () => {
+    const image = 'ghcr.io/team-croffle/tetris-server:1.2.0';
+    expect(
+      parseManifest({ ...valid, needsServer: true, server: { protocol: '2.1.0', image } }).ok,
+    ).toBe(true);
+    expect(
+      parseManifest({
+        ...valid,
+        needsServer: true,
+        server: { protocol: '2.1.0', image: `ghcr.io/team-croffle/x@sha256:${'a'.repeat(64)}` },
+      }).ok,
+    ).toBe(true);
+    for (const server of [
+      undefined,
+      { protocol: '2.1.0' },
+      { protocol: '2.1.0', image: 'docker.io/evil/server:1.0.0' },
+      { protocol: '2.1.0', image: 'ghcr.io/team-croffle/tetris-server' },
+      { protocol: '2.1.0', image: 'ghcr.io/team-croffle/tetris-server:latest' },
+    ]) {
+      const r = parseManifest({ ...valid, needsServer: true, ...(server ? { server } : {}) });
+      expect(r.ok).toBe(false);
+      expect(!r.ok && r.issues[0]?.path).toMatch(/^server/);
+    }
+  });
+
+  it('lets games without a server declare a client protocol only', () => {
+    expect(parseManifest({ ...valid, server: { protocol: '1.0.0' } }).ok).toBe(true);
   });
 });

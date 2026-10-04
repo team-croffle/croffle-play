@@ -117,6 +117,14 @@ export class SdkClient {
   }
 
   /**
+   * This game's own server (Tier 2, capability `server` — present only once an admin approved
+   * it): `{ url, protocol }`. Authenticate with `getToken()` as the first message.
+   */
+  getServerInfo(): Promise<ResponsePayload<'getServerInfo'>> {
+    return this.request('getServerInfo', {});
+  }
+
+  /**
    * Joins a room on the shared rooms server (capability `rooms`). Omit `room` to create one and
    * share `room.id` with friends. The SDK pings, reconnects, and re-joins on its own.
    */

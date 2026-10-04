@@ -57,6 +57,14 @@ export const requests = {
     request: v.object({}),
     response: v.object({ token: v.string(), expiresAt: v.string() }),
   },
+  /**
+   * This game's own server, when approved (capability `server`): base URL and the protocol
+   * version it was approved with. Connect with a token from `getToken`.
+   */
+  getServerInfo: {
+    request: v.object({}),
+    response: v.object({ url: v.string(), protocol: v.string() }),
+  },
   /** WebSocket URL of the shared rooms server (capability `rooms`). */
   getRoomsUrl: {
     request: v.object({}),

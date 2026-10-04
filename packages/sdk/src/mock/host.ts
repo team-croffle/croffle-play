@@ -19,8 +19,8 @@ export interface MockHostOptions {
   /** Player returned by `getUser`. `null` simulates a guest. */
   user?: PublicUser | null;
   /**
-   * Capabilities announced in `__welcome`. Default: every v1 capability except `token` and
-   * `rooms` — multiplayer needs the real rooms server (`pnpm dev:rooms` with the platform).
+   * Capabilities announced in `__welcome`. Default: every v1 capability except `token`,
+   * `rooms`, and `server` — those need the real platform (`pnpm dev:rooms` etc.).
    */
   capabilities?: string[];
   /** Where saves go. Default: localStorage (memory when unavailable). */
@@ -52,7 +52,8 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
       ? { id: 'mock-user', nickname: 'Player', avatar: null }
       : options.user;
   const caps =
-    options.capabilities ?? allCapabilities.filter((c) => c !== 'token' && c !== 'rooms');
+    options.capabilities ??
+    allCapabilities.filter((c) => c !== 'token' && c !== 'rooms' && c !== 'server');
   const storage = options.storage ?? defaultStorage();
   const log = options.log ?? true;
   const listeners = new Set<(message: unknown, origin: string) => void>();
@@ -99,6 +100,7 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
         return { on: (payload as { on: boolean }).on };
       case 'getToken':
       case 'getRoomsUrl':
+      case 'getServerInfo':
         throw new Error('unsupported');
       case 'getLeaderboard': {
         const best = scores.length > 0 && user ? Math.max(...scores) : null;
