@@ -99,8 +99,20 @@ adapter.mount({ core, iframe, sdkVersion: hello.sdk });
 - **Tier 2 (승인제, 자체 서버 게임)**: 셸이 API에 `aud: game:<id>`로 제한된 5~15분 JWT를 요청 →
   postMessage로 게임에 전달 → 게임 서버는 플랫폼 JWKS로 검증 → 만료 시 `sdk.getToken()`으로 갱신.
   쿼리스트링 금지 (프록시 로그에 남음). `aud` 제한 이유: 게임 A가 털려도 B나 플랫폼 API에 못 간다.
-- IdP: 직접 구현하지 않고 OIDC 프로바이더 셀프호스팅 (Zitadel / Logto 우선, Keycloak·Ory는 무거움).
+- IdP: 직접 구현하지 않고 OIDC 프로바이더 셀프호스팅 — **Logto**(같은 PostgreSQL의 별도 DB).
   API 쪽은 `jose`로 JWKS 검증만. 나중에 외부 개발자·모바일 앱도 같은 계정 체계로 붙는다.
+
+### 구현 (Tier 1)
+
+- 셸 서버가 OIDC 클라이언트다: authorization code + PKCE, state·nonce, `resource=<API>`로 API용 JWT
+  access token, `offline_access` + `prompt=consent`로 refresh token. 토큰은 h3 sealed 세션 쿠키
+  (`__Host-`, HttpOnly, SameSite=Lax) 안에만 있고 브라우저 JS·게임은 보지 못한다. 만료 1분 전에 갱신.
+- 브라우저는 API를 직접 부르지 않는다. 셸 `/api/*`(BFF)가 세션 토큰을 붙여 API를 부르고, 상태를
+  바꾸는 `/api` 요청은 같은 Origin만 받는다.
+- API는 `iss`·`aud`·서명·만료를 검증하고 IdP `sub`를 내부 계정(uuid)에 매핑한다. 게임이 받는 건
+  `{ id, nickname, avatar }`뿐이고 `sub`·역할·토큰은 나가지 않는다.
+- 관리자 = 계정의 `admin` 역할. 첫 관리자는 `ADMIN_SUBS`(로그인 시 승격) 또는 `grant-admin`.
+- 로컬 개발은 `pnpm dev:oidc`(oidc-provider)가 Logto를 대신한다. 셸은 표준 OIDC만 쓰므로 동작이 같다.
 
 ## 5. 게임 번들과 배포
 

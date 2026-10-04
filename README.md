@@ -6,9 +6,9 @@ shared account, scores and saves, multiplayer rooms, and the SDK games talk to.
 
 [한국어](./README.ko.md)
 
-> Status: **early development.** Catalog, play page, SDK v1, runtime host adapters, and the publish
-> pipeline (play-cli → review → approval) work; accounts and multiplayer follow the
-> [roadmap](./docs/ROADMAP.md). Design record:
+> Status: **early development.** Catalog, play page, SDK v1, runtime host adapters, the publish
+> pipeline (play-cli → review → approval), and accounts (sign-in, scores, leaderboards, saves) work;
+> multiplayer follows the [roadmap](./docs/ROADMAP.md). Design record:
 > [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## How it fits together
@@ -78,6 +78,10 @@ pnpm dev:games    # builds fixtures + host adapters, serves http://localhost:410
 #                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
 pnpm dev:api && pnpm dev:shell    # open http://localhost:3000/game/sample/play
 ```
+
+Sign-in locally: `pnpm dev:oidc` starts a stand-in OpenID provider on `:4300` (any login name). Set the
+OIDC variables from `apps/api/.env.example` and `apps/shell/.env.example`; `ADMIN_SUBS=admin` makes the
+login name `admin` an admin.
 
 ## Building a game
 
