@@ -59,6 +59,30 @@ services:
       - ./minio/api-policy.json:/policy/api-policy.json:ro
     networks: [storage-net]
 
+  # Game domain + adapter host in front of storage (infra/nginx/templates).
+  games-edge:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /var/run]
+    environment:
+      GAME_DOMAIN: ${GAME_DOMAIN:-croffle-play.link}
+      GAME_DOMAIN_REGEX: ${GAME_DOMAIN_REGEX:-croffle-play\.link}
+      STATIC_HOST: ${STATIC_HOST:-static.play.croffledev.kr}
+      PLATFORM_ORIGIN: ${PLATFORM_ORIGIN:-https://play.croffledev.kr}
+      ROOMS_ORIGIN: ${ROOMS_ORIGIN:-wss://rooms.play.croffledev.kr}
+      STORAGE_UPSTREAM: minio:9000
+      NGINX_RESOLVER: 127.0.0.11
+      NGINX_ENVSUBST_FILTER: '^(GAME_DOMAIN|GAME_DOMAIN_REGEX|STATIC_HOST|PLATFORM_ORIGIN|ROOMS_ORIGIN|STORAGE_UPSTREAM|NGINX_RESOLVER)$'
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - '127.0.0.1:8080:8080'
+    networks: [storage-net]
+
   api:
     image: ${API_IMAGE:-croffle-play/api:local}
     build:
