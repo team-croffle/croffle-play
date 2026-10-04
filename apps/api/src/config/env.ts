@@ -79,6 +79,13 @@ export const envSchema = v.object({
     v.optional(v.string(), 'https://{id}.srv.croffle-play.link'),
     v.includes('{id}'),
   ),
+  /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
+  SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
+    v.optional(v.string(), '3600'),
+    v.transform(Number),
+    v.integer(),
+    v.minValue(0),
+  ),
   GAME_URL_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
