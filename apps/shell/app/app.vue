@@ -2,6 +2,7 @@
   <div class="layout">
     <header class="site-header">
       <NuxtLink to="/" class="brand">Croffle Play</NuxtLink>
+      <AccountMenu />
     </header>
     <main class="content">
       <NuxtPage />
