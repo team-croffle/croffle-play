@@ -6,8 +6,8 @@
 
 [English](./README.md)
 
-> 상태: **설계 단계.** 현재 이 저장소에는 툴링, 워크플로, 설계 기록만 있다.
-> [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md), [docs/ROADMAP.md](./docs/ROADMAP.md) 참고.
+> 상태: **초기 개발.** API와 셸 골격이 있다. SDK, 배포, 멀티플레이는 [로드맵](./docs/ROADMAP.md)
+> 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## 구조
 
@@ -48,8 +48,21 @@ Node ≥ 24, pnpm (Corepack) 필요.
 ```bash
 pnpm install        # 의존성 + git 훅 설치
 pnpm check          # secret-files · format · lint · typecheck · test · build
-pnpm dev:shell      # apps/shell 생성 후
-pnpm dev:api
+```
+
+API와 셸 로컬 실행. Docker가 없으면 API가 임베디드 Postgres(PGlite)와 더미 카탈로그로 뜬다:
+
+```bash
+cp apps/api/.env.example apps/api/.env   # DATABASE_URL=pglite://memory, DB_SEED=true
+pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/games)
+pnpm dev:shell                           # http://localhost:3000
+```
+
+컨테이너로 전체 스택(PostgreSQL, MinIO, API, 셸):
+
+```bash
+cp infra/.env.example infra/.env         # CHANGE_ME 값 교체
+docker compose -f infra/compose.yml --env-file infra/.env up --build
 ```
 
 사람과 에이전트 공통 기여 규칙: [AGENTS.md](./AGENTS.md).
