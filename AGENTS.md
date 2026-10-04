@@ -163,7 +163,8 @@ Changing any of these requires a decision entry in `.ai/history/`.
 - `game.json` manifest: `id`, `name`, `version`, `entry`, `thumbnail`, `sdk`
   (semver range), `needsServer`, `orientation`, optional `server.protocol`.
 - Reserved game ids / subdomains: `www`, `api`, `admin`, `cdn`, `play`,
-  `rooms`, `auth`, `static`, `preview`.
+  `rooms`, `auth`, `static`, `preview`, `srv` (`RESERVED_GAME_IDS` in
+  `packages/protocol`; game servers live at `<id>.srv.<game domain>`).
 - Publish flow: tag push → CI builds → `play-cli validate` →
   `POST /games/:id/versions` (refused when the SDK major is deprecated/eol) →
   presigned uploads → `…/complete` (hash + file list check) → `preview`
