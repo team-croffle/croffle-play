@@ -32,9 +32,12 @@ are never checked in here.
 
 ### Current state
 
-- `apps/api` (NestJS 12 on Fastify, Drizzle, `/healthz`, `/v1/games`) and `apps/shell`
-  (Nuxt 4, catalog and game detail SSR) exist, with Dockerfiles and `infra/compose.yml`.
-  Everything else in the layout below is still planned.
+- Exists: `apps/api` (NestJS 12 on Fastify, Drizzle; catalog, play info, SDK registry),
+  `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading),
+  `apps/adapters` (v1), `packages/protocol`, `packages/sdk` (+ `/mock`), Dockerfiles,
+  `infra/compose.yml`. Not yet: `apps/rooms`, `packages/cli`.
+- `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) and adapter bundles on
+  `:4100`, a separate origin like production.
 - API tests run the real migrations on in-memory PGlite; `DATABASE_URL=pglite://memory` also runs
   the API locally without Docker (development only).
 - Remote: `team-croffle/croffle-play` (public). `master` is protected by a ruleset: PRs only,

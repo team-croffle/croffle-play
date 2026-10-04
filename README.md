@@ -6,8 +6,8 @@ shared account, scores and saves, multiplayer rooms, and the SDK games talk to.
 
 [한국어](./README.ko.md)
 
-> Status: **early development.** The API and shell skeletons exist; the SDK, publishing, and
-> multiplayer follow the [roadmap](./docs/ROADMAP.md). Design record:
+> Status: **early development.** Catalog, play page, SDK v1, and runtime host adapters work;
+> publishing, accounts, and multiplayer follow the [roadmap](./docs/ROADMAP.md). Design record:
 > [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## How it fits together
@@ -67,6 +67,30 @@ Full stack in containers (PostgreSQL, MinIO, API, shell):
 cp infra/.env.example infra/.env         # replace the CHANGE_ME values
 docker compose -f infra/compose.yml --env-file infra/.env up --build
 ```
+
+Play a game locally (the `sample` fixture, served on its own origin like a real game):
+
+```bash
+pnpm dev:games    # builds fixtures + host adapters, serves http://localhost:4100
+# apps/api/.env: GAME_URL_TEMPLATE=http://localhost:4100/{id}/{version}/
+#                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
+pnpm dev:api && pnpm dev:shell    # open http://localhost:3000/game/sample/play
+```
+
+## Building a game
+
+Games bundle [`@croffledev/play-sdk`](./packages/sdk) and talk to the platform only through it:
+
+```ts
+import { createSdk } from '@croffledev/play-sdk';
+
+const sdk = await createSdk({ game: 'tetris' });
+await sdk.ready();
+if (sdk.has('score')) await sdk.submitScore(1200);
+```
+
+Outside the platform, pass `transport: createMockHost()` from `@croffledev/play-sdk/mock` to run the
+game on its own.
 
 Contribution rules for humans and agents: [AGENTS.md](./AGENTS.md).
 
