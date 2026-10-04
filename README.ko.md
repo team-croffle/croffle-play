@@ -69,7 +69,7 @@ docker compose -f infra/compose.yml --env-file infra/.env up --build
 
 ```bash
 pnpm dev:games    # 픽스처 + 호스트 어댑터 빌드, http://localhost:4100
-# apps/api/.env: GAME_URL_TEMPLATE=http://localhost:4100/{id}/{version}/
+# apps/api/.env: GAME_URL_TEMPLATE=http://{id}.localhost:4100/{version}/
 #                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
 pnpm dev:api && pnpm dev:shell    # http://localhost:3000/game/sample/play
 ```

@@ -73,7 +73,7 @@ Play a game locally (the `sample` fixture, served on its own origin like a real 
 
 ```bash
 pnpm dev:games    # builds fixtures + host adapters, serves http://localhost:4100
-# apps/api/.env: GAME_URL_TEMPLATE=http://localhost:4100/{id}/{version}/
+# apps/api/.env: GAME_URL_TEMPLATE=http://{id}.localhost:4100/{version}/
 #                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
 pnpm dev:api && pnpm dev:shell    # open http://localhost:3000/game/sample/play
 ```
