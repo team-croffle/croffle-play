@@ -84,6 +84,9 @@ adapter.mount({ core, iframe, sdkVersion: hello.sdk });
 | eol         | **X** | X                    | "지원 종료", 실행 불가       |
 
 - 동시에 살아있는 메이저는 2~3개로 제한 (어댑터마다 유지보수 대상). 연 1회 메이저, LTS 18개월 정도.
+- 구현: 상태는 `effectiveStatus()`로 날짜에서 계산해 모든 조회(play·publish·카탈로그)에 쓰고, 매시간 작업이
+  저장값을 맞추며 `sdk_version_events`에 기록하고 알림(GitHub 이슈)을 보낸다. 정책·알림·업그레이드 절차는
+  [sdk-lifecycle.md](./sdk-lifecycle.md).
 - 게임이 알아서 올리게 하는 장치: publish 게이트, deprecated 전환 시 게임 저장소에 GitHub 이슈 자동
   생성(EOL 날짜 + 마이그레이션 가이드), 템플릿의 Renovate, 메이저 전환용 codemod
   (`npx @croffledev/play-sdk migrate 2-to-3`).
