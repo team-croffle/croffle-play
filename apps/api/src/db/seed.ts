@@ -1,5 +1,5 @@
 import type { Db } from './db.js';
-import { gameVersions, games } from './schema.js';
+import { gameVersions, games, sdkVersions } from './schema.js';
 
 /** Dummy catalog for local development. Idempotent. */
 export const seedGames = [
@@ -9,6 +9,8 @@ export const seedGames = [
 ] as const;
 
 export async function seed(db: Db): Promise<void> {
+  // Adapter URL/SRI come from `sdk:register` (or SEED_ADAPTER_MANIFEST_URL).
+  await db.insert(sdkVersions).values({ major: 1, status: 'current' }).onConflictDoNothing();
   for (const g of seedGames) {
     await db
       .insert(games)
@@ -20,7 +22,14 @@ export async function seed(db: Db): Promise<void> {
         gameId: g.id,
         version: g.version,
         status: 'approved',
-        manifest: { id: g.id, name: g.name, version: g.version, entry: 'index.html' },
+        manifest: {
+          id: g.id,
+          name: g.name,
+          version: g.version,
+          entry: 'index.html',
+          sdk: '^1.0.0',
+        },
+        sdkMajor: 1,
         uploadedAt: new Date(),
       })
       .onConflictDoNothing();

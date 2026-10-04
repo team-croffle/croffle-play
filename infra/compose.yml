@@ -51,6 +51,7 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-play}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-play}
       DB_SEED: ${DB_SEED:-false}
+      GAME_URL_TEMPLATE: ${GAME_URL_TEMPLATE:-https://{id}.croffle-play.link/{version}/}
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       postgres:

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
 
 /** Upload lifecycle of one immutable game version (`games/<id>/<version>/`). */
 export const gameVersionStatus = pgEnum('game_version_status', [
@@ -37,10 +37,33 @@ export const gameVersions = pgTable(
     version: text('version').notNull(),
     status: gameVersionStatus('status').notNull().default('pending'),
     manifest: jsonb('manifest').$type<Record<string, unknown>>().notNull(),
+    /** SDK major the bundle was built with (from `game.json` `sdk`). */
+    sdkMajor: integer('sdk_major').notNull().default(1),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
     createdAt: timestamps.createdAt,
   },
   (t) => [primaryKey({ columns: [t.gameId, t.version] })],
 );
 
-export const schema = { games, gameVersions, gameVersionStatus };
+/** SDK major lifecycle (docs/ARCHITECTURE.md §3). Data, not code: policy changes are row edits. */
+export const sdkStatus = pgEnum('sdk_status', [
+  'current',
+  'lts',
+  'maintenance',
+  'deprecated',
+  'eol',
+]);
+
+export const sdkVersions = pgTable('sdk_versions', {
+  major: integer('major').primaryKey(),
+  status: sdkStatus('status').notNull().default('current'),
+  /** Host adapter bundle for this major, loaded by the shell at runtime. */
+  adapterUrl: text('adapter_url'),
+  /** Subresource integrity of the adapter bundle (`sha384-…`). */
+  sri: text('sri'),
+  deprecatedAt: timestamp('deprecated_at', { withTimezone: true }),
+  eolAt: timestamp('eol_at', { withTimezone: true }),
+  ...timestamps,
+});
+
+export const schema = { games, gameVersions, gameVersionStatus, sdkVersions, sdkStatus };
