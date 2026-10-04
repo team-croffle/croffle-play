@@ -35,6 +35,7 @@ export class AdminGamesService {
     patch: {
       name?: string | undefined;
       description?: string | undefined;
+      repo?: string | null | undefined;
       maxBundleBytes?: number | null | undefined;
     },
   ): Promise<AdminGame> {

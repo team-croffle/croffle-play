@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createApp } from '../../src/bootstrap.js';
 import type { Db } from '../../src/db/db.js';
 import { seed } from '../../src/db/seed.js';
+import type { Notifier } from '../../src/notify/notifier.js';
 import type { Storage } from '../../src/storage/storage.js';
 import { UsersService } from '../../src/users/users.service.js';
 import { createTestDb, testEnv } from './test-db.js';
@@ -18,7 +19,12 @@ export interface TestApp {
 
 /** App over a migrated PGlite database, optionally seeded. */
 export async function createTestApp(
-  opts: { seed?: boolean; env?: Record<string, string>; storage?: Storage } = {},
+  opts: {
+    seed?: boolean;
+    env?: Record<string, string>;
+    storage?: Storage;
+    notifier?: Notifier;
+  } = {},
 ): Promise<TestApp> {
   const { db, close: closeDb } = await createTestDb();
   if (opts.seed) {
@@ -29,6 +35,7 @@ export async function createTestApp(
     db,
     jwks: testJwks,
     ...(opts.storage ? { storage: opts.storage } : {}),
+    ...(opts.notifier ? { notifier: opts.notifier } : {}),
   });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();

@@ -27,6 +27,8 @@ const createSchema = v.object({ id: gameIdSchema, name, description: v.optional(
 const updateSchema = v.object({
   name: v.optional(name),
   description: v.optional(description),
+  /** GitHub repository for platform notices (`owner/name`). */
+  repo: v.optional(v.nullable(v.pipe(v.string(), v.regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)))),
   maxBundleBytes: v.optional(
     v.nullable(
       v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_APPROVABLE_BUNDLE_BYTES)),

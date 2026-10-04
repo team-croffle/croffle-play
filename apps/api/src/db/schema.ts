@@ -37,6 +37,8 @@ export const games = pgTable('games', {
   stableVersion: text('stable_version'),
   /** Latest uploaded version, reachable by admins for review. */
   previewVersion: text('preview_version'),
+  /** GitHub repository (`owner/name`) for platform notices. Set by admins only. */
+  repo: text('repo'),
   /** Bundle size limit when an admin approved more than the default. */
   maxBundleBytes: bigint('max_bundle_bytes', { mode: 'number' }),
   ...timestamps,
@@ -176,6 +178,20 @@ export const sdkVersions = pgTable('sdk_versions', {
   ...timestamps,
 });
 
+/** One notice per (game, SDK major, status) — the sync job may run any number of times. */
+export const sdkNotifications = pgTable(
+  'sdk_notifications',
+  {
+    gameId: text('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    major: integer('major').notNull(),
+    kind: sdkStatus('kind').notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [primaryKey({ columns: [t.gameId, t.major, t.kind] })],
+);
+
 /** Lifecycle transitions applied by the sync job (audit trail and notification source). */
 export const sdkVersionEvents = pgTable('sdk_version_events', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -201,4 +217,5 @@ export const schema = {
   gameServers,
   gameServerStatus,
   sdkVersionEvents,
+  sdkNotifications,
 };

@@ -127,6 +127,7 @@ services:
       # Game tokens (rooms, game servers): ES256 PKCS8 PEM, `\n`-escaped on one line.
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY}
       PUBLIC_API_ORIGIN: ${PUBLIC_API_ORIGIN:-https://api.play.croffledev.kr}
+      GITHUB_NOTIFY_TOKEN: ${GITHUB_NOTIFY_TOKEN:-}
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       postgres:

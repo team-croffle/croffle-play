@@ -84,6 +84,12 @@ export const envSchema = v.object({
     v.pipe(v.string(), v.url()),
     'https://github.com/team-croffle/croffle-play/blob/master/docs/sdk-lifecycle.md',
   ),
+  /**
+   * Fine-grained GitHub token (Issues: write on the team's game repositories) for deprecation
+   * notices. Without it notices are only logged.
+   */
+  GITHUB_NOTIFY_TOKEN: v.optional(v.string()),
+  GITHUB_API_URL: v.optional(v.pipe(v.string(), v.url()), 'https://api.github.com'),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),
