@@ -10,6 +10,8 @@ import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
 import { GameServersModule } from './game-servers/game-servers.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
+import type { Notifier } from './notify/notifier.js';
+import { NotifyModule } from './notify/notify.module.js';
 import { PublishModule } from './publish/publish.module.js';
 import { SavesModule } from './saves/saves.module.js';
 import { ScoresModule } from './scores/scores.module.js';
@@ -28,6 +30,8 @@ export interface AppOptions {
   storage?: Storage;
   /** Access-token keys (tests); otherwise the IdP JWKS from env. */
   jwks?: JWTVerifyGetKey;
+  /** Deprecation notices (tests); otherwise GitHub issues or logs, from env. */
+  notifier?: Notifier;
 }
 
 @Module({})
@@ -49,6 +53,7 @@ export class AppModule {
         SavesModule,
         TokensModule,
         GameServersModule,
+        NotifyModule.forRoot(options.notifier),
       ],
       controllers: [HealthController],
     };

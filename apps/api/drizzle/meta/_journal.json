@@ -50,6 +50,13 @@
       "when": 1791145127092,
       "tag": "0006_sdk_version_events",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791145643445,
+      "tag": "0007_game_repo_notifications",
+      "breakpoints": true
     }
   ]
 }
