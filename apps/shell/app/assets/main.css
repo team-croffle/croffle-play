@@ -334,3 +334,18 @@ a {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.dev-game {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dev-game h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.dev-game__warnings {
+  margin: 8px 0 0;
+  color: #b9770e;
+}

@@ -13,6 +13,7 @@
 <template>
   <div class="account">
     <template v-if="data.user">
+      <NuxtLink to="/dev">내 게임</NuxtLink>
       <NuxtLink v-if="data.user.role === 'admin'" to="/admin">관리</NuxtLink>
       <span class="account__name">{{ data.user.nickname }}</span>
       <button type="button" class="button button--ghost" @click="signOut">로그아웃</button>

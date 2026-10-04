@@ -1,4 +1,4 @@
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** Calls the admin API through the shell; a lost session sends the admin back to sign-in. */
 export function useAdmin() {

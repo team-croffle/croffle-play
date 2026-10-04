@@ -4,6 +4,7 @@ export interface AdminGame {
   description: string;
   stableVersion: string | null;
   previewVersion: string | null;
+  repo: string | null;
   maxBundleBytes: number | null;
   createdAt: string;
   updatedAt: string;
