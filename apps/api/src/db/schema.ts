@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 /** Upload lifecycle of one immutable game version (`games/<id>/<version>/`). */
 export const gameVersionStatus = pgEnum('game_version_status', [
@@ -25,8 +35,20 @@ export const games = pgTable('games', {
   stableVersion: text('stable_version'),
   /** Latest uploaded version, reachable by admins for review. */
   previewVersion: text('preview_version'),
+  /** Bundle size limit when an admin approved more than the default. */
+  maxBundleBytes: bigint('max_bundle_bytes', { mode: 'number' }),
   ...timestamps,
 });
+
+/** One file of an uploaded bundle, as declared at publish time and verified on completion. */
+export interface BundleFile {
+  path: string;
+  size: number;
+  /** Base64 SHA-256, as S3 `x-amz-checksum-sha256`. */
+  sha256: string;
+  contentType: string;
+  contentEncoding?: string;
+}
 
 export const gameVersions = pgTable(
   'game_versions',
@@ -39,11 +61,28 @@ export const gameVersions = pgTable(
     manifest: jsonb('manifest').$type<Record<string, unknown>>().notNull(),
     /** SDK major the bundle was built with (from `game.json` `sdk`). */
     sdkMajor: integer('sdk_major').notNull().default(1),
+    files: jsonb('files').$type<BundleFile[]>(),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
     createdAt: timestamps.createdAt,
   },
   (t) => [primaryKey({ columns: [t.gameId, t.version] })],
 );
+
+/** Per-game publish credential. Only the SHA-256 of the key is stored. */
+export const deployKeys = pgTable('deploy_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  gameId: text('game_id')
+    .notNull()
+    .references(() => games.id, { onDelete: 'cascade' }),
+  keyHash: text('key_hash').notNull().unique(),
+  /** Leading characters of the key, to tell keys apart in listings. */
+  prefix: text('prefix').notNull(),
+  label: text('label').notNull().default(''),
+  createdAt: timestamps.createdAt,
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
 
 /** SDK major lifecycle (docs/ARCHITECTURE.md §3). Data, not code: policy changes are row edits. */
 export const sdkStatus = pgEnum('sdk_status', [
@@ -66,4 +105,11 @@ export const sdkVersions = pgTable('sdk_versions', {
   ...timestamps,
 });
 
-export const schema = { games, gameVersions, gameVersionStatus, sdkVersions, sdkStatus };
+export const schema = {
+  games,
+  gameVersions,
+  gameVersionStatus,
+  sdkVersions,
+  sdkStatus,
+  deployKeys,
+};

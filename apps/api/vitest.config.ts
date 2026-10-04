@@ -1,11 +1,11 @@
-import { defaultServerConditions } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-const conditions = ['@croffledev/source', ...defaultServerConditions];
+// Node's own conditions (no bundler-only `module`), plus workspace packages from source.
+const conditions = ['@croffledev/source', 'node', 'import', 'default'];
 
 export default defineConfig({
   resolve: { conditions },
-  ssr: { resolve: { conditions } },
+  ssr: { resolve: { conditions, externalConditions: ['node', 'import'] } },
   test: {
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
     environment: 'node',

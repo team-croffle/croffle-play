@@ -34,6 +34,16 @@ export const envSchema = v.object({
    * Where a game version is served. `{id}` and `{version}` are replaced, e.g.
    * `https://{id}.croffle-play.link/{version}/`. Must end with `/`.
    */
+  /** Object storage (S3 API). Publishing is disabled until these are set. */
+  S3_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
+  /** Endpoint in presigned upload URLs (reachable by CI runners). Defaults to S3_ENDPOINT. */
+  S3_PUBLIC_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
+  S3_REGION: v.optional(v.string(), 'us-east-1'),
+  S3_ACCESS_KEY_ID: v.optional(v.string()),
+  S3_SECRET_ACCESS_KEY: v.optional(v.string()),
+  S3_BUCKET: v.optional(v.string(), 'games'),
+  /** Temporary admin credential (Bearer) until accounts and roles exist. ≥ 32 chars. */
+  ADMIN_TOKEN: v.optional(v.pipe(v.string(), v.minLength(32))),
   GAME_URL_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://localhost:4100/{id}/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
