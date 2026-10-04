@@ -6,7 +6,7 @@
 
 [English](./README.md)
 
-> 상태: **초기 개발.** 카탈로그, 실행 페이지, SDK v1, 런타임 호스트 어댑터, 배포 파이프라인(play-cli →
+> 상태: **정식 출시 전.** 카탈로그, 실행 페이지, SDK v1, 런타임 호스트 어댑터, 배포 파이프라인(play-cli →
 > 검토 → 승인), 계정(로그인, 점수, 리더보드, 저장), 멀티플레이 룸이 동작한다.
 > [로드맵](./docs/ROADMAP.md) 참고. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
@@ -95,7 +95,8 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다. 배포(배포 키,
 `play-cli`, 검토·승인): [docs/publishing.md](./docs/publishing.md). 멀티플레이 룸:
 [docs/multiplayer.md](./docs/multiplayer.md). 전용 서버가 필요한 게임: [docs/game-servers.md](./docs/game-servers.md). SDK 버전과 업그레이드:
-[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md).
+[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). 운영: [docs/operations.md](./docs/operations.md),
+[docs/security.md](./docs/security.md).
 
 사람과 에이전트 공통 기여 규칙: [AGENTS.md](./AGENTS.md).
 

@@ -100,6 +100,13 @@ names explicitly so fragments can attach to it; a Traefik instance on that netwo
 Universal SSL does not cover it: use an advanced certificate for `*.srv.croffle-play.link` or
 terminate TLS at Traefik.
 
+## Backups and monitoring
+
+The `ops` service (infra/ops) dumps PostgreSQL (platform and Logto) and mirrors the `games` and
+`adapters` buckets nightly with a read-only storage user, keeping 14 days of dumps, and alerts
+`ALERT_WEBHOOK_URL` (Discord) when a health URL goes down or recovers. Procedures, including
+restore: [docs/operations.md](../docs/operations.md).
+
 ## Releasing a host adapter
 
 Adapters are platform code, versioned with the platform tag:
