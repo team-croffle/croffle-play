@@ -10,6 +10,9 @@
   },
   "type": "module",
   "sideEffects": false,
+  "bin": {
+    "play-sdk": "./dist/cli.mjs"
+  },
   "exports": {
     ".": {
       "@croffledev/source": "./src/index.ts",
@@ -38,6 +41,7 @@
     "valibot": "^1.5.0"
   },
   "devDependencies": {
+    "@types/node": "^24.19.1",
     "tsdown": "^0.23.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.2",
