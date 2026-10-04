@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { gameVersions, games } from '../src/db/schema.js';
-import { adminAuth, createTestApp, type TestApp } from './support/test-app.js';
+import { createTestApp, type TestApp } from './support/test-app.js';
+import { bearerFor } from './support/test-issuer.js';
 
 describe('admin games', () => {
   let t: TestApp;
@@ -24,9 +25,9 @@ describe('admin games', () => {
   });
 
   const call = (method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) =>
-    t.app.inject({ method, url, headers: adminAuth, ...(payload ? { payload } : {}) });
+    t.app.inject({ method, url, headers: t.adminAuth, ...(payload ? { payload } : {}) });
 
-  it('requires the admin token', async () => {
+  it('requires a signed-in admin', async () => {
     expect((await t.app.inject({ method: 'GET', url: '/v1/admin/games' })).statusCode).toBe(401);
   });
 
@@ -92,5 +93,30 @@ describe('admin games', () => {
       (await call('PATCH', '/v1/admin/games/rel', { maxBundleBytes: 500 * 1024 * 1024 }))
         .statusCode,
     ).toBe(400);
+  });
+});
+
+describe('admin role', () => {
+  let t: TestApp;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await t.close();
+  });
+
+  it('refuses signed-in players without the admin role', async () => {
+    const res = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/games',
+      headers: await bearerFor('idp|player'),
+    });
+    expect(res.statusCode).toBe(403);
+    expect(
+      (await t.app.inject({ method: 'GET', url: '/v1/admin/games', headers: t.adminAuth }))
+        .statusCode,
+    ).toBe(200);
   });
 });

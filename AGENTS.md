@@ -35,8 +35,8 @@ are never checked in here.
 - Exists: `apps/api` (NestJS 12 on Fastify, Drizzle; catalog, play info, SDK registry),
   `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading),
   `apps/adapters` (v1), `packages/protocol`, `packages/sdk` (+ `/mock`), `packages/cli`
-  (validate/publish), admin (temporary `ADMIN_TOKEN`), Dockerfiles, `infra/compose.yml`.
-  Not yet: `apps/rooms`, accounts.
+  (validate/publish), accounts (Logto/OIDC, admin by role), Dockerfiles, `infra/compose.yml`.
+  Not yet: `apps/rooms`.
 - The game template lives in a separate repository (`play-game-template`).
 - Game domain edge: `infra/nginx/templates/game-domain.conf.template` (nginx in front of
   storage; rules in `infra/README.md`). Shell CSP origins come from `NUXT_CSP_*`.

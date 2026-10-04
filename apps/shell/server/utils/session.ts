@@ -11,8 +11,6 @@ export interface SessionUser {
 }
 
 export interface ShellSession {
-  /** Temporary admin credential, until accounts and roles exist. */
-  adminToken?: string;
   /** In-flight sign-in (PKCE verifier, state, nonce). */
   oidc?: { verifier: string; state: string; nonce: string; returnTo: string };
   /** Tokens stay here, server-side; the browser only holds the sealed cookie. */

@@ -20,7 +20,7 @@ export function useAdmin() {
     } catch (err) {
       const e = err as { statusCode?: number; data?: { data?: { message?: unknown } } };
       if (e.statusCode === 401) {
-        await navigateTo('/admin/login');
+        await navigateTo(loginHref(useRoute().fullPath), { external: true });
         return undefined;
       }
       const message = e.data?.data?.message;

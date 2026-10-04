@@ -2,14 +2,13 @@ import type { H3Event } from 'h3';
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
-/** Calls `/v1/admin/<path>` on the platform API with the session's admin token. */
+/** Calls `/v1/admin/<path>` as the signed-in player; the API requires the admin role. */
 export async function adminFetch<T>(
   event: H3Event,
   path: string,
   init: { method?: Method; body?: unknown } = {},
 ): Promise<T> {
-  const session = await useShellSession(event);
-  const token = session.data.adminToken;
+  const token = await accessToken(event);
   if (!token) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
   }
@@ -22,9 +21,6 @@ export async function adminFetch<T>(
     });
     return res as T;
   } catch (err) {
-    if ((err as { statusCode?: number }).statusCode === 401) {
-      await session.clear();
-    }
     // Keep the API's validation details for the admin UI.
     const data = (err as { data?: { message?: unknown; issues?: unknown; problems?: unknown } })
       .data;

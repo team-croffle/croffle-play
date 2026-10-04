@@ -4,16 +4,15 @@ import { createApp } from '../../src/bootstrap.js';
 import type { Db } from '../../src/db/db.js';
 import { seed } from '../../src/db/seed.js';
 import type { Storage } from '../../src/storage/storage.js';
+import { UsersService } from '../../src/users/users.service.js';
 import { createTestDb, testEnv } from './test-db.js';
-import { AUDIENCE, ISSUER, testJwks } from './test-issuer.js';
-
-/** Admin bearer token every test app accepts. */
-export const ADMIN_TOKEN = 'test-admin-token-0123456789abcdef0123';
-export const adminAuth = { authorization: `Bearer ${ADMIN_TOKEN}` };
+import { AUDIENCE, ISSUER, bearerFor, testJwks } from './test-issuer.js';
 
 export interface TestApp {
   app: NestFastifyApplication;
   db: Db;
+  /** Headers of a signed-in admin (`idp|admin`). */
+  adminAuth: { authorization: string };
   close: () => Promise<void>;
 }
 
@@ -26,16 +25,20 @@ export async function createTestApp(
     await seed(db);
   }
   const app = await createApp({
-    env: testEnv({ ADMIN_TOKEN, OIDC_ISSUER: ISSUER, OIDC_AUDIENCE: AUDIENCE, ...opts.env }),
+    env: testEnv({ OIDC_ISSUER: ISSUER, OIDC_AUDIENCE: AUDIENCE, ...opts.env }),
     db,
     jwks: testJwks,
     ...(opts.storage ? { storage: opts.storage } : {}),
   });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
+  const users = app.get(UsersService);
+  await users.ensure('idp|admin');
+  await users.grantAdmin('idp|admin');
   return {
     app,
     db,
+    adminAuth: await bearerFor('idp|admin'),
     close: async () => {
       await app.close();
       await closeDb();

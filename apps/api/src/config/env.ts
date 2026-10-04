@@ -46,10 +46,18 @@ export const envSchema = v.object({
   OIDC_ISSUER: v.optional(v.pipe(v.string(), v.url())),
   /** API resource indicator; the `aud` of access tokens. */
   OIDC_AUDIENCE: v.optional(v.string()),
+  /** IdP subjects promoted to admin when they sign in (comma-separated; never demotes). */
+  ADMIN_SUBS: v.pipe(
+    v.optional(v.string(), ''),
+    v.transform((s) =>
+      s
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean),
+    ),
+  ),
   /** JWKS location when not `<issuer>/jwks` (e.g. an internal URL). */
   OIDC_JWKS_URL: v.optional(v.pipe(v.string(), v.url())),
-  /** Temporary admin credential (Bearer) until accounts and roles exist. ≥ 32 chars. */
-  ADMIN_TOKEN: v.optional(v.pipe(v.string(), v.minLength(32))),
   GAME_URL_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
