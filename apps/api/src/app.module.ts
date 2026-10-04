@@ -7,6 +7,7 @@ import { DbModule } from './db/db.module.js';
 import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
+import { PublishModule } from './publish/publish.module.js';
 import { ScoresModule } from './scores/scores.module.js';
 import { SdkModule } from './sdk/sdk.module.js';
 import type { Storage } from './storage/storage.js';
@@ -32,6 +33,7 @@ export class AppModule {
         StorageModule.forRoot(options.storage),
         GamesModule,
         DeployKeysModule,
+        PublishModule,
         SdkModule,
         ScoresModule,
       ],
