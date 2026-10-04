@@ -102,6 +102,11 @@ export class SdkClient {
     return (await this.request('fullscreen', { on })).on;
   }
 
+  /** Best players of this game (needs the `leaderboard` capability). */
+  async getLeaderboard(limit?: number): Promise<ResponsePayload<'getLeaderboard'>['entries']> {
+    return (await this.request('getLeaderboard', limit === undefined ? {} : { limit })).entries;
+  }
+
   /** Subscribe to host events (`pause`, `resume`). Returns an unsubscribe function. */
   on(type: EventType, listener: () => void): () => void {
     let set = this.listeners.get(type);
