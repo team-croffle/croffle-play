@@ -27,6 +27,8 @@ import {
 export interface CreatedVersion {
   version: string;
   expiresAt: string;
+  /** Things the author should act on (e.g. an SDK major nearing end of life). */
+  warnings: string[];
   uploads: ({ path: string } & PresignedUpload)[];
 }
 
@@ -56,7 +58,7 @@ export class PublishService {
         `Version ${manifest.version} already exists and cannot be replaced; publish a new version`,
       );
     }
-    const sdkMajor = await this.checkSdk(manifest.sdk);
+    const { major: sdkMajor, warnings } = await this.checkSdk(manifest.sdk);
     const files = this.files(manifest, body.files, game.maxBundleBytes ?? DEFAULT_MAX_BUNDLE_BYTES);
 
     const values = { manifest: manifest as Record<string, unknown>, files, sdkMajor };
@@ -83,6 +85,7 @@ export class PublishService {
     return {
       version: manifest.version,
       expiresAt: new Date(Date.now() + UPLOAD_URL_TTL_SECONDS * 1000).toISOString(),
+      warnings,
       uploads,
     };
   }
@@ -146,19 +149,25 @@ export class PublishService {
   }
 
   /** SDK major of the bundle; refused when unknown, deprecated, or end-of-life. */
-  private async checkSdk(range: string): Promise<number> {
+  private async checkSdk(range: string): Promise<{ major: number; warnings: string[] }> {
     const major = sdkRangeMajor(range) ?? 0;
     const info = await this.sdk.find(major);
+    const guide = this.env.SDK_MIGRATION_GUIDE_URL;
     if (!info) {
       throw new UnprocessableEntityException(`SDK v${major} is not supported by the platform`);
     }
+    const when = info.eolAt ? ` (end of life ${info.eolAt.slice(0, 10)})` : '';
     if (info.status === 'deprecated' || info.status === 'eol') {
-      const when = info.eolAt ? ` (end of life ${info.eolAt.slice(0, 10)})` : '';
       throw new UnprocessableEntityException(
-        `SDK v${major} is ${info.status}${when}; new versions must use a supported SDK major`,
+        `SDK v${major} is ${info.status}${when}; new versions must use a supported SDK major. ` +
+          `Migration guide: ${guide}`,
       );
     }
-    return major;
+    const warnings =
+      info.status === 'maintenance'
+        ? [`SDK v${major} is in maintenance${when}; plan an upgrade: ${guide}`]
+        : [];
+    return { major, warnings };
   }
 
   private files(manifest: GameManifest, declared: CreateVersionBody['files'], limit: number) {
