@@ -1,4 +1,9 @@
-import { type GameManifest, parseManifest, sdkRangeMajor } from '@croffledev/play-protocol';
+import {
+  type GameManifest,
+  parseManifest,
+  sdkRangeMajor,
+  THUMBNAIL,
+} from '@croffledev/play-protocol';
 import {
   ConflictException,
   Inject,
@@ -182,6 +187,16 @@ export class PublishService {
       if (!paths.has(required)) {
         throw new UnprocessableEntityException(`Bundle is missing '${required}'`);
       }
+    }
+    const thumb = declared.find((f) => f.path === manifest.thumbnail);
+    const ext = manifest.thumbnail.split('.').pop()?.toLowerCase() ?? '';
+    if (
+      !(THUMBNAIL.extensions as readonly string[]).includes(ext) ||
+      (thumb && thumb.size > THUMBNAIL.maxBytes)
+    ) {
+      throw new UnprocessableEntityException(
+        `Thumbnail must be PNG, JPEG, or WebP and at most ${THUMBNAIL.maxBytes} bytes`,
+      );
     }
     const total = declared.reduce((sum, f) => sum + f.size, 0);
     if (total > limit) {
