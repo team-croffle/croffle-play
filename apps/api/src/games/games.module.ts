@@ -9,6 +9,6 @@ import { PlayService } from './play.service.js';
   imports: [SdkModule],
   controllers: [GamesController],
   providers: [GamesService, PlayService],
-  exports: [GamesService],
+  exports: [GamesService, PlayService],
 })
 export class GamesModule {}
