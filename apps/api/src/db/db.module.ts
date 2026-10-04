@@ -5,43 +5,26 @@ import {
   Module,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import postgres from 'postgres';
 
 import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
-import { DB, type Db, migrationsFolder } from './db.js';
-import { schema } from './schema.js';
+import { type Connection, connect } from './connect.js';
+import { DB, type Db } from './db.js';
 
-const SQL = Symbol('SQL');
+const CONNECTION = Symbol('CONNECTION');
 
 @Global()
 @Module({})
 export class DbModule implements OnApplicationShutdown {
-  constructor(@Inject(SQL) private readonly sql: postgres.Sql | null) {}
+  constructor(@Inject(CONNECTION) private readonly conn: Connection | null) {}
 
-  /** Connects with `DATABASE_URL` and applies migrations unless `DB_MIGRATE=false`. */
+  /** Connects with `DATABASE_URL`; migrates unless `DB_MIGRATE=false`. */
   static forRoot(): DynamicModule {
     return {
       module: DbModule,
       providers: [
-        {
-          provide: SQL,
-          inject: [ENV],
-          useFactory: (env: Env) => postgres(env.DATABASE_URL, { max: env.DB_POOL_SIZE }),
-        },
-        {
-          provide: DB,
-          inject: [SQL, ENV],
-          useFactory: async (sql: postgres.Sql, env: Env) => {
-            const db = drizzle(sql, { schema });
-            if (env.DB_MIGRATE) {
-              await migrate(db, { migrationsFolder });
-            }
-            return db;
-          },
-        },
+        { provide: CONNECTION, inject: [ENV], useFactory: (env: Env) => connect(env) },
+        { provide: DB, inject: [CONNECTION], useFactory: (conn: Connection) => conn.db },
       ],
       exports: [DB],
     };
@@ -52,7 +35,7 @@ export class DbModule implements OnApplicationShutdown {
     return {
       module: DbModule,
       providers: [
-        { provide: SQL, useValue: null },
+        { provide: CONNECTION, useValue: null },
         { provide: DB, useValue: db },
       ],
       exports: [DB],
@@ -60,6 +43,6 @@ export class DbModule implements OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
-    await this.sql?.end({ timeout: 5 });
+    await this.conn?.close();
   }
 }
