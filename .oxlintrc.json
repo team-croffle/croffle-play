@@ -139,7 +139,10 @@
       "files": ["apps/api/**/*.ts", "apps/rooms/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off",
-        "typescript/no-import-type-side-effects": "off"
+        "typescript/no-import-type-side-effects": "off",
+        // Nest modules are decorated classes with only static factories.
+        "typescript/no-extraneous-class": ["warn", { "allowWithDecorator": true }],
+        "import/no-unassigned-import": ["warn", { "allow": ["reflect-metadata"] }]
       }
     },
     {
