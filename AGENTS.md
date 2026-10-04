@@ -38,6 +38,8 @@ are never checked in here.
   (validate/publish), admin (temporary `ADMIN_TOKEN`), Dockerfiles, `infra/compose.yml`.
   Not yet: `apps/rooms`, accounts.
 - The game template lives in a separate repository (`play-game-template`).
+- Game domain edge: `infra/nginx/templates/game-domain.conf.template` (nginx in front of
+  storage; rules in `infra/README.md`). Shell CSP origins come from `NUXT_CSP_*`.
 - `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) and adapter bundles on
   `:4100`, a separate origin like production.
 - API tests run the real migrations on in-memory PGlite; `DATABASE_URL=pglite://memory` also runs

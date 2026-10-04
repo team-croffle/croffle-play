@@ -58,7 +58,8 @@ pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/
 pnpm dev:shell                           # http://localhost:3000
 ```
 
-컨테이너로 전체 스택(PostgreSQL, MinIO, API, 셸):
+컨테이너로 전체 스택(PostgreSQL, MinIO, 게임 도메인 엣지, API, 셸). 배포 세부 사항은
+[infra/README.md](./infra/README.md):
 
 ```bash
 cp infra/.env.example infra/.env         # CHANGE_ME 값 교체
