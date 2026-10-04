@@ -22,6 +22,8 @@ export default defineNuxtConfig({
     apiBase: 'http://localhost:3001',
     // Server-only. Seals the session cookie (NUXT_SESSION_PASSWORD, ≥ 32 chars).
     sessionPassword: '',
+    // Session lifetime in seconds (NUXT_SESSION_MAX_AGE); sign-in is needed again after it.
+    sessionMaxAge: 43_200,
     // Public URL of this shell (NUXT_SITE_URL); OIDC redirect URIs are built from it.
     siteUrl: 'http://localhost:3000',
     oidc: {

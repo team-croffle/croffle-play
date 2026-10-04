@@ -68,6 +68,18 @@ describe('admin deploy keys', () => {
     expect(await keys.verify(b.key)).toBeNull();
   });
 
+  it('rotates: a new key now, the old one for 24 more hours', async () => {
+    const old = await keys.issue('sample', 'ci', 'deploy');
+    const res = await call('POST', `/v1/admin/games/sample/deploy-keys/${old.id}/rotate`);
+    expect(res.statusCode).toBe(201);
+    const fresh = res.json<{ key: string; label: string; kind: string }>();
+    expect(fresh).toMatchObject({ label: 'ci', kind: 'deploy' });
+    expect(await keys.verify(fresh.key)).not.toBeNull();
+    const stillValid = await keys.verify(old.key);
+    expect(stillValid?.expiresAt?.getTime()).toBeGreaterThan(Date.now() + 23 * 3_600_000);
+    expect(stillValid?.expiresAt?.getTime()).toBeLessThanOrEqual(Date.now() + 24 * 3_600_000);
+  });
+
   it('404s for unknown games and keys', async () => {
     expect((await call('POST', '/v1/admin/games/nope/deploy-keys')).statusCode).toBe(404);
     const missing = '/v1/admin/games/sample/deploy-keys/00000000-0000-4000-8000-000000000000';
