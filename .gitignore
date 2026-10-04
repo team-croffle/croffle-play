@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+
+# Secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.properties
+*.pem
+*.key
+
+# Build output
+dist
+.output
+.nuxt
+.nitro
+.cache
+*.tsbuildinfo
+
+# Logs / caches
+*.log*
+.eslintcache
+coverage
+.turbo
+
+# Local hook overrides
+lefthook-local.yml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea
+*.sublime-workspace
+*.sublime-project
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Syncthing
+.stfolder
+.stignore
+.stversions
+
+# Local AI workspace (never committed)
+.ai/

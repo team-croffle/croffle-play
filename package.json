@@ -1,0 +1,38 @@
+{
+  "name": "@croffledev/croffle-play",
+  "private": true,
+  "description": "Croffle Play — web game platform monorepo (shell, api, rooms, game SDK)",
+  "author": {
+    "name": "Croffle Dev.",
+    "email": "support@croffledev.kr"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/team-croffle/croffle-play",
+  "scripts": {
+    "prepare": "lefthook install",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint --no-error-on-unmatched-pattern .",
+    "lint:fix": "oxlint --no-error-on-unmatched-pattern --fix .",
+    "typecheck": "pnpm -r --parallel --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build",
+    "check": "lefthook run check",
+    "dev:shell": "pnpm --filter @croffledev/play-shell dev",
+    "dev:api": "pnpm --filter @croffledev/play-api dev",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm --filter './packages/*' build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1",
+    "lefthook": "^2.1.16",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.9.1+sha512.06b055fff5cd20dc12781de173ced3310ce0951bf2ec620211a16045d5444d5c93a663210764ef29a653a610459ba0368f0e74f84d80c54723cf95aae7bc0d6d"
+}

@@ -1,0 +1,51 @@
+# Git hooks. Installed by `pnpm install` (prepare → `lefthook install`).
+# Run every check by hand: `pnpm check` (= `lefthook run check`).
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: secret-files
+      run: sh scripts/hooks/check-secret-files.sh {staged_files}
+
+    - name: format
+      glob: '*.{js,mjs,cjs,ts,mts,cts,vue,json,md,yml,yaml}'
+      exclude:
+        - pnpm-lock.yaml
+      run: pnpm exec oxfmt --write {staged_files}
+      stage_fixed: true
+
+    - name: lint
+      glob: '*.{js,mjs,ts,mts,cts,vue}'
+      run: pnpm exec oxlint {staged_files}
+
+    - name: typecheck
+      glob: '*.{ts,mts,cts,vue}'
+      run: pnpm typecheck
+
+commit-msg:
+  jobs:
+    - name: commit-msg
+      run: sh scripts/hooks/check-commit-msg.sh {1}
+
+pre-push:
+  jobs:
+    - name: test
+      run: pnpm test
+
+# Manual: every check over the whole tree, no file filtering.
+# Same gate as CI (`.github/workflows/ci.yml`).
+check:
+  piped: true
+  jobs:
+    - name: secret-files
+      run: sh scripts/hooks/check-secret-files.sh $(git ls-files)
+    - name: format
+      run: pnpm format:check
+    - name: lint
+      run: pnpm lint
+    - name: typecheck
+      run: pnpm typecheck
+    - name: test
+      run: pnpm test
+    - name: build
+      run: pnpm build

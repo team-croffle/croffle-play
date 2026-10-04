@@ -1,0 +1,143 @@
+# CI — the same gate as `pnpm check` locally (secret files, format, lint,
+# typecheck, test, build), plus a Docker build for every app whose files
+# changed and that has a Dockerfile. `CI result` is the single required check
+# for branch protection.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      apps: ${{ steps.apps.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          list-files: shell
+          filters: |
+            code:
+              - 'apps/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.npmrc'
+              - 'tsconfig*.json'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
+              - 'lefthook.yml'
+              - 'scripts/hooks/**'
+              - '.github/workflows/ci.yml'
+            shell:
+              - 'apps/shell/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            rooms:
+              - 'apps/rooms/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+
+      # Apps to docker-build: changed AND have a Dockerfile.
+      - id: apps
+        shell: bash
+        env:
+          SHELL_CHANGED: ${{ steps.filter.outputs.shell }}
+          API_CHANGED: ${{ steps.filter.outputs.api }}
+          ROOMS_CHANGED: ${{ steps.filter.outputs.rooms }}
+        run: |
+          set -euo pipefail
+          APPS=()
+          [[ "$SHELL_CHANGED" == "true" && -f apps/shell/Dockerfile ]] && APPS+=(shell)
+          [[ "$API_CHANGED" == "true" && -f apps/api/Dockerfile ]] && APPS+=(api)
+          [[ "$ROOMS_CHANGED" == "true" && -f apps/rooms/Dockerfile ]] && APPS+=(rooms)
+          JSON=$(printf '%s\n' "${APPS[@]:-}" | { grep -v '^$' || true; } | jq -R . | jq -cs .)
+          echo "apps=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Docker builds: $JSON"
+
+  check:
+    name: Check (secret-files · format · lint · typecheck · test · build)
+    needs: changes
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: lefthook check
+        run: pnpm exec lefthook run check
+
+  image:
+    name: Docker build (${{ matrix.app }})
+    needs: changes
+    if: ${{ needs.changes.outputs.apps != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: false
+          build-args: VERSION=ci-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  ci-ok:
+    name: CI result
+    needs: [changes, check, image]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          echo "$RESULTS"
+          if echo "$RESULTS" | grep -Eq '"result": "(failure|cancelled)"'; then
+            echo "A required job failed."
+            exit 1
+          fi
+          echo "All jobs passed or were skipped."

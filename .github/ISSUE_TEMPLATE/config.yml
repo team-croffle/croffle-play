@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Game repositories
+    url: https://github.com/team-croffle
+    about: Bugs inside a specific game belong to that game's repository, not the platform.

@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "semi": true,
+  "singleQuote": true,
+  "sortPackageJson": false,
+  "sortImports": true,
+  "vueIndentScriptAndStyle": true,
+  "useTabs": false,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.nuxt/**",
+    "**/.output/**",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "pnpm-lock.yaml",
+    ".ai/**"
+  ]
+}

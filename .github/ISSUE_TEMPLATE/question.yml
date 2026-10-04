@@ -1,0 +1,12 @@
+name: Question
+description: Ask about using the platform, SDK, or publish flow.
+title: '[Q]: '
+labels: ['question']
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What you are trying to do and where you got stuck. Link docs or code you already looked at.
+    validations:
+      required: true

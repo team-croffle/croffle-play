@@ -1,0 +1,74 @@
+# Used by actions/labeler (see .github/workflows/labeler.yml).
+# Missing labels are created by the workflow (`issues: write`).
+
+shell:
+  - changed-files:
+      - any-glob-to-any-file: apps/shell/**
+
+api:
+  - changed-files:
+      - any-glob-to-any-file: apps/api/**
+
+rooms:
+  - changed-files:
+      - any-glob-to-any-file: apps/rooms/**
+
+adapters:
+  - changed-files:
+      - any-glob-to-any-file: apps/adapters/**
+
+protocol:
+  - changed-files:
+      - any-glob-to-any-file: packages/protocol/**
+
+sdk:
+  - changed-files:
+      - any-glob-to-any-file: packages/sdk/**
+
+cli:
+  - changed-files:
+      - any-glob-to-any-file: packages/cli/**
+
+infra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - infra/**
+          - '**/Dockerfile'
+          - '**/.dockerignore'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - docs/**
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/package.json'
+          - pnpm-lock.yaml
+          - pnpm-workspace.yaml
+          - .npmrc
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/workflows/**
+          - .github/labeler.yaml
+          - .github/CODEOWNERS
+          - lefthook.yml
+          - scripts/hooks/**
+
+feature:
+  - head-branch:
+      - '^feat'
+      - '^feature'
+
+bug:
+  - head-branch:
+      - '^fix'
+      - '^bug'
+
+refactor:
+  - head-branch:
+      - '^refactor'

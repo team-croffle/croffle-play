@@ -1,0 +1,55 @@
+name: Bug Report
+description: Something in the platform (shell, API, SDK, CLI, rooms) does not work.
+title: '[BUG]: '
+labels: ['bug']
+type: bug
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Shell (catalog / play page)
+        - API
+        - SDK (@croffledev/play-sdk)
+        - CLI (@croffledev/play-cli)
+        - Rooms (multiplayer)
+        - Publish pipeline
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / environment
+      placeholder: Chrome 131 on Windows 11 · Node 24.2 · play-sdk 1.3.0
+    validations:
+      required: false
+
+  - type: input
+    id: game
+    attributes:
+      label: Game id and version (if a specific game is affected)
+      placeholder: tetris 1.2.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Summary, reproduction steps, expected vs. actual, console/network output.
+      placeholder: |
+        Short summary:
+
+        Steps to reproduce:
+        1. ...
+        2. ...
+
+        Expected:
+        Actual:
+
+        Console / network output:
+    validations:
+      required: true

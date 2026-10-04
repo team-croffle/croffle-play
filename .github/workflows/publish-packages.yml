@@ -1,0 +1,57 @@
+# Publish Packages — Changesets for packages/* (protocol, sdk, cli).
+# On master: opens/updates the "chore: version packages" PR, or publishes to
+# npm when that PR is merged. apps/* are private and never versioned here.
+
+name: Publish Packages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.changeset/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/publish-packages.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    name: Version or publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request or Publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version-packages
+          publish: pnpm run release
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
