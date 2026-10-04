@@ -7,8 +7,8 @@ shared account, scores and saves, multiplayer rooms, and the SDK games talk to.
 [한국어](./README.ko.md)
 
 > Status: **early development.** Catalog, play page, SDK v1, runtime host adapters, the publish
-> pipeline (play-cli → review → approval), and accounts (sign-in, scores, leaderboards, saves) work;
-> multiplayer follows the [roadmap](./docs/ROADMAP.md). Design record:
+> pipeline (play-cli → review → approval), accounts (sign-in, scores, leaderboards, saves), and
+> multiplayer rooms work; see the [roadmap](./docs/ROADMAP.md). Design record:
 > [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## How it fits together
@@ -97,7 +97,7 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 
 Outside the platform, pass `transport: createMockHost()` from `@croffledev/play-sdk/mock` to run the
 game on its own. Publishing (deploy keys, `play-cli`, review and approval):
-[docs/publishing.md](./docs/publishing.md).
+[docs/publishing.md](./docs/publishing.md). Multiplayer rooms: [docs/multiplayer.md](./docs/multiplayer.md).
 
 Contribution rules for humans and agents: [AGENTS.md](./AGENTS.md).
 

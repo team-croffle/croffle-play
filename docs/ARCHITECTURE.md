@@ -187,13 +187,17 @@ nginx 매핑 (개인 서버, 실제 규칙은 `infra/nginx/templates/game-domain
 - 통신은 **WebSocket** 기본. HTTP+SSE는 턴제만 가능하지만 하나로 통일하는 게 SDK가 단순. WebRTC
   DataChannel(시그널링·TURN 필요)과 WebTransport는 초기 제외.
 - **공용 룸 서버** 하나로 대부분 해결: 방·인원 관리, 메시지 중계만. 로직은 클라이언트(방장). 게임별
-  서버 불필요. 후보: Colyseus(룸 구조, 가벼움) vs Nakama(기능 많지만 무겁고 API와 겹침) vs 자체.
+  서버 불필요. Colyseus·Nakama 대신 **자체 `ws` 서버**(`apps/rooms`)로 결정 — 중계만 하므로 작고,
+  메시지 형식을 `packages/protocol`(`rooms.ts`)이 직접 정의해 SDK 메이저와 함께 관리한다.
 - 게임 iframe이 룸 서버에 **직접** 연결 (`wss://rooms.<플랫폼 도메인>`). 셸을 거쳐 postMessage로
   중계하지 않는다.
 - SDK가 숨기는 것: 30초 ping(Cloudflare는 약 100초 무통신 시 끊음), 지수 백오프 재연결 + 같은 방
   재입장, `reconnecting` 이벤트. 인증은 연결 직후 **첫 메시지**로 토큰 전송(쿼리스트링 금지), 서버는
   `Origin` 헤더를 게임 도메인과 대조.
 - 진짜 권위 서버가 필요한 게임만 **Tier 2 승인제**로 개별 컨테이너 허용.
+- 구현 세부: 방 키는 `<게임>:<방>`, 방장은 가장 오래 있은 멤버(나가면 다음 사람), 프레임 16KB, 연결당
+  초당 30개, 인증 5초, 상태는 메모리(단일 인스턴스). 토큰 `sub`는 공개 계정 id, `nickname` 클레임 포함
+  → 룸 서버는 DB 없이 동작. 사용법은 [multiplayer.md](./multiplayer.md).
 
 ### 게임 서버 컨테이너 (Tier 2)
 

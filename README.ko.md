@@ -7,8 +7,8 @@
 [English](./README.md)
 
 > 상태: **초기 개발.** 카탈로그, 실행 페이지, SDK v1, 런타임 호스트 어댑터, 배포 파이프라인(play-cli →
-> 검토 → 승인), 계정(로그인, 점수, 리더보드, 저장)이 동작한다. 멀티플레이는
-> [로드맵](./docs/ROADMAP.md) 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> 검토 → 승인), 계정(로그인, 점수, 리더보드, 저장), 멀티플레이 룸이 동작한다.
+> [로드맵](./docs/ROADMAP.md) 참고. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## 구조
 
@@ -93,7 +93,8 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 ```
 
 플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다. 배포(배포 키,
-`play-cli`, 검토·승인): [docs/publishing.md](./docs/publishing.md).
+`play-cli`, 검토·승인): [docs/publishing.md](./docs/publishing.md). 멀티플레이 룸:
+[docs/multiplayer.md](./docs/multiplayer.md).
 
 사람과 에이전트 공통 기여 규칙: [AGENTS.md](./AGENTS.md).
 

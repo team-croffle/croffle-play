@@ -7,6 +7,7 @@ MinIO can be swapped for R2/S3/another S3-compatible store by configuration only
                    Cloudflare (DNS, TLS, cache, Tunnel)
  play.croffledev.kr ──────────► shell :3000 ──► api :3001 ──► postgres
  api.play.croffledev.kr ──────────────────────► api :3001 ──► minio (S3)
+ rooms.play.croffledev.kr ───► rooms :3002 (WebSocket; tokens checked against the API's JWKS)
  static.play.croffledev.kr ──► games-edge :8080 ──► minio /adapters/…
  <id>.croffle-play.link ─────► games-edge :8080 ──► minio /games/<id>/…
 ```
@@ -16,14 +17,15 @@ platform domain could set cookies for it or make same-site requests with the pla
 
 ## Services (`compose.yml`)
 
-| Service      | Port (host)    | Networks                | Notes                                    |
-| ------------ | -------------- | ----------------------- | ---------------------------------------- |
-| `postgres`   | —              | data-net                | API only                                 |
-| `minio`      | 127.0.0.1:9000 | storage-net             | S3 API; console on 127.0.0.1:9001        |
-| `minio-init` | —              | storage-net             | one-shot: buckets, API user, public-read |
-| `games-edge` | 127.0.0.1:8080 | storage-net             | nginx; read-only container               |
-| `api`        | 127.0.0.1:3001 | platform, data, storage | migrations run on start                  |
-| `shell`      | 127.0.0.1:3000 | platform-net            | never talks to the database or storage   |
+| Service      | Port (host)    | Networks                | Notes                                        |
+| ------------ | -------------- | ----------------------- | -------------------------------------------- |
+| `postgres`   | —              | data-net                | API only                                     |
+| `minio`      | 127.0.0.1:9000 | storage-net             | S3 API; console on 127.0.0.1:9001            |
+| `minio-init` | —              | storage-net             | one-shot: buckets, API user, public-read     |
+| `games-edge` | 127.0.0.1:8080 | storage-net             | nginx; read-only container                   |
+| `api`        | 127.0.0.1:3001 | platform, data, storage | migrations run on start                      |
+| `rooms`      | 127.0.0.1:3002 | platform-net            | WebSocket relay; verifies game tokens (JWKS) |
+| `shell`      | 127.0.0.1:3000 | platform-net            | never talks to the database or storage       |
 
 ## Environment (`infra/.env`, from `.env.example`)
 
