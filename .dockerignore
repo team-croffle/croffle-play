@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.output
+**/.nuxt
+**/.nitro
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.ai
+.github
+.vscode
+infra
+docs
+*.md
