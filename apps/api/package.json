@@ -18,7 +18,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx --conditions=@croffledev/source --env-file-if-exists=.env src/db/seed-cli.ts",
-    "sdk:register": "tsx --conditions=@croffledev/source --env-file-if-exists=.env src/sdk/register-cli.ts"
+    "sdk:register": "tsx --conditions=@croffledev/source --env-file-if-exists=.env src/sdk/register-cli.ts",
+    "db:grant-admin": "tsx --conditions=@croffledev/source --env-file-if-exists=.env src/auth/grant-admin-cli.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
@@ -28,6 +29,7 @@
     "@nestjs/core": "^12.1.2",
     "@nestjs/platform-fastify": "^12.1.2",
     "drizzle-orm": "^0.45.3",
+    "jose": "^6.2.12",
     "postgres": "^3.4.9",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",

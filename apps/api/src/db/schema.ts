@@ -68,6 +68,22 @@ export const gameVersions = pgTable(
   (t) => [primaryKey({ columns: [t.gameId, t.version] })],
 );
 
+export const userRole = pgEnum('user_role', ['user', 'admin']);
+
+/**
+ * Platform account, keyed by the IdP subject. Games only ever see `id`, `nickname`, `avatar`
+ * (design invariant 4) — never `sub`.
+ */
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sub: text('sub').notNull().unique(),
+  nickname: text('nickname').notNull(),
+  avatar: text('avatar'),
+  role: userRole('role').notNull().default('user'),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  ...timestamps,
+});
+
 /** Per-game publish credential. Only the SHA-256 of the key is stored. */
 export const deployKeys = pgTable('deploy_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -112,4 +128,6 @@ export const schema = {
   sdkVersions,
   sdkStatus,
   deployKeys,
+  users,
+  userRole,
 };

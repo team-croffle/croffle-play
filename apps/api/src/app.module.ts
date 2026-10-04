@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import type { JWTVerifyGetKey } from 'jose';
 
 import { AdminModule } from './admin/admin.module.js';
 import { ConfigModule } from './config/config.module.js';
@@ -13,6 +14,7 @@ import { ScoresModule } from './scores/scores.module.js';
 import { SdkModule } from './sdk/sdk.module.js';
 import type { Storage } from './storage/storage.js';
 import { StorageModule } from './storage/storage.module.js';
+import { UsersModule } from './users/users.module.js';
 
 export interface AppOptions {
   /** Validated env; parsed from `process.env` when omitted. */
@@ -21,6 +23,8 @@ export interface AppOptions {
   db?: Db;
   /** Object storage (tests); otherwise S3 from env. */
   storage?: Storage;
+  /** Access-token keys (tests); otherwise the IdP JWKS from env. */
+  jwks?: JWTVerifyGetKey;
 }
 
 @Module({})
@@ -32,6 +36,7 @@ export class AppModule {
         ConfigModule.forRoot(options.env),
         options.db ? DbModule.forDb(options.db) : DbModule.forRoot(),
         StorageModule.forRoot(options.storage),
+        UsersModule.forRoot(options.jwks),
         GamesModule,
         DeployKeysModule,
         PublishModule,
