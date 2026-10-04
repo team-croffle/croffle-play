@@ -71,6 +71,29 @@ export class DeployKeysService {
     }
   }
 
+  /**
+   * Issues a replacement (same kind and label) and lets the old key keep working for `graceHours`
+   * so CI secrets can be swapped without a failed publish.
+   */
+  async rotate(
+    gameId: string,
+    id: string,
+    graceHours = 24,
+  ): Promise<{ key: string } & DeployKeyView> {
+    const [old] = await this.db
+      .select()
+      .from(deployKeys)
+      .where(and(eq(deployKeys.gameId, gameId), eq(deployKeys.id, id)));
+    if (!old || old.revokedAt) {
+      throw new NotFoundException('Active deploy key not found');
+    }
+    const until = new Date(Date.now() + graceHours * 3_600_000);
+    if (!old.expiresAt || old.expiresAt > until) {
+      await this.db.update(deployKeys).set({ expiresAt: until }).where(eq(deployKeys.id, id));
+    }
+    return this.issue(gameId, old.label, old.kind);
+  }
+
   /** The active key row of this kind for a raw key, or null (unknown, revoked, expired). */
   async verify(raw: string, kind: KeyKind = 'deploy'): Promise<DeployKey | null> {
     if (!raw.startsWith(`${PREFIX[kind]}_`)) {

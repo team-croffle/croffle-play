@@ -40,12 +40,13 @@ function password(): string {
  * see tokens (design invariant 4).
  */
 export function useShellSession(event: H3Event) {
-  const secure = useRuntimeConfig().siteUrl.startsWith('https://');
+  const config = useRuntimeConfig();
+  const secure = config.siteUrl.startsWith('https://');
   return useSession<ShellSession>(event, {
     password: password(),
     // `__Host-` pins the cookie to this host over HTTPS (no Domain attribute possible).
     name: secure ? '__Host-cp_session' : 'cp_session',
-    maxAge: 60 * 60 * 12,
+    maxAge: Number(config.sessionMaxAge) || 43_200,
     cookie: { httpOnly: true, secure, sameSite: 'lax', path: '/' },
   });
 }

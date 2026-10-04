@@ -40,6 +40,15 @@ export class DeployKeysController {
     return { items: await this.keys.list(id) };
   }
 
+  /** New key now; the old one expires in 24 hours. */
+  @Post(':keyId/rotate')
+  rotate(
+    @Param('id', GameIdPipe) id: string,
+    @Param('keyId', ParseUUIDPipe) keyId: string,
+  ): Promise<{ key: string } & DeployKeyView> {
+    return this.keys.rotate(id, keyId);
+  }
+
   @Delete(':keyId')
   @HttpCode(204)
   revoke(

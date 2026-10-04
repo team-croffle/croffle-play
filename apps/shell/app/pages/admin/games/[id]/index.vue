@@ -82,6 +82,12 @@
     await refreshKeys();
   }
 
+  async function rotateKey(keyId: string) {
+    const res = await call<{ key: string }>('POST', `games/${id}/deploy-keys/${keyId}/rotate`);
+    newKey.value = res?.key ?? null;
+    await refreshKeys();
+  }
+
   async function revokeKey(keyId: string) {
     await call('DELETE', `games/${id}/deploy-keys/${keyId}`);
     await refreshKeys();
@@ -248,8 +254,20 @@
           <td>마지막 사용 {{ k.lastUsedAt?.slice(0, 10) ?? '—' }}</td>
           <td class="actions">
             <span v-if="k.revokedAt" class="muted">폐기됨</span>
+            <span v-else-if="k.expiresAt" class="muted"
+              >{{ k.expiresAt.slice(0, 16).replace('T', ' ') }} 만료</span
+            >
             <button
-              v-else
+              v-if="!k.revokedAt && !k.expiresAt"
+              type="button"
+              class="button button--ghost"
+              :disabled="busy"
+              @click="rotateKey(k.id)"
+            >
+              회전
+            </button>
+            <button
+              v-if="!k.revokedAt"
               type="button"
               class="button button--ghost"
               :disabled="busy"
