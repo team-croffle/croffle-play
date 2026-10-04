@@ -99,7 +99,9 @@
 <template>
   <div ref="stage" class="player">
     <p v-if="blocked" class="player__message">
-      지원이 종료된 SDK로 만들어진 버전이라 실행할 수 없습니다.
+      지원이 종료된 SDK로 만들어진 버전이라 실행할 수 없습니다{{
+        sdk?.eolAt ? ` (${formatDate(sdk.eolAt)} 종료)` : ''
+      }}.
     </p>
     <template v-else>
       <iframe
