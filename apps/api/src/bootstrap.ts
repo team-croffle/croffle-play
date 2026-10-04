@@ -14,5 +14,18 @@ export async function createApp(options: AppOptions = {}): Promise<NestFastifyAp
   // Everything is versioned under /v1 except probes and well-known documents.
   app.setGlobalPrefix('v1', { exclude: ['healthz', '.well-known/jwks.json'] });
   app.enableShutdownHooks();
+  // A JSON API: nothing to render, frame, or sniff. No CORS — browsers reach it only through the
+  // shell server (BFF), so cross-origin calls from pages are refused by default.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', async (req, reply) => {
+      reply.header('x-content-type-options', 'nosniff');
+      reply.header('referrer-policy', 'no-referrer');
+      reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");
+      if (req.headers.authorization && !reply.hasHeader('cache-control')) {
+        reply.header('cache-control', 'no-store');
+      }
+    });
   return app;
 }
