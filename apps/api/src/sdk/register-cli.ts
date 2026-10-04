@@ -10,7 +10,6 @@ if (!url) {
 const conn = await connect(parseEnv(process.env));
 try {
   const result = await registerAdapter(conn.db, await fetchAdapterManifest(url), url);
-  // oxlint-disable-next-line no-console
   console.log(`SDK v${result.major} → ${result.adapterUrl} (${result.sri})`);
 } finally {
   await conn.close();

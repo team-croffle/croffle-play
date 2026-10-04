@@ -25,6 +25,8 @@ export interface HostCore {
    */
   api<T = unknown>(method: HttpMethod, path: string, body?: unknown): Promise<T>;
   ui: {
+    /** The game finished loading (`sdk.ready()`): hide the platform loading screen. */
+    gameReady(): void;
     setFullscreen(on: boolean): Promise<boolean>;
     /** Short non-blocking message to the player. */
     notify(message: string): void;

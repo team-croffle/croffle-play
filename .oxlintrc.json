@@ -146,7 +146,8 @@
       }
     },
     {
-      "files": ["packages/cli/**/*.ts"],
+      // Command-line entry points and build scripts print by design.
+      "files": ["packages/cli/**/*.ts", "**/scripts/**", "**/*-cli.ts"],
       "rules": {
         "no-console": "off"
       }
