@@ -1,10 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { type GameManifest, parseManifest, sdkRangeMajor } from '@croffledev/play-protocol';
+import {
+  type GameManifest,
+  parseManifest,
+  sdkRangeMajor,
+  THUMBNAIL,
+} from '@croffledev/play-protocol';
 
 import { type BundleFile, formatBytes, listBundle } from './bundle.js';
 import { findExternalUrls, kindOf } from './external-urls.js';
+import { imageInfo } from './image-size.js';
 
 export const DEFAULT_MAX_BYTES = 30 * 1024 * 1024;
 
@@ -67,6 +73,10 @@ export async function validateBundle(
         errors.push(`game.json ${field} '${path}' is not in the bundle`);
       }
     }
+    const thumb = files.find((f) => f.path === manifest?.thumbnail);
+    if (thumb) {
+      errors.push(...(await checkThumbnail(thumb)));
+    }
     if (opts.api) {
       await checkSdk(opts.api, manifest.sdk, opts.fetch ?? fetch, errors, warnings);
     }
@@ -90,6 +100,24 @@ export async function validateBundle(
   }
 
   return { ok: errors.length === 0, errors, warnings, manifest, files, totalBytes };
+}
+
+async function checkThumbnail(f: BundleFile): Promise<string[]> {
+  if (f.size > THUMBNAIL.maxBytes) {
+    return [
+      `thumbnail ${f.path} is ${formatBytes(f.size)}; the limit is ${formatBytes(THUMBNAIL.maxBytes)}`,
+    ];
+  }
+  const info = imageInfo(await readFile(f.absPath));
+  if (!info) {
+    return [`thumbnail ${f.path} is not a PNG, JPEG, or WebP image`];
+  }
+  if (info.width < THUMBNAIL.minWidth || info.height < THUMBNAIL.minHeight) {
+    return [
+      `thumbnail ${f.path} is ${info.width}×${info.height}; at least ${THUMBNAIL.minWidth}×${THUMBNAIL.minHeight} is required`,
+    ];
+  }
+  return [];
 }
 
 async function checkSdk(

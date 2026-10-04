@@ -73,6 +73,14 @@ export function sdkRangeMajor(range: string): number | null {
   return major === undefined ? null : Number(major);
 }
 
+/** Catalog thumbnail rules (checked by play-cli on the image, by the API on the declared file). */
+export const THUMBNAIL = {
+  maxBytes: 512 * 1024,
+  minWidth: 256,
+  minHeight: 144,
+  extensions: ['png', 'jpg', 'jpeg', 'webp'],
+} as const;
+
 /** Game server images must come from the team's registry, pinned to a tag or digest. */
 export const SERVER_IMAGE_PREFIX = 'ghcr.io/team-croffle/';
 
