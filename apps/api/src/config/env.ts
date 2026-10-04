@@ -79,6 +79,11 @@ export const envSchema = v.object({
     v.optional(v.string(), 'https://{id}.srv.croffle-play.link'),
     v.includes('{id}'),
   ),
+  /** Linked from publish refusals and warnings about old SDK majors. */
+  SDK_MIGRATION_GUIDE_URL: v.optional(
+    v.pipe(v.string(), v.url()),
+    'https://github.com/team-croffle/croffle-play/blob/master/docs/sdk-lifecycle.md',
+  ),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),

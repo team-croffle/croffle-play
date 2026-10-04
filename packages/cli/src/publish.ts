@@ -58,11 +58,14 @@ export async function publishBundle(
     }),
   );
   const raw = JSON.parse(await readFile(`${dir}/game.json`, 'utf8')) as unknown;
-  const declared = await call<{ uploads: Upload[] }>(fetcher, base, {
+  const declared = await call<{ uploads: Upload[]; warnings?: string[] }>(fetcher, base, {
     method: 'POST',
     headers: { ...auth, 'content-type': 'application/json' },
     body: JSON.stringify({ manifest: raw, files }),
   });
+  for (const w of declared.warnings ?? []) {
+    log(`warning: ${w}`);
+  }
   log(`declared ${id}@${version}: ${declared.uploads.length} files`);
 
   const byPath = new Map(result.files.map((f) => [f.path, f.absPath]));
