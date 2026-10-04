@@ -15,6 +15,7 @@ import { ScoresModule } from './scores/scores.module.js';
 import { SdkModule } from './sdk/sdk.module.js';
 import type { Storage } from './storage/storage.js';
 import { StorageModule } from './storage/storage.module.js';
+import { TokensModule } from './tokens/tokens.module.js';
 import { UsersModule } from './users/users.module.js';
 
 export interface AppOptions {
@@ -45,6 +46,7 @@ export class AppModule {
         SdkModule,
         ScoresModule,
         SavesModule,
+        TokensModule,
       ],
       controllers: [HealthController],
     };

@@ -124,6 +124,9 @@ services:
       # Fetch signing keys inside the network; tokens still carry the public issuer.
       OIDC_JWKS_URL: http://logto:3001/oidc/jwks
       ADMIN_SUBS: ${ADMIN_SUBS:-}
+      # Game tokens (rooms, game servers): ES256 PKCS8 PEM, `\n`-escaped on one line.
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY}
+      PUBLIC_API_ORIGIN: ${PUBLIC_API_ORIGIN:-https://api.play.croffledev.kr}
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       postgres:
