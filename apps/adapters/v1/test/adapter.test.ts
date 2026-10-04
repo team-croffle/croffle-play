@@ -50,7 +50,14 @@ function setup(overrides: { api?: HostCore['api'] } = {}) {
 describe('host adapter v1', () => {
   it('is for SDK major 1 and announces its capabilities', () => {
     expect(major).toBe(1);
-    expect(setup().adapter.capabilities).toEqual(['user', 'score', 'fullscreen', 'exit']);
+    expect(setup().adapter.capabilities).toEqual([
+      'user',
+      'score',
+      'save',
+      'leaderboard',
+      'fullscreen',
+      'exit',
+    ]);
   });
 
   it('maps requests to the core', async () => {
@@ -73,24 +80,44 @@ describe('host adapter v1', () => {
     expect(core.lifecycle.exit).toHaveBeenCalled();
   });
 
+  it('stores saves and reads the leaderboard through the core', async () => {
+    const api = vi.fn(async (method: string, path: string) => {
+      if (path.includes('leaderboard')) {
+        return {
+          items: [{ rank: 1, user: { id: 'u', nickname: 'K', avatar: null }, score: 9, at: 'x' }],
+        };
+      }
+      return method === 'GET' ? { data: 'saved' } : undefined;
+    });
+    const { send } = setup({ api: api as unknown as HostCore['api'] });
+    expect(await send(request('1', 'save', { slot: 'main', data: 'd' }))).toMatchObject({
+      ok: true,
+    });
+    expect(api).toHaveBeenCalledWith('PUT', 'games/tetris/saves/main', { data: 'd' });
+    expect(await send(request('2', 'load', { slot: 'main' }))).toMatchObject({
+      payload: { data: 'saved' },
+    });
+    expect(await send(request('3', 'getLeaderboard', { limit: 5 }))).toMatchObject({
+      payload: { entries: [{ rank: 1, score: 9, user: { nickname: 'K' } }] },
+    });
+    expect(api).toHaveBeenCalledWith('GET', 'games/tetris/leaderboard?limit=5');
+  });
+
   it('answers unsupported and invalid requests', async () => {
     const { send } = setup();
-    expect(await send(request('1', 'save', { slot: 'a', data: '' }))).toMatchObject({
-      ok: false,
-      error: { code: 'unsupported' },
-    });
     expect(await send(request('2', 'nonsense'))).toMatchObject({ error: { code: 'unsupported' } });
     expect(await send(request('3', 'submitScore', { score: 'x' }))).toMatchObject({
       error: { code: 'invalid_request' },
     });
   });
 
-  it('maps core HTTP failures to protocol errors', async () => {
+  it('maps core HTTP failures to protocol errors and asks guests to sign in', async () => {
     const api = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { status: 401 }));
-    const { send } = setup({ api: api as HostCore['api'] });
+    const { send, core } = setup({ api: api as HostCore['api'] });
     expect(await send(request('1', 'submitScore', { score: 1 }))).toMatchObject({
       error: { code: 'auth_required' },
     });
+    expect(core.ui.requestLogin).toHaveBeenCalledOnce();
   });
 
   it('forwards visibility as pause/resume and stops after dispose', () => {
