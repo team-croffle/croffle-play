@@ -32,6 +32,8 @@ export default defineNuxtConfig({
       // API resource indicator; access tokens are issued for it (NUXT_OIDC_AUDIENCE).
       audience: '',
     },
+    // Shared rooms server games connect to (NUXT_ROOMS_URL), e.g. wss://rooms.play.croffledev.kr
+    roomsUrl: 'ws://localhost:3002',
     csp: {
       // Where game versions are framed from (NUXT_CSP_FRAME_SRC), e.g. https://*.croffle-play.link
       frameSrc: 'http://localhost:4100 http://*.localhost:4100',
