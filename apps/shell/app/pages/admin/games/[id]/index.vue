@@ -26,6 +26,12 @@
   }>(`/api/admin/games/${id}/members`, { default: () => ({ items: [] }) });
   const memberForm = reactive({ userId: '', role: 'developer' });
   const repo = ref(game.value?.repo ?? '');
+  const scoring = reactive({
+    policy: game.value?.scorePolicy ?? 'client',
+    min: game.value?.scoreMin ?? null,
+    max: game.value?.scoreMax ?? null,
+  });
+  const keyKind = ref<'deploy' | 'server'>('deploy');
   const newKey = ref<string | null>(null);
   const keyLabel = ref('');
 
@@ -51,6 +57,15 @@
   async function removeMember(userId: string) {
     await call('DELETE', `games/${id}/members/${userId}`);
     await refreshMembers();
+  }
+
+  async function saveScoring() {
+    await call('PATCH', `games/${id}`, {
+      scorePolicy: scoring.policy,
+      scoreMin: scoring.min === null || String(scoring.min) === '' ? null : Number(scoring.min),
+      scoreMax: scoring.max === null || String(scoring.max) === '' ? null : Number(scoring.max),
+    });
+    await refreshGame();
   }
 
   async function saveRepo() {
@@ -202,6 +217,17 @@
       <button class="button" type="submit" :disabled="busy">추가</button>
     </form>
 
+    <h2>점수</h2>
+    <form class="row" @submit.prevent="saveScoring">
+      <select v-model="scoring.policy" class="input">
+        <option value="client">client — 브라우저 보고(미검증 표시)</option>
+        <option value="server">server — 게임 서버 키로 제출된 점수만</option>
+      </select>
+      <input v-model="scoring.min" class="input" type="number" placeholder="최소" />
+      <input v-model="scoring.max" class="input" type="number" placeholder="최대" />
+      <button class="button" type="submit" :disabled="busy">저장</button>
+    </form>
+
     <h2>저장소</h2>
     <form class="row" @submit.prevent="saveRepo">
       <input v-model="repo" class="input" placeholder="owner/name (SDK 지원 종료 알림 이슈)" />
@@ -237,6 +263,10 @@
     </table>
     <form class="row" @submit.prevent="issueKey">
       <input v-model="keyLabel" class="input" placeholder="라벨 (예: github-actions)" />
+      <select v-model="keyKind" class="input">
+        <option value="deploy">배포 키 (cpk)</option>
+        <option value="server">게임 서버 키 (csk)</option>
+      </select>
       <button class="button" type="submit" :disabled="busy">키 발급</button>
     </form>
   </section>

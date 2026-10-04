@@ -17,7 +17,10 @@ import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { type DeployKeyView, DeployKeysService } from './deploy-keys.service.js';
 
-const issueSchema = v.object({ label: v.optional(v.pipe(v.string(), v.maxLength(80)), '') });
+const issueSchema = v.object({
+  label: v.optional(v.pipe(v.string(), v.maxLength(80)), ''),
+  kind: v.optional(v.picklist(['deploy', 'server']), 'deploy'),
+});
 
 @Controller('admin/games/:id/deploy-keys')
 @UseGuards(AdminGuard)
@@ -27,9 +30,9 @@ export class DeployKeysController {
   @Post()
   issue(
     @Param('id', GameIdPipe) id: string,
-    @Body(new ValibotPipe(v.optional(issueSchema, {}))) body: { label: string },
+    @Body(new ValibotPipe(v.optional(issueSchema, {}))) body: v.InferOutput<typeof issueSchema>,
   ): Promise<{ key: string } & DeployKeyView> {
-    return this.keys.issue(id, body.label);
+    return this.keys.issue(id, body.label, body.kind);
   }
 
   @Get()

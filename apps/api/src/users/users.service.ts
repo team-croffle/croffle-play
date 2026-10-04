@@ -54,6 +54,11 @@ export class UsersService {
     return row;
   }
 
+  async exists(id: string): Promise<boolean> {
+    const [row] = await this.db.select({ id: users.id }).from(users).where(eq(users.id, id));
+    return Boolean(row);
+  }
+
   async grantAdmin(sub: string): Promise<User | null> {
     const [row] = await this.db
       .update(users)
