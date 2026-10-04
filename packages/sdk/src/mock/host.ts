@@ -93,6 +93,10 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
       }
       case 'fullscreen':
         return { on: (payload as { on: boolean }).on };
+      case 'getLeaderboard': {
+        const best = scores.length > 0 && user ? Math.max(...scores) : null;
+        return { entries: best === null || !user ? [] : [{ rank: 1, user, score: best }] };
+      }
     }
   };
 

@@ -18,6 +18,9 @@ describe('createMockHost', () => {
     await sdk.save('main', '{"lvl":2}');
     expect(await sdk.load('main')).toBe('{"lvl":2}');
     expect(await sdk.setFullscreen(true)).toBe(true);
+    expect(await sdk.getLeaderboard()).toEqual([
+      { rank: 1, user: { id: 'mock-user', nickname: 'Player', avatar: null }, score: 7 },
+    ]);
     await sdk.exit();
   });
 

@@ -40,6 +40,15 @@ export const requests = {
     request: v.object({ on: v.boolean() }),
     response: v.object({ on: v.boolean() }),
   },
+  /** Top players of this game by best score (capability `leaderboard`). */
+  getLeaderboard: {
+    request: v.object({
+      limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))),
+    }),
+    response: v.object({
+      entries: v.array(v.object({ rank: v.number(), user: publicUserSchema, score: v.number() })),
+    }),
+  },
 } as const;
 
 /** Events the host pushes to the game. */
