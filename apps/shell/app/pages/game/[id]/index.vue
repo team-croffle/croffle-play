@@ -21,6 +21,7 @@
       <h1 class="page-title">{{ game.name }}</h1>
       <p>{{ game.description }}</p>
       <p class="muted">v{{ game.version }}</p>
+      <NuxtLink :to="`/game/${game.id}/play`" class="button">플레이</NuxtLink>
     </div>
   </article>
 </template>

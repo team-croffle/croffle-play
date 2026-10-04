@@ -1,3 +1,10 @@
+import { defaultClientConditions, defaultServerConditions } from 'vite';
+
+// Workspace packages (`@croffledev/play-*`) resolve to their TypeScript source, so the shell never
+// waits for a package build (see AGENTS.md → Planned layout).
+const source = '@croffledev/source';
+const customConditions = { compilerOptions: { customConditions: [source] } };
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
@@ -14,5 +21,18 @@ export default defineNuxtConfig({
     // Server-only. Internal API base URL (NUXT_API_BASE). The browser never calls it directly.
     apiBase: 'http://localhost:3001',
   },
-  typescript: { strict: true },
+  vite: {
+    resolve: { conditions: [source, ...defaultClientConditions] },
+    ssr: { resolve: { conditions: [source, ...defaultServerConditions] } },
+  },
+  nitro: {
+    exportConditions: [source],
+    typescript: { tsConfig: customConditions },
+  },
+  typescript: {
+    strict: true,
+    tsConfig: customConditions,
+    sharedTsConfig: customConditions,
+    nodeTsConfig: customConditions,
+  },
 });
