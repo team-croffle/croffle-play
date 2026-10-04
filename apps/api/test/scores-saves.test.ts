@@ -59,7 +59,7 @@ describe('scores and leaderboard', () => {
 
   it('keeps leaderboards per game', async () => {
     const res = await t.app.inject({ method: 'GET', url: '/v1/games/block-drop/leaderboard' });
-    expect(res.json()).toEqual({ items: [] });
+    expect(res.json()).toEqual({ policy: 'client', items: [] });
   });
 });
 

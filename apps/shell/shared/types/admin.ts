@@ -5,6 +5,9 @@ export interface AdminGame {
   stableVersion: string | null;
   previewVersion: string | null;
   repo: string | null;
+  scorePolicy: 'client' | 'server';
+  scoreMin: number | null;
+  scoreMax: number | null;
   maxBundleBytes: number | null;
   createdAt: string;
   updatedAt: string;
@@ -20,6 +23,7 @@ export interface AdminVersion {
 
 export interface DeployKeyView {
   id: string;
+  kind: 'deploy' | 'server';
   prefix: string;
   label: string;
   createdAt: string;

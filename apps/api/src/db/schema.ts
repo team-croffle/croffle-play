@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -29,6 +30,12 @@ const timestamps = {
     .$onUpdate(() => sql`now()`),
 };
 
+/**
+ * Whose scores count: `client` (Tier 1, reported by the game in the browser — shown as
+ * unverified) or `server` (only scores submitted by the game's own server with its server key).
+ */
+export const scorePolicy = pgEnum('score_policy', ['client', 'server']);
+
 export const games = pgTable('games', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -37,6 +44,10 @@ export const games = pgTable('games', {
   stableVersion: text('stable_version'),
   /** Latest uploaded version, reachable by admins for review. */
   previewVersion: text('preview_version'),
+  scorePolicy: scorePolicy('score_policy').notNull().default('client'),
+  /** Scores outside [min, max] are refused (sanity bounds; null = unbounded). */
+  scoreMin: doublePrecision('score_min'),
+  scoreMax: doublePrecision('score_max'),
   /** GitHub repository (`owner/name`) for platform notices. Set by admins only. */
   repo: text('repo'),
   /** Bundle size limit when an admin approved more than the default. */
@@ -100,6 +111,8 @@ export const scores = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     score: doublePrecision('score').notNull(),
+    /** Submitted by the game's server (server key), not by the browser. */
+    verified: boolean('verified').notNull().default(false),
     createdAt: timestamps.createdAt,
   },
   (t) => [index('scores_game_user_score_idx').on(t.gameId, t.userId, t.score)],
@@ -159,12 +172,16 @@ export const gameMembers = pgTable(
   (t) => [primaryKey({ columns: [t.gameId, t.userId] })],
 );
 
-/** Per-game publish credential. Only the SHA-256 of the key is stored. */
+/** `deploy`: publish versions (cpk_…). `server`: the game server submits verified scores (csk_…). */
+export const keyKind = pgEnum('key_kind', ['deploy', 'server']);
+
+/** Per-game credential. Only the SHA-256 of the key is stored. */
 export const deployKeys = pgTable('deploy_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
   gameId: text('game_id')
     .notNull()
     .references(() => games.id, { onDelete: 'cascade' }),
+  kind: keyKind('kind').notNull().default('deploy'),
   keyHash: text('key_hash').notNull().unique(),
   /** Leading characters of the key, to tell keys apart in listings. */
   prefix: text('prefix').notNull(),
@@ -238,4 +255,6 @@ export const schema = {
   sdkNotifications,
   gameMembers,
   memberRole,
+  scorePolicy,
+  keyKind,
 };

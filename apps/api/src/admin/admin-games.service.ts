@@ -36,6 +36,9 @@ export class AdminGamesService {
       name?: string | undefined;
       description?: string | undefined;
       repo?: string | null | undefined;
+      scorePolicy?: 'client' | 'server' | undefined;
+      scoreMin?: number | null | undefined;
+      scoreMax?: number | null | undefined;
       maxBundleBytes?: number | null | undefined;
     },
   ): Promise<AdminGame> {

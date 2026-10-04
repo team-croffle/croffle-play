@@ -7,8 +7,13 @@ import { deployKeys, games } from '../db/schema.js';
 
 export type DeployKey = typeof deployKeys.$inferSelect;
 
+export type KeyKind = DeployKey['kind'];
+
+const PREFIX: Record<KeyKind, string> = { deploy: 'cpk', server: 'csk' };
+
 export interface DeployKeyView {
   id: string;
+  kind: KeyKind;
   prefix: string;
   label: string;
   createdAt: string;
@@ -17,17 +22,30 @@ export interface DeployKeyView {
   revokedAt: string | null;
 }
 
-/** Per-game publish keys (`cpk_<game>_<random>`). The raw key is shown once, at issue. */
+/**
+ * Per-game keys: publish (`cpk_<game>_<random>`) and game server (`csk_<game>_<random>`). The raw
+ * key is shown once, at issue.
+ */
 @Injectable()
 export class DeployKeysService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async issue(gameId: string, label = ''): Promise<{ key: string } & DeployKeyView> {
+  async issue(
+    gameId: string,
+    label = '',
+    kind: KeyKind = 'deploy',
+  ): Promise<{ key: string } & DeployKeyView> {
     await this.requireGame(gameId);
-    const key = `cpk_${gameId}_${randomToken()}`;
+    const key = `${PREFIX[kind]}_${gameId}_${randomToken()}`;
     const [row] = await this.db
       .insert(deployKeys)
-      .values({ gameId, keyHash: sha256Hex(key), prefix: key.slice(0, gameId.length + 11), label })
+      .values({
+        gameId,
+        kind,
+        keyHash: sha256Hex(key),
+        prefix: key.slice(0, gameId.length + 11),
+        label,
+      })
       .returning();
     return { key, ...toView(row as DeployKey) };
   }
@@ -53,9 +71,9 @@ export class DeployKeysService {
     }
   }
 
-  /** The active key row for a raw key, or null (unknown, revoked, expired). */
-  async verify(raw: string): Promise<DeployKey | null> {
-    if (!raw.startsWith('cpk_')) {
+  /** The active key row of this kind for a raw key, or null (unknown, revoked, expired). */
+  async verify(raw: string, kind: KeyKind = 'deploy'): Promise<DeployKey | null> {
+    if (!raw.startsWith(`${PREFIX[kind]}_`)) {
       return null;
     }
     const [row] = await this.db
@@ -63,7 +81,12 @@ export class DeployKeysService {
       .from(deployKeys)
       .where(eq(deployKeys.keyHash, sha256Hex(raw)));
     const now = Date.now();
-    if (!row || row.revokedAt || (row.expiresAt && row.expiresAt.getTime() <= now)) {
+    if (
+      !row ||
+      row.kind !== kind ||
+      row.revokedAt ||
+      (row.expiresAt && row.expiresAt.getTime() <= now)
+    ) {
       return null;
     }
     await this.db
@@ -84,6 +107,7 @@ export class DeployKeysService {
 function toView(row: DeployKey): DeployKeyView {
   return {
     id: row.id,
+    kind: row.kind,
     prefix: row.prefix,
     label: row.label,
     createdAt: row.createdAt.toISOString(),

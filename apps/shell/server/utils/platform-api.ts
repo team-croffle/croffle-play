@@ -1,5 +1,5 @@
 import type { GameSummary } from '../../shared/types/game';
-import type { LeaderboardEntry, PlayInfo, SdkInfo } from '../../shared/types/play';
+import type { Leaderboard, PlayInfo, SdkInfo } from '../../shared/types/play';
 
 interface FetchOptions {
   baseURL?: string;
@@ -28,7 +28,7 @@ export function createPlatformApi(baseURL: string, fetcher: Fetcher) {
         ...(version ? { query: { version } } : {}),
       });
     },
-    getLeaderboard(gameId: string, limit: number): Promise<{ items: LeaderboardEntry[] }> {
+    getLeaderboard(gameId: string, limit: number): Promise<Leaderboard> {
       return fetcher(`/v1/games/${id(gameId)}/leaderboard`, {
         baseURL,
         query: { limit: String(limit) },

@@ -24,4 +24,10 @@ export interface LeaderboardEntry {
   user: { id: string; nickname: string; avatar: string | null };
   score: number;
   at: string;
+  verified: boolean;
+}
+
+export interface Leaderboard {
+  policy: 'client' | 'server';
+  items: LeaderboardEntry[];
 }
