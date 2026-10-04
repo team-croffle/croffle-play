@@ -19,8 +19,16 @@ import { toProtocolError } from './errors.js';
 
 export const major = 1;
 
-/** Features this adapter serves. `save` and `leaderboard` need accounts. */
-const CAPABILITIES = ['user', 'score', 'fullscreen', 'exit'];
+/** Features this adapter serves. */
+const CAPABILITIES = ['user', 'score', 'save', 'leaderboard', 'fullscreen', 'exit'];
+
+const game = (core: HostCore) => `games/${encodeURIComponent(core.lifecycle.gameId)}`;
+
+interface LeaderboardItem {
+  rank: number;
+  user: { id: string; nickname: string; avatar: string | null };
+  score: number;
+}
 
 type Handler = (core: HostCore, payload: never) => Promise<unknown>;
 
@@ -30,7 +38,18 @@ const handlers: Partial<Record<RequestType, Handler>> = {
   },
   getUser: (core) => core.identity.getUser(),
   submitScore: (core, payload: { score: number }) =>
-    core.api('POST', `games/${encodeURIComponent(core.lifecycle.gameId)}/scores`, payload),
+    core.api('POST', `${game(core)}/scores`, payload),
+  save: async (core, payload: { slot: string; data: string }) => {
+    await core.api('PUT', `${game(core)}/saves/${payload.slot}`, { data: payload.data });
+  },
+  load: (core, payload: { slot: string }) => core.api('GET', `${game(core)}/saves/${payload.slot}`),
+  getLeaderboard: async (core, payload: { limit?: number }) => {
+    const res = await core.api<{ items: LeaderboardItem[] }>(
+      'GET',
+      `${game(core)}/leaderboard?limit=${payload.limit ?? 10}`,
+    );
+    return { entries: res.items.map(({ rank, user, score }) => ({ rank, user, score })) };
+  },
   exit: async (core) => {
     core.lifecycle.exit();
   },
@@ -54,7 +73,11 @@ export function mount({ core, port }: AdapterContext): MountedAdapter {
     try {
       port.post(ok(msg.id, await handler(core, check.output as never)));
     } catch (err) {
-      port.post(fail(msg.id, toProtocolError(err)));
+      const error = toProtocolError(err);
+      if (error.code === 'auth_required') {
+        core.ui.requestLogin();
+      }
+      port.post(fail(msg.id, error));
     }
   };
 

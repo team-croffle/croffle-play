@@ -15,5 +15,7 @@ export default defineConfig({
   platform: 'browser',
   target: 'es2022',
   noExternal: () => true,
+  // Bundle workspace packages from source: a stale package dist must never end up in an adapter.
+  inputOptions: { resolve: { conditionNames: ['@croffledev/source', 'import', 'default'] } },
   outExtensions: () => ({ js: '.js' }),
 });
