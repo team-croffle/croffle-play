@@ -22,7 +22,7 @@ describe('/v1/games', () => {
     const res = await t.app.inject({ method: 'GET', url: '/v1/games' });
     expect(res.statusCode).toBe(200);
     const ids = res.json<{ items: { id: string }[] }>().items.map((g) => g.id);
-    expect(ids).toEqual(['block-drop', 'sample', 'word-chain']);
+    expect(ids).toEqual(['block-drop', 'duo', 'sample', 'word-chain']);
   });
 
   it('returns one game', async () => {

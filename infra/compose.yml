@@ -137,6 +137,25 @@ services:
       - '127.0.0.1:3001:3001'
     networks: [platform-net, data-net, storage-net]
 
+  # Shared multiplayer relay. Verifies game tokens against the API's JWKS; no database.
+  rooms:
+    image: ${ROOMS_IMAGE:-croffle-play/rooms:local}
+    build:
+      context: ..
+      dockerfile: apps/rooms/Dockerfile
+    restart: unless-stopped
+    read_only: true
+    environment:
+      JWKS_URL: http://api:3001/.well-known/jwks.json
+      TOKEN_ISSUER: ${PUBLIC_API_ORIGIN:-https://api.play.croffledev.kr}
+      ALLOWED_ORIGIN_TEMPLATE: https://{id}.${GAME_DOMAIN:-croffle-play.link}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3002:3002'
+    networks: [platform-net]
+
   shell:
     image: ${SHELL_IMAGE:-croffle-play/shell:local}
     build:
@@ -151,6 +170,7 @@ services:
       NUXT_OIDC_AUDIENCE: ${OIDC_AUDIENCE:-https://api.play.croffledev.kr}
       NUXT_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID}
       NUXT_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?set OIDC_CLIENT_SECRET}
+      NUXT_ROOMS_URL: ${ROOMS_URL:-wss://rooms.play.croffledev.kr}
       NUXT_CSP_FRAME_SRC: ${NUXT_CSP_FRAME_SRC:-https://*.croffle-play.link}
       NUXT_CSP_CONNECT_SRC: ${NUXT_CSP_CONNECT_SRC:-https://static.play.croffledev.kr}
     depends_on:

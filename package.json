@@ -22,6 +22,7 @@
     "dev:api": "pnpm --filter @croffledev/play-api dev",
     "dev:games": "pnpm --filter @croffledev/play-shell dev:games",
     "dev:oidc": "pnpm --filter @croffledev/play-shell dev:oidc",
+    "dev:rooms": "pnpm --filter @croffledev/play-rooms dev",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm --filter './packages/*' build && node scripts/publish-packages.mjs"
