@@ -20,6 +20,7 @@ export function testEnv(overrides: Record<string, string> = {}): Env {
     NODE_ENV: 'test',
     DATABASE_URL: 'postgres://unused@localhost/test',
     SDK_LIFECYCLE_INTERVAL_SECONDS: '0',
+    RATE_LIMITS: 'false',
     ...overrides,
   });
 }

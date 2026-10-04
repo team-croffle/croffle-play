@@ -14,6 +14,7 @@ import * as v from 'valibot';
 
 import { CurrentUser, UserGuard } from '../auth/user.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
+import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { GamesService } from '../games/games.service.js';
 import type { User } from '../users/users.service.js';
@@ -37,7 +38,8 @@ export class ScoresController {
   /** Client-reported score (Tier 1): recorded as the signed-in player's. */
   @Post('scores')
   @HttpCode(201)
-  @UseGuards(UserGuard)
+  @UseGuards(UserGuard, SubjectThrottlerGuard)
+  @Limit.score()
   async submit(
     @Param('id', GameIdPipe) id: string,
     @CurrentUser() user: User,

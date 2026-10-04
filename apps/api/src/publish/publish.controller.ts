@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 
 import { GameIdPipe } from '../common/game-id.pipe.js';
+import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { DeployKeyGuard } from '../deploy-keys/deploy-key.guard.js';
 import { type CreateVersionBody, createVersionSchema } from './publish.schemas.js';
@@ -13,6 +14,8 @@ export class PublishController {
   constructor(@Inject(PublishService) private readonly publish: PublishService) {}
 
   @Post()
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.publish()
   create(
     @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(createVersionSchema)) body: CreateVersionBody,
@@ -21,6 +24,8 @@ export class PublishController {
   }
 
   @Post(':version/complete')
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.complete()
   @HttpCode(200)
   complete(
     @Param('id', GameIdPipe) id: string,
