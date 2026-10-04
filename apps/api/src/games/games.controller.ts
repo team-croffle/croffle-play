@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
 
+import { GameIdPipe } from '../common/game-id.pipe.js';
 import { type GameSummary, GamesService } from './games.service.js';
 import { type PlayInfo, PlayService } from './play.service.js';
 
@@ -16,12 +17,15 @@ export class GamesController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string): Promise<GameSummary> {
+  get(@Param('id', GameIdPipe) id: string): Promise<GameSummary> {
     return this.games.get(id);
   }
 
   @Get(':id/play')
-  playInfo(@Param('id') id: string, @Query('version') version?: string): Promise<PlayInfo> {
+  playInfo(
+    @Param('id', GameIdPipe) id: string,
+    @Query('version') version?: string,
+  ): Promise<PlayInfo> {
     return this.play.info(id, version || undefined);
   }
 }

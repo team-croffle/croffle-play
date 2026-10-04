@@ -1,6 +1,7 @@
 import { requests } from '@croffledev/play-protocol';
 import { Body, Controller, HttpCode, Inject, Logger, Param, Post } from '@nestjs/common';
 
+import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { GamesService } from '../games/games.service.js';
 
@@ -17,7 +18,7 @@ export class ScoresController {
   @Post()
   @HttpCode(202)
   async submit(
-    @Param('id') id: string,
+    @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(requests.submitScore.request)) body: { score: number },
   ): Promise<{ accepted: boolean }> {
     await this.games.get(id);
