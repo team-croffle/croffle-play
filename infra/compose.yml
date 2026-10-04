@@ -189,5 +189,9 @@ networks:
   platform-net:
   # Database: API only. Game servers never join this network.
   data-net:
-  # Object storage: API (and the game-domain edge, later) only.
+  # Object storage: API and the game-domain edge only.
   storage-net:
+  # Tier 2 game servers (untrusted tenants) and the reverse proxy in front of them. Nothing
+  # else joins it: game servers reach the platform through its public API only.
+  games-net:
+    name: games-net

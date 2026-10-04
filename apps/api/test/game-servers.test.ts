@@ -92,6 +92,28 @@ describe('game servers', () => {
     });
   });
 
+  it('renders an isolated compose service for the approved image', async () => {
+    const res = await admin('GET', '/v1/admin/games/block-drop/server/compose');
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/yaml');
+    const yaml = res.body;
+    for (const line of [
+      `image: ${IMAGE}`,
+      'read_only: true',
+      'cap_drop: [ALL]',
+      "security_opt: ['no-new-privileges:true']",
+      'pids: 256',
+      'networks: [games-net]',
+      'TOKEN_AUDIENCE: game:block-drop',
+      'PLATFORM_JWKS_URL: http://localhost:3001/.well-known/jwks.json',
+      'traefik.http.routers.game-block-drop.rule: Host(`block-drop.srv.croffle-play.link`)',
+      "traefik.http.middlewares.game-block-drop-nocookie.headers.customresponseheaders.Set-Cookie: ''",
+    ]) {
+      expect(yaml).toContain(line);
+    }
+    expect(yaml).not.toMatch(/data-net|storage-net|platform-net|privileged|DATABASE_URL/);
+  });
+
   it('keeps approval for the same image and asks again for a new one', async () => {
     const same = parseManifest(manifest('2.0.1', { protocol: '1.0.0', image: IMAGE }));
     await servers.onVersionUploaded('block-drop', same.ok ? same.manifest : (undefined as never));
