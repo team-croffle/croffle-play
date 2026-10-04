@@ -20,7 +20,16 @@ import { toProtocolError } from './errors.js';
 export const major = 1;
 
 /** Features this adapter serves. */
-const CAPABILITIES = ['user', 'score', 'save', 'leaderboard', 'fullscreen', 'exit'];
+const CAPABILITIES = [
+  'user',
+  'score',
+  'save',
+  'leaderboard',
+  'fullscreen',
+  'exit',
+  'token',
+  'rooms',
+];
 
 const game = (core: HostCore) => `games/${encodeURIComponent(core.lifecycle.gameId)}`;
 
@@ -50,6 +59,8 @@ const handlers: Partial<Record<RequestType, Handler>> = {
     );
     return { entries: res.items.map(({ rank, user, score }) => ({ rank, user, score })) };
   },
+  getToken: (core) => core.api('POST', `${game(core)}/token`),
+  getRoomsUrl: (core) => core.api('GET', 'rooms'),
   exit: async (core) => {
     core.lifecycle.exit();
   },

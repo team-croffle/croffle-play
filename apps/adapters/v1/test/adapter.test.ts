@@ -57,6 +57,8 @@ describe('host adapter v1', () => {
       'leaderboard',
       'fullscreen',
       'exit',
+      'token',
+      'rooms',
     ]);
   });
 
@@ -101,6 +103,18 @@ describe('host adapter v1', () => {
       payload: { entries: [{ rank: 1, score: 9, user: { nickname: 'K' } }] },
     });
     expect(api).toHaveBeenCalledWith('GET', 'games/tetris/leaderboard?limit=5');
+  });
+
+  it('fetches game tokens and the rooms URL through the core', async () => {
+    const api = vi.fn(async (_m: string, path: string) =>
+      path === 'rooms' ? { url: 'wss://rooms.test' } : { token: 't', expiresAt: 'x' },
+    );
+    const { send } = setup({ api: api as unknown as HostCore['api'] });
+    expect(await send(request('1', 'getToken', {}))).toMatchObject({ payload: { token: 't' } });
+    expect(api).toHaveBeenCalledWith('POST', 'games/tetris/token');
+    expect(await send(request('2', 'getRoomsUrl', {}))).toMatchObject({
+      payload: { url: 'wss://rooms.test' },
+    });
   });
 
   it('answers unsupported and invalid requests', async () => {
