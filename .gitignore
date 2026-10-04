@@ -12,6 +12,8 @@ secrets/
 
 # Build output
 dist
+# Dev fixture builds (apps/shell/dev/.out)
+.out
 .output
 .nuxt
 .nitro

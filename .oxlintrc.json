@@ -10,6 +10,7 @@
     "**/dist/**",
     "**/.nuxt/**",
     "**/.output/**",
+    "**/.out/**",
     "**/node_modules/**",
     "**/coverage/**",
     "**/*.cjs",
@@ -147,7 +148,7 @@
     },
     {
       // Command-line entry points and build scripts print by design.
-      "files": ["packages/cli/**/*.ts", "**/scripts/**", "**/*-cli.ts"],
+      "files": ["packages/cli/**/*.ts", "**/scripts/**", "**/*-cli.ts", "**/dev/serve-*.ts"],
       "rules": {
         "no-console": "off"
       }

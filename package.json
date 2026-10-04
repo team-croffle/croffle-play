@@ -1,7 +1,7 @@
 {
   "name": "@croffledev/croffle-play",
   "private": true,
-  "description": "Croffle Play — web game platform monorepo (shell, api, rooms, game SDK)",
+  "description": "Croffle Play \u2014 web game platform monorepo (shell, api, rooms, game SDK)",
   "author": {
     "name": "Croffle Dev.",
     "email": "support@croffledev.kr"
@@ -20,6 +20,7 @@
     "check": "lefthook run check",
     "dev:shell": "pnpm --filter @croffledev/play-shell dev",
     "dev:api": "pnpm --filter @croffledev/play-api dev",
+    "dev:games": "pnpm --filter @croffledev/play-shell dev:games",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm --filter './packages/*' build && changeset publish"
