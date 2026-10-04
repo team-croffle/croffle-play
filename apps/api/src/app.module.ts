@@ -1,5 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
+import { AdminModule } from './admin/admin.module.js';
 import { ConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
@@ -34,6 +35,7 @@ export class AppModule {
         GamesModule,
         DeployKeysModule,
         PublishModule,
+        AdminModule,
         SdkModule,
         ScoresModule,
       ],
