@@ -26,6 +26,8 @@ export const envSchema = v.object({
     v.minValue(1),
   ),
   DB_MIGRATE: bool('true'),
+  /** Insert the dummy catalog on boot (development only). */
+  DB_SEED: bool('false'),
 });
 
 export type Env = v.InferOutput<typeof envSchema>;
