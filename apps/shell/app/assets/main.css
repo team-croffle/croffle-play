@@ -325,3 +325,12 @@ a {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
+
+.badge--warn {
+  background: #b9770e;
+}
+
+.button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

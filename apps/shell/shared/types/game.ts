@@ -5,4 +5,10 @@ export interface GameSummary {
   description: string;
   version: string;
   serverProtocol: string | null;
+  sdk: {
+    major: number;
+    status: 'current' | 'lts' | 'maintenance' | 'deprecated' | 'eol';
+    deprecatedAt: string | null;
+    eolAt: string | null;
+  } | null;
 }
