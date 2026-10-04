@@ -26,3 +26,13 @@ export interface DeployKeyView {
   expiresAt: string | null;
   revokedAt: string | null;
 }
+
+export interface GameServerView {
+  gameId: string;
+  gameName: string;
+  image: string;
+  protocol: string;
+  status: 'requested' | 'approved' | 'revoked';
+  requestedAt: string;
+  approvedAt: string | null;
+}

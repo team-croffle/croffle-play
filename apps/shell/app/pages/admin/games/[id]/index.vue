@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import type { AdminGame, AdminVersion, DeployKeyView } from '~~/shared/types/admin';
+  import type {
+    AdminGame,
+    AdminVersion,
+    DeployKeyView,
+    GameServerView,
+  } from '~~/shared/types/admin';
 
   definePageMeta({ middleware: 'admin' });
 
@@ -12,6 +17,10 @@
   const { data: keys, refresh: refreshKeys } = await useFetch<{ items: DeployKeyView[] }>(
     `/api/admin/games/${id}/deploy-keys`,
   );
+  const { data: server, refresh: refreshServer } = await useFetch<GameServerView | null>(
+    `/api/admin/games/${id}/server`,
+    { default: () => null, onResponseError: () => undefined, ignoreResponseError: true },
+  );
   const newKey = ref<string | null>(null);
   const keyLabel = ref('');
 
@@ -21,6 +30,11 @@
     if (await call('POST', path, body)) {
       await refreshGame();
     }
+  }
+
+  async function decideServer(action: 'approve' | 'revoke') {
+    await call('POST', `games/${id}/server/${action}`);
+    await refreshServer();
   }
 
   async function issueKey() {
@@ -98,6 +112,41 @@
         </tr>
       </tbody>
     </table>
+
+    <template v-if="server && 'image' in server">
+      <h2>전용 서버 (Tier 2)</h2>
+      <p>
+        <code>{{ server.image }}</code> · 프로토콜 v{{ server.protocol }} ·
+        <strong>{{ server.status }}</strong>
+      </p>
+      <div class="row">
+        <button
+          v-if="server.status !== 'approved'"
+          type="button"
+          class="button"
+          :disabled="busy"
+          @click="decideServer('approve')"
+        >
+          서버 승인
+        </button>
+        <button
+          v-if="server.status === 'approved'"
+          type="button"
+          class="button button--ghost"
+          :disabled="busy"
+          @click="decideServer('revoke')"
+        >
+          승인 폐기
+        </button>
+        <a
+          v-if="server.status === 'approved'"
+          :href="`/api/admin/games/${id}/server/compose`"
+          class="button button--ghost"
+        >
+          compose 내려받기
+        </a>
+      </div>
+    </template>
 
     <h2>배포 키</h2>
     <p v-if="newKey" class="notice">

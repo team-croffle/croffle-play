@@ -4,4 +4,5 @@ export interface GameSummary {
   name: string;
   description: string;
   version: string;
+  serverProtocol: string | null;
 }
