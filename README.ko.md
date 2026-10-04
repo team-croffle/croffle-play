@@ -6,8 +6,8 @@
 
 [English](./README.md)
 
-> 상태: **초기 개발.** API와 셸 골격이 있다. SDK, 배포, 멀티플레이는 [로드맵](./docs/ROADMAP.md)
-> 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> 상태: **초기 개발.** 카탈로그, 실행 페이지, SDK v1, 런타임 호스트 어댑터가 동작한다. 배포, 계정,
+> 멀티플레이는 [로드맵](./docs/ROADMAP.md) 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## 구조
 
@@ -64,6 +64,29 @@ pnpm dev:shell                           # http://localhost:3000
 cp infra/.env.example infra/.env         # CHANGE_ME 값 교체
 docker compose -f infra/compose.yml --env-file infra/.env up --build
 ```
+
+로컬에서 게임 실행 (`sample` 픽스처, 실제 게임처럼 별도 origin에서 서빙):
+
+```bash
+pnpm dev:games    # 픽스처 + 호스트 어댑터 빌드, http://localhost:4100
+# apps/api/.env: GAME_URL_TEMPLATE=http://localhost:4100/{id}/{version}/
+#                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
+pnpm dev:api && pnpm dev:shell    # http://localhost:3000/game/sample/play
+```
+
+## 게임 만들기
+
+게임은 [`@croffledev/play-sdk`](./packages/sdk)를 번들에 넣고 SDK로만 플랫폼과 통신한다:
+
+```ts
+import { createSdk } from '@croffledev/play-sdk';
+
+const sdk = await createSdk({ game: 'tetris' });
+await sdk.ready();
+if (sdk.has('score')) await sdk.submitScore(1200);
+```
+
+플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다.
 
 사람과 에이전트 공통 기여 규칙: [AGENTS.md](./AGENTS.md).
 

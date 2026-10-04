@@ -49,6 +49,27 @@ adapter.mount({ core, iframe, sdkVersion: hello.sdk });
 
 마이너 차이는 capability로 처리한다. 게임은 `sdk.has('leaderboard')`로 확인한 뒤 사용한다.
 
+### v1 메시지와 origin 규칙 (구현: `packages/protocol`)
+
+```ts
+{ ns: 'croffle-play', v: 1, kind: 'req', id: '7', type: 'submitScore', payload: { score: 1200 } }
+{ ns: 'croffle-play', v: 1, kind: 'res', id: '7', ok: true, payload: { accepted: true } }
+{ ns: 'croffle-play', v: 1, kind: 'res', id: '8', ok: false, error: { code: 'auth_required', message } }
+{ ns: 'croffle-play', v: 1, kind: 'evt', type: 'pause' }
+```
+
+- 요청 `ready`, `getUser`, `submitScore`, `save`, `load`, `exit`, `fullscreen` / 이벤트 `pause`, `resume`.
+  요청마다 필요한 capability가 있고, SDK는 없는 capability 요청을 보내지 않고 `unsupported`로 거절한다.
+- SDK: `__hello`만 `targetOrigin: '*'`(민감 정보 없음)로 보내고 `__welcome`을 보낸 origin에 고정한다.
+  이후 `window.parent`가 아닌 곳, 고정 origin이 아닌 곳의 메시지는 무시한다. 요청 기본 타임아웃 10초.
+- 셸: iframe의 `contentWindow` **그리고** 게임 origin(play 정보의 URL)에서 온 메시지만 받고, 게임
+  origin으로만 보낸다. hello의 게임 id·SDK major가 등록된 버전 매니페스트와 다르면 실행하지 않는다.
+- 어댑터 로딩: `import()`는 integrity를 지원하지 않으므로 셸이 번들을 받아 `sdk_versions.sri`(SHA-384)와
+  비교한 뒤 Blob URL로 import한다. 어댑터는 `apps/adapters` 빌드가 쓰는
+  `adapters/v<major>/<버전>/{index.js,manifest.json}`에서 오고, API `sdk:register <manifest-url>`로 등록한다.
+- iframe: `sandbox="allow-scripts allow-same-origin allow-pointer-lock"`,
+  `allow="fullscreen; autoplay; gamepad"`. 게임이 다른 등록 도메인이라 `allow-same-origin`이 안전하다.
+
 ## 3. SDK 버전 수명주기
 
 `sdk_versions` 테이블에 상태와 날짜(`deprecated_at`, `eol_at`)를 두고, 정책 변경은 데이터 수정으로
