@@ -20,6 +20,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only. Internal API base URL (NUXT_API_BASE). The browser never calls it directly.
     apiBase: 'http://localhost:3001',
+    // Server-only. Seals the session cookie (NUXT_SESSION_PASSWORD, ≥ 32 chars).
+    sessionPassword: '',
   },
   vite: {
     resolve: { conditions: [source, ...defaultClientConditions] },
