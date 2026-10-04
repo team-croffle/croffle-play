@@ -10,6 +10,8 @@
   const failure = ref<string | null>(null);
   const loaded = ref(false);
   const notice = ref('');
+  const loginPrompt = ref(false);
+  const route = useRoute();
 
   const sdk = props.info.sdk;
   const blocked = !sdk || sdk.status === 'eol' || !sdk.adapterUrl || !sdk.sri;
@@ -72,6 +74,7 @@
           stage: () => stage.value,
           onGameReady: () => (loaded.value = true),
           onNotify: notify,
+          onLoginRequested: () => (loginPrompt.value = true),
           onExit: () => void navigateTo(`/game/${props.info.id}`),
         });
         mounted = mod.mount({ core, port, sdkVersion: hello.sdk });
@@ -113,5 +116,10 @@
       <div v-else-if="!loaded" class="player__overlay" aria-live="polite">불러오는 중…</div>
     </template>
     <div v-if="notice" class="player__toast" role="status">{{ notice }}</div>
+    <div v-if="loginPrompt" class="player__toast player__toast--action" role="status">
+      로그인하면 점수와 저장이 기록됩니다.
+      <a :href="loginHref(route.fullPath)" class="button">로그인</a>
+      <button type="button" class="button button--ghost" @click="loginPrompt = false">닫기</button>
+    </div>
   </div>
 </template>

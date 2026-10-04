@@ -290,3 +290,38 @@ a {
 .account__name {
   font-weight: 600;
 }
+
+.player__toast--action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.leaderboard {
+  margin-top: 32px;
+}
+
+.leaderboard__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leaderboard__list li {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.leaderboard__rank {
+  color: var(--muted);
+}
+
+.leaderboard__score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}

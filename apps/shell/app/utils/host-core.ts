@@ -12,6 +12,8 @@ export interface HostCoreOptions {
   stage: () => HTMLElement | null;
   onGameReady: () => void;
   onNotify: (message: string) => void;
+  /** Ask the player to sign in (the shell shows a prompt; navigation is the player's choice). */
+  onLoginRequested: () => void;
   onExit: () => void;
   getUser?: () => Promise<PublicUser | null>;
   fetchJson?: <T>(path: string, init: { method: HttpMethod; body?: unknown }) => Promise<T>;
@@ -26,9 +28,9 @@ export function createHostCore(o: HostCoreOptions): HostCore {
   const doc = o.doc ?? document;
   const fetchJson = o.fetchJson ?? defaultFetchJson;
   return {
-    identity: { getUser: o.getUser ?? (async () => null) },
+    identity: { getUser: o.getUser ?? defaultGetUser },
     async api<T>(method: HttpMethod, path: string, body?: unknown): Promise<T> {
-      if (!/^[a-z0-9][\w./-]*$/i.test(path) || path.includes('..')) {
+      if (!/^[a-z0-9][\w./-]*(\?[\w=&.-]*)?$/i.test(path) || path.includes('..')) {
         throw httpError(400, `Invalid core.api path '${path}'`);
       }
       return fetchJson<T>(`/api/${path}`, { method, body });
@@ -36,7 +38,7 @@ export function createHostCore(o: HostCoreOptions): HostCore {
     ui: {
       gameReady: o.onGameReady,
       notify: o.onNotify,
-      requestLogin: () => o.onNotify('로그인하면 이 기능을 사용할 수 있습니다.'),
+      requestLogin: o.onLoginRequested,
       async setFullscreen(on) {
         try {
           if (on && !doc.fullscreenElement) {
@@ -61,6 +63,12 @@ export function createHostCore(o: HostCoreOptions): HostCore {
       },
     },
   };
+}
+
+async function defaultGetUser(): Promise<PublicUser | null> {
+  const { user } = await $fetch<{ user: PublicUser | null }>('/api/me');
+  // Only the public profile reaches games (design invariant 4).
+  return user ? { id: user.id, nickname: user.nickname, avatar: user.avatar } : null;
 }
 
 function httpError(status: number, message: string): HostApiError {

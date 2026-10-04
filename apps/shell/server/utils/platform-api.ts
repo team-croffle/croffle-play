@@ -1,5 +1,5 @@
 import type { GameSummary } from '../../shared/types/game';
-import type { PlayInfo, SdkInfo } from '../../shared/types/play';
+import type { LeaderboardEntry, PlayInfo, SdkInfo } from '../../shared/types/play';
 
 interface FetchOptions {
   baseURL?: string;
@@ -28,15 +28,14 @@ export function createPlatformApi(baseURL: string, fetcher: Fetcher) {
         ...(version ? { query: { version } } : {}),
       });
     },
+    getLeaderboard(gameId: string, limit: number): Promise<{ items: LeaderboardEntry[] }> {
+      return fetcher(`/v1/games/${id(gameId)}/leaderboard`, {
+        baseURL,
+        query: { limit: String(limit) },
+      });
+    },
     getSdk(major: number): Promise<SdkInfo> {
       return fetcher<SdkInfo>(`/v1/sdk/${major}`, { baseURL });
-    },
-    submitScore(gameId: string, score: number): Promise<{ accepted: boolean }> {
-      return fetcher(`/v1/games/${id(gameId)}/scores`, {
-        baseURL,
-        method: 'POST',
-        body: { score },
-      });
     },
   };
 }
