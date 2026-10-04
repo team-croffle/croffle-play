@@ -3,8 +3,9 @@ import { eq } from 'drizzle-orm';
 
 import { DB, type Db } from '../db/db.js';
 import { sdkVersions } from '../db/schema.js';
+import { effectiveStatus, type SdkStatus } from './lifecycle.js';
 
-export type SdkStatus = (typeof sdkVersions.$inferSelect)['status'];
+export type { SdkStatus };
 
 export interface SdkInfo {
   major: number;
@@ -19,6 +20,11 @@ export interface SdkInfo {
 export class SdkService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
+  async list(): Promise<SdkInfo[]> {
+    return (await this.db.select().from(sdkVersions).orderBy(sdkVersions.major)).map(toInfo);
+  }
+
+  /** The major with its status in force now (dates applied). */
   async find(major: number): Promise<SdkInfo | null> {
     const [row] = await this.db.select().from(sdkVersions).where(eq(sdkVersions.major, major));
     return row ? toInfo(row) : null;
@@ -33,10 +39,10 @@ export class SdkService {
   }
 }
 
-function toInfo(row: typeof sdkVersions.$inferSelect): SdkInfo {
+export function toInfo(row: typeof sdkVersions.$inferSelect): SdkInfo {
   return {
     major: row.major,
-    status: row.status,
+    status: effectiveStatus(row),
     adapterUrl: row.adapterUrl,
     sri: row.sri,
     deprecatedAt: row.deprecatedAt?.toISOString() ?? null,

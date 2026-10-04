@@ -176,6 +176,17 @@ export const sdkVersions = pgTable('sdk_versions', {
   ...timestamps,
 });
 
+/** Lifecycle transitions applied by the sync job (audit trail and notification source). */
+export const sdkVersionEvents = pgTable('sdk_version_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  major: integer('major')
+    .notNull()
+    .references(() => sdkVersions.major, { onDelete: 'cascade' }),
+  fromStatus: sdkStatus('from_status').notNull(),
+  toStatus: sdkStatus('to_status').notNull(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   games,
   gameVersions,
@@ -189,4 +200,5 @@ export const schema = {
   saves,
   gameServers,
   gameServerStatus,
+  sdkVersionEvents,
 };

@@ -43,6 +43,13 @@
       "when": 1791144305658,
       "tag": "0005_game_servers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791145127092,
+      "tag": "0006_sdk_version_events",
+      "breakpoints": true
     }
   ]
 }
