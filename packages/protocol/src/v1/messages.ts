@@ -49,6 +49,19 @@ export const requests = {
       entries: v.array(v.object({ rank: v.number(), user: publicUserSchema, score: v.number() })),
     }),
   },
+  /**
+   * Short-lived token for this game (`aud: game:<id>`), for the rooms server or the game's own
+   * server (capability `token`). Delivered over postMessage only, never in a URL.
+   */
+  getToken: {
+    request: v.object({}),
+    response: v.object({ token: v.string(), expiresAt: v.string() }),
+  },
+  /** WebSocket URL of the shared rooms server (capability `rooms`). */
+  getRoomsUrl: {
+    request: v.object({}),
+    response: v.object({ url: v.string() }),
+  },
 } as const;
 
 /** Events the host pushes to the game. */
