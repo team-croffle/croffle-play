@@ -119,6 +119,8 @@ services:
     environment:
       NUXT_API_BASE: http://api:3001
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD}
+      NUXT_CSP_FRAME_SRC: ${NUXT_CSP_FRAME_SRC:-https://*.croffle-play.link}
+      NUXT_CSP_CONNECT_SRC: ${NUXT_CSP_CONNECT_SRC:-https://static.play.croffledev.kr}
     depends_on:
       api:
         condition: service_healthy
