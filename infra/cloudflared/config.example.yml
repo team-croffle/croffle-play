@@ -1,0 +1,19 @@
+# Cloudflare Tunnel ingress for the home server (copy to config.yml next to the tunnel credentials).
+# Hostnames reach the compose services; with Traefik in front, point every rule at Traefik instead.
+# DNS: one CNAME per hostname (and a wildcard for games) to <tunnel-id>.cfargotunnel.com.
+
+tunnel: <tunnel-id>
+credentials-file: /etc/cloudflared/<tunnel-id>.json
+
+ingress:
+  # Platform (registered domain 1)
+  - hostname: play.croffledev.kr
+    service: http://shell:3000
+  - hostname: api.play.croffledev.kr
+    service: http://api:3001
+  - hostname: static.play.croffledev.kr
+    service: http://games-edge:8080
+  # Game bundles (registered domain 2 — never a subdomain of the platform domain)
+  - hostname: '*.croffle-play.link'
+    service: http://games-edge:8080
+  - service: http_status:404
