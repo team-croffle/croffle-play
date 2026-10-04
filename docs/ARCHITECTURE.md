@@ -219,6 +219,11 @@ services:
 - 리소스 제한 필수 (무한 루프 하나가 같은 머신의 팀 서비스를 죽인다).
 - 저장할 데이터는 DB 직접 접근이 아니라 플랫폼 API로.
 - 클라이언트 `game.json`에 `server.protocol`, 서버는 지원 범위 공개 → 한쪽만 배포/롤백해도 호환 유지.
+- 구현: `game.json`의 `server.image`(팀 레지스트리, 태그·다이제스트 고정)가 publish 때 승인 요청이 되고,
+  관리자가 승인하면 API가 승인 상태에서 위 형태의 compose 서비스를 **생성**한다(손으로 쓰지 않음 —
+  DB 승인이 실행 정의의 원본). 주소는 `<id>.srv.croffle-play.link`(게임 도메인 쪽, 플랫폼 도메인
+  쿠키에 닿지 않음), 게임은 `sdk.getServerInfo()`로 받는다. 자세한 절차는
+  [game-servers.md](./game-servers.md).
 
 ## 7. 배치와 이전
 

@@ -36,7 +36,8 @@ are never checked in here.
   `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading),
   `apps/adapters` (v1), `packages/protocol`, `packages/sdk` (+ `/mock`), `packages/cli`
   (validate/publish), accounts (Logto/OIDC, admin by role), Dockerfiles, `infra/compose.yml`.
-  `apps/rooms` (shared WebSocket relay; game tokens from the API's JWKS).
+  `apps/rooms` (shared WebSocket relay; game tokens from the API's JWKS), Tier 2 game
+  server approval with API-generated compose fragments (`games-net`).
 - The game template lives in a separate repository (`play-game-template`).
 - Game domain edge: `infra/nginx/templates/game-domain.conf.template` (nginx in front of
   storage; rules in `infra/README.md`). Shell CSP origins come from `NUXT_CSP_*`.

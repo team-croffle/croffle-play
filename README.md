@@ -97,7 +97,8 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 
 Outside the platform, pass `transport: createMockHost()` from `@croffledev/play-sdk/mock` to run the
 game on its own. Publishing (deploy keys, `play-cli`, review and approval):
-[docs/publishing.md](./docs/publishing.md). Multiplayer rooms: [docs/multiplayer.md](./docs/multiplayer.md).
+[docs/publishing.md](./docs/publishing.md). Multiplayer rooms: [docs/multiplayer.md](./docs/multiplayer.md). Games with their own server:
+[docs/game-servers.md](./docs/game-servers.md).
 
 Contribution rules for humans and agents: [AGENTS.md](./AGENTS.md).
 
