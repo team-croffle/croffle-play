@@ -57,6 +57,13 @@
       "when": 1791145643445,
       "tag": "0007_game_repo_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791145902008,
+      "tag": "0008_game_members",
+      "breakpoints": true
     }
   ]
 }

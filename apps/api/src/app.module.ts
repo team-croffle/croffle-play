@@ -10,6 +10,7 @@ import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
 import { GameServersModule } from './game-servers/game-servers.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
+import { MembersModule } from './members/members.module.js';
 import type { Notifier } from './notify/notifier.js';
 import { NotifyModule } from './notify/notify.module.js';
 import { PublishModule } from './publish/publish.module.js';
@@ -53,6 +54,7 @@ export class AppModule {
         SavesModule,
         TokensModule,
         GameServersModule,
+        MembersModule,
         NotifyModule.forRoot(options.notifier),
       ],
       controllers: [HealthController],

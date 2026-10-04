@@ -141,6 +141,24 @@ export const gameServers = pgTable('game_servers', {
   updatedAt: timestamps.updatedAt,
 });
 
+export const memberRole = pgEnum('member_role', ['owner', 'developer']);
+
+/** Team members of a game: they see it on their developer dashboard. Granted by admins. */
+export const gameMembers = pgTable(
+  'game_members',
+  {
+    gameId: text('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: memberRole('role').notNull().default('developer'),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [primaryKey({ columns: [t.gameId, t.userId] })],
+);
+
 /** Per-game publish credential. Only the SHA-256 of the key is stored. */
 export const deployKeys = pgTable('deploy_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -218,4 +236,6 @@ export const schema = {
   gameServerStatus,
   sdkVersionEvents,
   sdkNotifications,
+  gameMembers,
+  memberRole,
 };
