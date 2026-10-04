@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { deployKeys } from '../src/db/schema.js';
 import { DeployKeysService } from '../src/deploy-keys/deploy-keys.service.js';
-import { adminAuth, createTestApp, type TestApp } from './support/test-app.js';
+import { createTestApp, type TestApp } from './support/test-app.js';
 
 describe('admin deploy keys', () => {
   let t: TestApp;
@@ -18,10 +18,13 @@ describe('admin deploy keys', () => {
     await t.close();
   });
 
-  const call = (method: 'GET' | 'POST' | 'DELETE', url: string, headers = adminAuth) =>
-    t.app.inject({ method, url, headers, ...(method === 'POST' ? { payload: {} } : {}) });
+  const call = (
+    method: 'GET' | 'POST' | 'DELETE',
+    url: string,
+    headers: Record<string, string> = t.adminAuth,
+  ) => t.app.inject({ method, url, headers, ...(method === 'POST' ? { payload: {} } : {}) });
 
-  it('refuses requests without the admin token', async () => {
+  it('refuses requests without an admin access token', async () => {
     expect((await call('GET', '/v1/admin/games/sample/deploy-keys', {} as never)).statusCode).toBe(
       401,
     );

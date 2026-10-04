@@ -1,28 +1,22 @@
 import {
   type CanActivate,
   type ExecutionContext,
+  ForbiddenException,
   Inject,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 
-import { bearer, safeEqual } from '../common/secret.js';
-import { ENV } from '../config/config.module.js';
-import type { Env } from '../config/env.js';
+import { UserGuard, type UserRequest } from './user.guard.js';
 
-/**
- * Temporary admin check: `Authorization: Bearer <ADMIN_TOKEN>`. Without ADMIN_TOKEN every admin
- * request is refused. Replaced by account roles once sign-in exists.
- */
+/** Signed-in players with the `admin` role (granted with `db:grant-admin`). */
 @Injectable()
 export class AdminGuard implements CanActivate {
-  constructor(@Inject(ENV) private readonly env: Env) {}
+  constructor(@Inject(UserGuard) private readonly users: UserGuard) {}
 
-  canActivate(ctx: ExecutionContext): boolean {
-    const token = bearer(ctx.switchToHttp().getRequest<FastifyRequest>().headers.authorization);
-    if (!this.env.ADMIN_TOKEN || !token || !safeEqual(token, this.env.ADMIN_TOKEN)) {
-      throw new UnauthorizedException();
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    await this.users.canActivate(ctx);
+    if (ctx.switchToHttp().getRequest<UserRequest>().user?.role !== 'admin') {
+      throw new ForbiddenException('Admins only');
     }
     return true;
   }

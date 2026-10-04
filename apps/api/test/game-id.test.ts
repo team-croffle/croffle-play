@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { adminAuth, createTestApp, type TestApp } from './support/test-app.js';
+import { createTestApp, type TestApp } from './support/test-app.js';
 import { bearerFor } from './support/test-issuer.js';
 
 describe('game id route parameters', () => {
@@ -21,7 +21,7 @@ describe('game id route parameters', () => {
     ['GET', '/v1/admin/games/api'],
     ['POST', '/v1/admin/games/static/deploy-keys'],
   ] as const)('%s %s → 404', async (method, url) => {
-    const res = await t.app.inject({ method, url, headers: adminAuth, payload: {} });
+    const res = await t.app.inject({ method, url, headers: t.adminAuth, payload: {} });
     expect(res.statusCode).toBe(404);
   });
 

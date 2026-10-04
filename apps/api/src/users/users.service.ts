@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 
+import { ENV } from '../config/config.module.js';
+import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
 import { users } from '../db/schema.js';
 
@@ -17,14 +19,26 @@ export interface PublicUser {
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(ENV) private readonly env: Pick<Env, 'ADMIN_SUBS'>,
+  ) {}
 
-  /** The account for an IdP subject, created on first sight. */
+  /** The account for an IdP subject, created on first sight (admins from ADMIN_SUBS promoted). */
   async ensure(sub: string): Promise<User> {
+    const promote = this.env.ADMIN_SUBS.includes(sub);
     const [row] = await this.db
       .insert(users)
-      .values({ sub, nickname: defaultNickname(sub), lastSeenAt: new Date() })
-      .onConflictDoUpdate({ target: users.sub, set: { lastSeenAt: new Date() } })
+      .values({
+        sub,
+        nickname: defaultNickname(sub),
+        lastSeenAt: new Date(),
+        ...(promote ? { role: 'admin' as const } : {}),
+      })
+      .onConflictDoUpdate({
+        target: users.sub,
+        set: { lastSeenAt: new Date(), ...(promote ? { role: 'admin' as const } : {}) },
+      })
       .returning();
     return row as User;
   }

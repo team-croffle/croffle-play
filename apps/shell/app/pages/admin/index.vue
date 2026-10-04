@@ -14,19 +14,11 @@
       await navigateTo(`/admin/games/${game.id}`);
     }
   }
-
-  async function signOut() {
-    await $fetch('/api/admin/session', { method: 'DELETE' });
-    await navigateTo('/admin/login');
-  }
 </script>
 
 <template>
   <section class="admin">
-    <div class="row">
-      <h1 class="page-title">게임 관리</h1>
-      <button type="button" class="button button--ghost" @click="signOut">로그아웃</button>
-    </div>
+    <h1 class="page-title">게임 관리</h1>
     <table class="table">
       <thead>
         <tr>

@@ -63,6 +63,20 @@ describe('/v1/me', () => {
     );
   });
 
+  it('promotes ADMIN_SUBS on sign-in', async () => {
+    const t2 = await createTestApp({ env: { ADMIN_SUBS: 'idp|boss, idp|other' } });
+    try {
+      const res = await t2.app.inject({
+        method: 'GET',
+        url: '/v1/me',
+        headers: await bearerFor('idp|boss'),
+      });
+      expect(res.json()).toMatchObject({ role: 'admin' });
+    } finally {
+      await t2.close();
+    }
+  });
+
   it('grants admin by subject', async () => {
     await me(await bearerFor('idp|carol'));
     const users = t.app.get(UsersService);

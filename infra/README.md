@@ -34,7 +34,10 @@ platform domain could set cookies for it or make same-site requests with the pla
 | `S3_ACCESS_KEY_ID/SECRET` | minio-init, api   | Least-privilege API storage user (`minio/api-policy.json`)     |
 | `S3_PUBLIC_ENDPOINT`      | api               | Host in presigned upload URLs; must be reachable by CI runners |
 | `GAME_URL_TEMPLATE`       | api               | `https://{id}.croffle-play.link/{version}/`                    |
-| `ADMIN_TOKEN`             | api               | Temporary admin credential (≥ 32 chars)                        |
+| `OIDC_ISSUER/AUDIENCE`    | api, shell        | Logto issuer (`…/oidc`) and the API resource identifier        |
+| `OIDC_CLIENT_ID/SECRET`   | shell             | The shell's Logto application                                  |
+| `SITE_URL`                | shell             | Public shell URL (OIDC redirect URIs; https → secure cookie)   |
+| `ADMIN_SUBS`              | api               | IdP subjects promoted to admin when they sign in               |
 | `NUXT_SESSION_PASSWORD`   | shell             | Seals the session cookie (≥ 32 chars)                          |
 | `NUXT_CSP_FRAME_SRC`      | shell             | `https://*.croffle-play.link`                                  |
 | `NUXT_CSP_CONNECT_SRC`    | shell             | `https://static.play.croffledev.kr` (adapter host)             |
@@ -53,8 +56,8 @@ on a fresh volume). Public endpoint `https://auth.play.croffledev.kr`; the admin
 2. **Traditional web application** for the shell: redirect URI
    `https://play.croffledev.kr/auth/callback`, post sign-out redirect `https://play.croffledev.kr/`;
    copy its id/secret to `NUXT_OIDC_CLIENT_ID` / `NUXT_OIDC_CLIENT_SECRET`.
-3. The first platform admin: sign in once, then
-   `docker compose exec api node dist/auth/grant-admin-cli.js <sub>`.
+3. The first platform admin: put their Logto user id in `ADMIN_SUBS` (promoted at sign-in), or after
+   they signed in once: `docker compose exec api node dist/auth/grant-admin-cli.js <sub>`.
 
 Locally, `pnpm dev:oidc` runs a stand-in provider on `http://localhost:4300` (any login name).
 
