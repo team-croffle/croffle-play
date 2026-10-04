@@ -45,7 +45,7 @@ export const envSchema = v.object({
   /** Temporary admin credential (Bearer) until accounts and roles exist. ≥ 32 chars. */
   ADMIN_TOKEN: v.optional(v.pipe(v.string(), v.minLength(32))),
   GAME_URL_TEMPLATE: v.pipe(
-    v.optional(v.string(), 'http://localhost:4100/{id}/{version}/'),
+    v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
     v.endsWith('/'),
   ),

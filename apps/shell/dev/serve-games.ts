@@ -1,7 +1,8 @@
-// `pnpm dev:games` — builds the fixture games and the host adapters, then serves them on their own
-// origin (default http://localhost:4100), like the game domain and adapter storage in production:
-//   /<game>/<version>/…      fixture game bundles (dev/games/<game>, version 1.0.0)
-//   /adapters/v<N>/<ver>/…   apps/adapters/dist (CORS enabled: the shell fetches them)
+// `pnpm dev:games` — builds the fixture games and the host adapters, then serves them like the game
+// domain and the adapter host in production, one origin per game:
+//   http://<game>.localhost:4100/<version>/…   fixture bundles (dev/games/<game>, version 1.0.0)
+//   http://localhost:4100/adapters/v<N>/<ver>/… apps/adapters/dist (CORS: the shell fetches them)
+// Chrome and Firefox resolve *.localhost to loopback; Safari needs hosts-file entries.
 import { execFileSync } from 'node:child_process';
 import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -39,8 +40,13 @@ const types: Record<string, string> = {
 
 createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
-  const isAdapter = path.startsWith('/adapters/');
-  const root = isAdapter ? adaptersDist : out;
+  const game = /^([a-z0-9-]+)\.localhost(?::\d+)?$/.exec(req.headers.host ?? '')?.[1];
+  const isAdapter = !game && path.startsWith('/adapters/');
+  if (!game && !isAdapter) {
+    res.writeHead(404).end('not found');
+    return;
+  }
+  const root = isAdapter ? adaptersDist : join(out, game ?? '');
   let file = join(root, isAdapter ? path.slice('/adapters'.length) : path);
   if (!file.startsWith(root)) {
     res.writeHead(400).end();
@@ -60,6 +66,6 @@ createServer((req, res) => {
   });
   createReadStream(file).pipe(res);
 }).listen(port, () => {
-  console.log(`dev games on http://localhost:${port}`);
+  console.log(`dev games on http://<game>.localhost:${port}/<version>/`);
   console.log(`  adapter manifest: http://localhost:${port}/adapters/v1/dev/manifest.json`);
 });
