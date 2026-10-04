@@ -29,26 +29,27 @@ platform domain could set cookies for it or make same-site requests with the pla
 
 ## Environment (`infra/.env`, from `.env.example`)
 
-| Variable                  | Used by           | Meaning                                                                        |
-| ------------------------- | ----------------- | ------------------------------------------------------------------------------ |
-| `POSTGRES_PASSWORD`       | postgres, api     | Database password                                                              |
-| `MINIO_ROOT_PASSWORD`     | minio, minio-init | Storage root password (stays on the storage host)                              |
-| `S3_ACCESS_KEY_ID/SECRET` | minio-init, api   | Least-privilege API storage user (`minio/api-policy.json`)                     |
-| `S3_PUBLIC_ENDPOINT`      | api               | Host in presigned upload URLs; must be reachable by CI runners                 |
-| `GAME_URL_TEMPLATE`       | api               | `https://{id}.croffle-play.link/{version}/`                                    |
-| `OIDC_ISSUER/AUDIENCE`    | api, shell        | Logto issuer (`…/oidc`) and the API resource identifier                        |
-| `OIDC_CLIENT_ID/SECRET`   | shell             | The shell's Logto application                                                  |
-| `SITE_URL`                | shell             | Public shell URL (OIDC redirect URIs; https → secure cookie)                   |
-| `ADMIN_SUBS`              | api               | IdP subjects promoted to admin when they sign in                               |
-| `JWT_SIGNING_KEY`         | api               | ES256 key for game tokens (`aud: game:<id>`); JWKS at `/.well-known/jwks.json` |
-| `PUBLIC_API_ORIGIN`       | api               | `iss` of game tokens, `https://api.play.croffledev.kr`                         |
-| `NUXT_SESSION_PASSWORD`   | shell             | Seals the session cookie (≥ 32 chars)                                          |
-| `NUXT_CSP_FRAME_SRC`      | shell             | `https://*.croffle-play.link`                                                  |
-| `NUXT_CSP_CONNECT_SRC`    | shell             | `https://static.play.croffledev.kr` (adapter host)                             |
-| `GAME_DOMAIN(_REGEX)`     | games-edge        | `croffle-play.link` / `croffle-play\.link`                                     |
-| `STATIC_HOST`             | games-edge        | Adapter host, `static.play.croffledev.kr`                                      |
-| `PLATFORM_ORIGIN`         | games-edge        | Only origin allowed to frame games and fetch adapters                          |
-| `ROOMS_ORIGIN`            | games-edge        | Rooms server, allowed in games' `connect-src`                                  |
+| Variable                   | Used by           | Meaning                                                                        |
+| -------------------------- | ----------------- | ------------------------------------------------------------------------------ |
+| `POSTGRES_PASSWORD`        | postgres, api     | Database password                                                              |
+| `MINIO_ROOT_PASSWORD`      | minio, minio-init | Storage root password (stays on the storage host)                              |
+| `S3_ACCESS_KEY_ID/SECRET`  | minio-init, api   | Least-privilege API storage user (`minio/api-policy.json`)                     |
+| `S3_PUBLIC_ENDPOINT`       | api               | Host in presigned upload URLs; must be reachable by CI runners                 |
+| `GAME_URL_TEMPLATE`        | api               | `https://{id}.croffle-play.link/{version}/`                                    |
+| `OIDC_ISSUER/AUDIENCE`     | api, shell        | Logto issuer (`…/oidc`) and the API resource identifier                        |
+| `OIDC_CLIENT_ID/SECRET`    | shell             | The shell's Logto application                                                  |
+| `SITE_URL`                 | shell             | Public shell URL (OIDC redirect URIs; https → secure cookie)                   |
+| `ADMIN_SUBS`               | api               | IdP subjects promoted to admin when they sign in                               |
+| `JWT_SIGNING_KEY`          | api               | ES256 key for game tokens (`aud: game:<id>`); JWKS at `/.well-known/jwks.json` |
+| `PUBLIC_API_ORIGIN`        | api               | `iss` of game tokens, `https://api.play.croffledev.kr`                         |
+| `GAME_SERVER_URL_TEMPLATE` | api               | `https://{id}.srv.croffle-play.link` (approved game servers)                   |
+| `NUXT_SESSION_PASSWORD`    | shell             | Seals the session cookie (≥ 32 chars)                                          |
+| `NUXT_CSP_FRAME_SRC`       | shell             | `https://*.croffle-play.link`                                                  |
+| `NUXT_CSP_CONNECT_SRC`     | shell             | `https://static.play.croffledev.kr` (adapter host)                             |
+| `GAME_DOMAIN(_REGEX)`      | games-edge        | `croffle-play.link` / `croffle-play\.link`                                     |
+| `STATIC_HOST`              | games-edge        | Adapter host, `static.play.croffledev.kr`                                      |
+| `PLATFORM_ORIGIN`          | games-edge        | Only origin allowed to frame games and fetch adapters                          |
+| `ROOMS_ORIGIN`             | games-edge        | Rooms server, allowed in games' `connect-src`                                  |
 
 ## Identity (Logto)
 
@@ -86,6 +87,16 @@ Locally, `pnpm dev:oidc` runs a stand-in provider on `http://localhost:4300` (an
 3. Uploads use presigned URLs to `S3_PUBLIC_ENDPOINT`. Cloudflare limits request bodies (100 MB on
    the free plan), so expose storage on a host that does not go through the proxy, or keep bundles
    under that size.
+
+## Tier 2 game servers
+
+Approved game servers run from compose fragments generated by the API
+(`GET /v1/admin/games/<id>/server/compose`, also on the admin page) — see
+[game-servers/README.md](./game-servers/README.md). They join only `games-net`, which `compose.yml`
+names explicitly so fragments can attach to it; a Traefik instance on that network routes
+`<id>.srv.croffle-play.link`. That name is two levels below the game domain, so Cloudflare's
+Universal SSL does not cover it: use an advanced certificate for `*.srv.croffle-play.link` or
+terminate TLS at Traefik.
 
 ## Releasing a host adapter
 
