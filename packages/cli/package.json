@@ -1,0 +1,46 @@
+{
+  "name": "@croffledev/play-cli",
+  "version": "0.0.0",
+  "description": "Validate and publish Croffle Play game bundles",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/team-croffle/croffle-play.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "bin": {
+    "play-cli": "./dist/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "@croffledev/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@croffledev/play-protocol": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "tsdown": "^0.23.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
