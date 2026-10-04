@@ -7,7 +7,8 @@
 [English](./README.md)
 
 > 상태: **초기 개발.** 카탈로그, 실행 페이지, SDK v1, 런타임 호스트 어댑터, 배포 파이프라인(play-cli →
-> 검토 → 승인)이 동작한다. 계정과 멀티플레이는 [로드맵](./docs/ROADMAP.md) 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> 검토 → 승인), 계정(로그인, 점수, 리더보드, 저장)이 동작한다. 멀티플레이는
+> [로드맵](./docs/ROADMAP.md) 순서로 진행한다. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## 구조
 
@@ -74,6 +75,10 @@ pnpm dev:games    # 픽스처 + 호스트 어댑터 빌드, http://localhost:410
 #                SEED_ADAPTER_MANIFEST_URL=http://localhost:4100/adapters/v1/dev/manifest.json
 pnpm dev:api && pnpm dev:shell    # http://localhost:3000/game/sample/play
 ```
+
+로컬 로그인: `pnpm dev:oidc`가 `:4300`에 대체 OpenID 공급자를 띄운다(아무 로그인 이름이나 가능).
+`apps/api/.env.example`, `apps/shell/.env.example`의 OIDC 변수를 설정하고, `ADMIN_SUBS=admin`이면
+`admin`으로 로그인한 사용자가 관리자가 된다.
 
 ## 게임 만들기
 
