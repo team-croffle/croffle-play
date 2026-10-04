@@ -6,6 +6,7 @@ export const seedGames = [
   { id: 'sample', name: 'Sample', description: 'SDK handshake fixture.', version: '1.0.0' },
   { id: 'block-drop', name: 'Block Drop', description: 'Falling blocks.', version: '1.2.0' },
   { id: 'word-chain', name: 'Word Chain', description: 'Turn-based words.', version: '0.3.1' },
+  { id: 'duo', name: 'Duo', description: 'Two-player rooms fixture.', version: '1.0.0' },
 ] as const;
 
 export async function seed(db: Db): Promise<void> {

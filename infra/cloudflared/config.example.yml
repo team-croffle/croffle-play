@@ -11,6 +11,9 @@ ingress:
     service: http://shell:3000
   - hostname: api.play.croffledev.kr
     service: http://api:3001
+  # WebSocket; the SDK pings every 30 s (Cloudflare closes idle connections after ~100 s).
+  - hostname: rooms.play.croffledev.kr
+    service: http://rooms:3002
   - hostname: static.play.croffledev.kr
     service: http://games-edge:8080
   # Game bundles (registered domain 2 — never a subdomain of the platform domain)

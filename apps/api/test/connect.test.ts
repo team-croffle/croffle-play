@@ -10,7 +10,7 @@ describe('connect', () => {
       testEnv({ DATABASE_URL: 'pglite://memory', DB_SEED: 'true', NODE_ENV: 'development' }),
     );
     try {
-      expect(await conn.db.select().from(games)).toHaveLength(3);
+      expect(await conn.db.select().from(games)).toHaveLength(4);
     } finally {
       await conn.close();
     }
