@@ -15,6 +15,11 @@
       "@croffledev/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./mock": {
+      "@croffledev/source": "./src/mock/index.ts",
+      "types": "./dist/mock.d.mts",
+      "import": "./dist/mock.mjs"
     }
   },
   "files": [
