@@ -74,6 +74,11 @@ export const envSchema = v.object({
     v.minValue(60),
     v.maxValue(900),
   ),
+  /** Public address of an approved game server, `{id}` replaced. */
+  GAME_SERVER_URL_TEMPLATE: v.pipe(
+    v.optional(v.string(), 'https://{id}.srv.croffle-play.link'),
+    v.includes('{id}'),
+  ),
   GAME_URL_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
