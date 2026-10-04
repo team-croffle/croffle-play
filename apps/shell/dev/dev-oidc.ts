@@ -10,6 +10,8 @@ const port = Number(process.env.DEV_OIDC_PORT ?? 4300);
 const issuer = `http://localhost:${port}`;
 const audience = process.env.OIDC_AUDIENCE ?? 'http://localhost:3001';
 const shell = process.env.SHELL_ORIGIN ?? 'http://localhost:3000';
+// Short lifetimes exercise the shell's token refresh (e.g. DEV_OIDC_ACCESS_TTL=70).
+const accessTtl = Number(process.env.DEV_OIDC_ACCESS_TTL ?? 15 * 60);
 
 const provider = new Provider(issuer, {
   clients: [
@@ -40,7 +42,7 @@ const provider = new Provider(issuer, {
         if (resource !== audience) {
           throw new Error(`unknown resource ${resource}`);
         }
-        return { scope: '', audience, accessTokenFormat: 'jwt', accessTokenTTL: 15 * 60 };
+        return { scope: '', audience, accessTokenFormat: 'jwt', accessTokenTTL: accessTtl };
       },
     },
   },

@@ -276,3 +276,17 @@ a {
   border-radius: 8px;
   overflow-wrap: anywhere;
 }
+
+.site-header {
+  justify-content: space-between;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account__name {
+  font-weight: 600;
+}

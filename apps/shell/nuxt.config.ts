@@ -22,6 +22,16 @@ export default defineNuxtConfig({
     apiBase: 'http://localhost:3001',
     // Server-only. Seals the session cookie (NUXT_SESSION_PASSWORD, ≥ 32 chars).
     sessionPassword: '',
+    // Public URL of this shell (NUXT_SITE_URL); OIDC redirect URIs are built from it.
+    siteUrl: 'http://localhost:3000',
+    oidc: {
+      // NUXT_OIDC_ISSUER (Logto: https://auth.play.croffledev.kr/oidc). Sign-in is off when empty.
+      issuer: '',
+      clientId: '',
+      clientSecret: '',
+      // API resource indicator; access tokens are issued for it (NUXT_OIDC_AUDIENCE).
+      audience: '',
+    },
     csp: {
       // Where game versions are framed from (NUXT_CSP_FRAME_SRC), e.g. https://*.croffle-play.link
       frameSrc: 'http://localhost:4100 http://*.localhost:4100',
