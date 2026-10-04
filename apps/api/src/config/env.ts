@@ -90,6 +90,8 @@ export const envSchema = v.object({
    */
   GITHUB_NOTIFY_TOKEN: v.optional(v.string()),
   GITHUB_API_URL: v.optional(v.pipe(v.string(), v.url()), 'https://api.github.com'),
+  /** Per-player / per-key request limits on write routes (`false` only for tests). */
+  RATE_LIMITS: bool('true'),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),

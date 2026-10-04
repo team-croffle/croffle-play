@@ -15,6 +15,7 @@ import * as v from 'valibot';
 
 import { CurrentUser, UserGuard } from '../auth/user.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
+import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { DB, type Db } from '../db/db.js';
 import { saves } from '../db/schema.js';
@@ -33,6 +34,8 @@ export class SavesController {
   ) {}
 
   @Get()
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.saveRead()
   async load(
     @Param('id', GameIdPipe) id: string,
     @Param('slot', new ValibotPipe(slotSchema)) slot: string,
@@ -47,6 +50,8 @@ export class SavesController {
 
   @Put()
   @HttpCode(204)
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.saveWrite()
   async save(
     @Param('id', GameIdPipe) id: string,
     @Param('slot', new ValibotPipe(slotSchema)) slot: string,

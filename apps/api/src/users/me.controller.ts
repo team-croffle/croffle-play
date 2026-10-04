@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Put, UseGuards } from '@nestjs/common';
 import * as v from 'valibot';
 
 import { CurrentUser, UserGuard } from '../auth/user.guard.js';
+import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { type PublicUser, toPublicUser, type User, UsersService } from './users.service.js';
 
@@ -24,6 +25,8 @@ export class MeController {
 
   /** The shell syncs the IdP profile here after sign-in. */
   @Put()
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.profile()
   async update(
     @CurrentUser() user: User,
     @Body(new ValibotPipe(profileSchema)) body: v.InferOutput<typeof profileSchema>,

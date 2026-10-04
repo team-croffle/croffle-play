@@ -2,6 +2,7 @@ import { Controller, Get, Header, Inject, Param, Post, UseGuards } from '@nestjs
 
 import { CurrentUser, UserGuard } from '../auth/user.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
+import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 import { GamesService } from '../games/games.service.js';
@@ -34,6 +35,8 @@ export class TokensController {
   ) {}
 
   @Post()
+  @UseGuards(SubjectThrottlerGuard)
+  @Limit.token()
   async issue(
     @Param('id', GameIdPipe) id: string,
     @CurrentUser() user: User,

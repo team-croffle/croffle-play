@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import type { JWTVerifyGetKey } from 'jose';
 
 import { AdminModule } from './admin/admin.module.js';
@@ -42,6 +43,8 @@ export class AppModule {
       module: AppModule,
       imports: [
         ConfigModule.forRoot(options.env),
+        // Limits are set per route (common/rate-limit.ts); this is only the fallback window.
+        ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }] }),
         options.db ? DbModule.forDb(options.db) : DbModule.forRoot(),
         StorageModule.forRoot(options.storage),
         UsersModule.forRoot(options.jwks),
