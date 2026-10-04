@@ -11,4 +11,9 @@ done
 mc admin policy create local play-api /policy/api-policy.json
 mc admin user add local "$S3_ACCESS_KEY_ID" "$S3_SECRET_ACCESS_KEY"
 mc admin policy attach local play-api --user "$S3_ACCESS_KEY_ID" || true
+if [ -n "${BACKUP_S3_ACCESS_KEY:-}" ]; then
+  mc admin policy create local play-backup /policy/backup-policy.json
+  mc admin user add local "$BACKUP_S3_ACCESS_KEY" "$BACKUP_S3_SECRET_KEY"
+  mc admin policy attach local play-backup --user "$BACKUP_S3_ACCESS_KEY" || true
+fi
 echo "minio-init: buckets games, adapters + user $S3_ACCESS_KEY_ID ready"
