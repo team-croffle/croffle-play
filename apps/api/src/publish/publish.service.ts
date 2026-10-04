@@ -14,6 +14,7 @@ import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
 import { type BundleFile, gameVersions, games } from '../db/schema.js';
+import { GameServersService } from '../game-servers/game-servers.service.js';
 import { SdkService } from '../sdk/sdk.service.js';
 import { STORAGE, type PresignedUpload, type Storage } from '../storage/storage.js';
 import { contentTypeFor } from './content-type.js';
@@ -40,6 +41,7 @@ export class PublishService {
     @Inject(ENV) private readonly env: Env,
     @Inject(STORAGE) private readonly storage: Storage,
     @Inject(SdkService) private readonly sdk: SdkService,
+    @Inject(GameServersService) private readonly servers: GameServersService,
   ) {}
 
   async create(gameId: string, body: CreateVersionBody): Promise<CreatedVersion> {
@@ -119,6 +121,7 @@ export class PublishService {
         .where(and(eq(gameVersions.gameId, gameId), eq(gameVersions.version, version)));
       await tx.update(games).set({ previewVersion: version }).where(eq(games.id, gameId));
     });
+    await this.servers.onVersionUploaded(gameId, row.manifest as GameManifest);
     const entry = (row.manifest as { entry?: string }).entry ?? 'index.html';
     return {
       version,

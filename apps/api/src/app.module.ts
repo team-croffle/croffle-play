@@ -7,6 +7,7 @@ import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
 import { DbModule } from './db/db.module.js';
 import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
+import { GameServersModule } from './game-servers/game-servers.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
 import { PublishModule } from './publish/publish.module.js';
@@ -47,6 +48,7 @@ export class AppModule {
         ScoresModule,
         SavesModule,
         TokensModule,
+        GameServersModule,
       ],
       controllers: [HealthController],
     };
