@@ -153,7 +153,8 @@
         "**/scripts/**",
         "**/*-cli.ts",
         "**/dev/serve-*.ts",
-        "**/dev/dev-*.ts"
+        "**/dev/dev-*.ts",
+        "docs/examples/**"
       ],
       "rules": {
         "no-console": "off"
