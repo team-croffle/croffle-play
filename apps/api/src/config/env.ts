@@ -42,6 +42,12 @@ export const envSchema = v.object({
   S3_ACCESS_KEY_ID: v.optional(v.string()),
   S3_SECRET_ACCESS_KEY: v.optional(v.string()),
   S3_BUCKET: v.optional(v.string(), 'games'),
+  /** OIDC issuer of player access tokens (Logto: https://auth.…/oidc). Sign-in is off without it. */
+  OIDC_ISSUER: v.optional(v.pipe(v.string(), v.url())),
+  /** API resource indicator; the `aud` of access tokens. */
+  OIDC_AUDIENCE: v.optional(v.string()),
+  /** JWKS location when not `<issuer>/jwks` (e.g. an internal URL). */
+  OIDC_JWKS_URL: v.optional(v.pipe(v.string(), v.url())),
   /** Temporary admin credential (Bearer) until accounts and roles exist. ≥ 32 chars. */
   ADMIN_TOKEN: v.optional(v.pipe(v.string(), v.minLength(32))),
   GAME_URL_TEMPLATE: v.pipe(

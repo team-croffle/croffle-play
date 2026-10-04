@@ -5,6 +5,7 @@ import type { Db } from '../../src/db/db.js';
 import { seed } from '../../src/db/seed.js';
 import type { Storage } from '../../src/storage/storage.js';
 import { createTestDb, testEnv } from './test-db.js';
+import { AUDIENCE, ISSUER, testJwks } from './test-issuer.js';
 
 /** Admin bearer token every test app accepts. */
 export const ADMIN_TOKEN = 'test-admin-token-0123456789abcdef0123';
@@ -25,8 +26,9 @@ export async function createTestApp(
     await seed(db);
   }
   const app = await createApp({
-    env: testEnv({ ADMIN_TOKEN, ...opts.env }),
+    env: testEnv({ ADMIN_TOKEN, OIDC_ISSUER: ISSUER, OIDC_AUDIENCE: AUDIENCE, ...opts.env }),
     db,
+    jwks: testJwks,
     ...(opts.storage ? { storage: opts.storage } : {}),
   });
   await app.init();
