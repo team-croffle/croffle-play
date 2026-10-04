@@ -57,8 +57,10 @@ are never checked in here.
 | `packages/cli`      | `@croffledev/play-cli`      | npm                          |
 | `infra/`            | —                           | Compose, nginx, env examples |
 
-`apps/*` are `"private": true`. Add a workspace package to `tsconfig.json`
-`references` when it is created.
+`apps/*` are `"private": true`. Workspace packages export a
+`"@croffledev/source"` condition pointing at `src/`; `tsconfig.base.json`
+(`customConditions`) and each vitest config resolve it, so packages typecheck
+and test against each other's source without a build. Builds use `dist`.
 
 ### Stack
 
