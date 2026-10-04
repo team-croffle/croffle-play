@@ -21,6 +21,11 @@
     `/api/admin/games/${id}/server`,
     { default: () => null, onResponseError: () => undefined, ignoreResponseError: true },
   );
+  const { data: members, refresh: refreshMembers } = await useFetch<{
+    items: { user: { id: string; nickname: string }; role: string }[];
+  }>(`/api/admin/games/${id}/members`, { default: () => ({ items: [] }) });
+  const memberForm = reactive({ userId: '', role: 'developer' });
+  const repo = ref(game.value?.repo ?? '');
   const newKey = ref<string | null>(null);
   const keyLabel = ref('');
 
@@ -35,6 +40,22 @@
   async function decideServer(action: 'approve' | 'revoke') {
     await call('POST', `games/${id}/server/${action}`);
     await refreshServer();
+  }
+
+  async function addMember() {
+    await call('PUT', `games/${id}/members/${memberForm.userId.trim()}`, { role: memberForm.role });
+    memberForm.userId = '';
+    await refreshMembers();
+  }
+
+  async function removeMember(userId: string) {
+    await call('DELETE', `games/${id}/members/${userId}`);
+    await refreshMembers();
+  }
+
+  async function saveRepo() {
+    await call('PATCH', `games/${id}`, { repo: repo.value.trim() || null });
+    await refreshGame();
   }
 
   async function issueKey() {
@@ -147,6 +168,45 @@
         </a>
       </div>
     </template>
+
+    <h2>멤버</h2>
+    <table class="table">
+      <tbody>
+        <tr v-for="m in members.items" :key="m.user.id">
+          <td>{{ m.user.nickname }}</td>
+          <td>{{ m.role }}</td>
+          <td class="actions">
+            <button
+              type="button"
+              class="button button--ghost"
+              :disabled="busy"
+              @click="removeMember(m.user.id)"
+            >
+              제외
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <form class="row" @submit.prevent="addMember">
+      <input
+        v-model="memberForm.userId"
+        class="input"
+        placeholder="계정 id (내 게임 페이지에 표시됨)"
+        required
+      />
+      <select v-model="memberForm.role" class="input">
+        <option value="developer">developer</option>
+        <option value="owner">owner</option>
+      </select>
+      <button class="button" type="submit" :disabled="busy">추가</button>
+    </form>
+
+    <h2>저장소</h2>
+    <form class="row" @submit.prevent="saveRepo">
+      <input v-model="repo" class="input" placeholder="owner/name (SDK 지원 종료 알림 이슈)" />
+      <button class="button" type="submit" :disabled="busy">저장</button>
+    </form>
 
     <h2>배포 키</h2>
     <p v-if="newKey" class="notice">

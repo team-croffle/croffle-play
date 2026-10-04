@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3';
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** Calls `/v1/admin/<path>` as the signed-in player; the API requires the admin role. */
 export async function adminFetch<T>(
