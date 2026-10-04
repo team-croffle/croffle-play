@@ -12,6 +12,7 @@ import {
 import * as v from 'valibot';
 
 import { SdkError } from './errors.js';
+import { Room, type SocketFactory, type SocketLike } from './rooms.js';
 import type { Transport } from './transport.js';
 
 interface Pending {
@@ -105,6 +106,33 @@ export class SdkClient {
   /** Best players of this game (needs the `leaderboard` capability). */
   async getLeaderboard(limit?: number): Promise<ResponsePayload<'getLeaderboard'>['entries']> {
     return (await this.request('getLeaderboard', limit === undefined ? {} : { limit })).entries;
+  }
+
+  /**
+   * Short-lived token for this game (`aud: game:<id>`), for a game server of your own
+   * (capability `token`). Verify it against the platform JWKS; never put it in a URL.
+   */
+  getToken(): Promise<ResponsePayload<'getToken'>> {
+    return this.request('getToken', {});
+  }
+
+  /**
+   * Joins a room on the shared rooms server (capability `rooms`). Omit `room` to create one and
+   * share `room.id` with friends. The SDK pings, reconnects, and re-joins on its own.
+   */
+  joinRoom(room?: string, opts: { maxPeers?: number; socket?: SocketFactory } = {}): Promise<Room> {
+    if (!this.has('rooms') || !this.has('token')) {
+      return Promise.reject(new SdkError('unsupported', "Host does not support 'rooms'"));
+    }
+    return Room.join(
+      {
+        url: async () => (await this.request('getRoomsUrl', {})).url,
+        token: async () => (await this.getToken()).token,
+        socket: opts.socket ?? ((url) => new WebSocket(url) as unknown as SocketLike),
+      },
+      room,
+      opts.maxPeers,
+    );
   }
 
   /** Subscribe to host events (`pause`, `resume`). Returns an unsubscribe function. */

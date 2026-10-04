@@ -3,7 +3,8 @@ import { SdkError } from './errors.js';
 import { type Transport, type WindowLike, windowTransport } from './transport.js';
 import { SDK_VERSION } from './version.js';
 
-export type { PublicUser } from '@croffledev/play-protocol';
+export type { Peer, PublicUser } from '@croffledev/play-protocol';
+export { Room, type RoomEvents, type SocketFactory, type SocketLike } from './rooms.js';
 export { SdkClient, SdkError, SDK_VERSION, type Transport, windowTransport };
 
 export interface SdkOptions {
