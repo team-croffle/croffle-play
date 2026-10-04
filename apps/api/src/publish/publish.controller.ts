@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 
+import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { DeployKeyGuard } from '../deploy-keys/deploy-key.guard.js';
 import { type CreateVersionBody, createVersionSchema } from './publish.schemas.js';
@@ -13,7 +14,7 @@ export class PublishController {
 
   @Post()
   create(
-    @Param('id') id: string,
+    @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(createVersionSchema)) body: CreateVersionBody,
   ): Promise<CreatedVersion> {
     return this.publish.create(id, body);
@@ -22,7 +23,7 @@ export class PublishController {
   @Post(':version/complete')
   @HttpCode(200)
   complete(
-    @Param('id') id: string,
+    @Param('id', GameIdPipe) id: string,
     @Param('version') version: string,
   ): Promise<{ version: string; previewUrl: string }> {
     return this.publish.complete(id, version);

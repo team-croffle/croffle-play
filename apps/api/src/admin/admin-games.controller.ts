@@ -13,6 +13,7 @@ import {
 import * as v from 'valibot';
 
 import { AdminGuard } from '../auth/admin.guard.js';
+import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { type PlayInfo, PlayService } from '../games/play.service.js';
 import { type AdminGame, AdminGamesService, type AdminVersion } from './admin-games.service.js';
@@ -55,39 +56,48 @@ export class AdminGamesController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string): Promise<AdminGame & { versions: AdminVersion[] }> {
+  get(@Param('id', GameIdPipe) id: string): Promise<AdminGame & { versions: AdminVersion[] }> {
     return this.games.get(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(updateSchema)) body: v.InferOutput<typeof updateSchema>,
   ): Promise<AdminGame> {
     return this.games.update(id, body);
   }
 
   @Get(':id/versions/:version/play')
-  playInfo(@Param('id') id: string, @Param('version') version: string): Promise<PlayInfo> {
+  playInfo(
+    @Param('id', GameIdPipe) id: string,
+    @Param('version') version: string,
+  ): Promise<PlayInfo> {
     return this.play.info(id, version, { anyVersion: true });
   }
 
   @Post(':id/versions/:version/approve')
   @HttpCode(200)
-  approve(@Param('id') id: string, @Param('version') version: string): Promise<AdminGame> {
+  approve(
+    @Param('id', GameIdPipe) id: string,
+    @Param('version') version: string,
+  ): Promise<AdminGame> {
     return this.games.approve(id, version);
   }
 
   @Post(':id/versions/:version/reject')
   @HttpCode(200)
-  reject(@Param('id') id: string, @Param('version') version: string): Promise<AdminGame> {
+  reject(
+    @Param('id', GameIdPipe) id: string,
+    @Param('version') version: string,
+  ): Promise<AdminGame> {
     return this.games.reject(id, version);
   }
 
   @Post(':id/rollback')
   @HttpCode(200)
   rollback(
-    @Param('id') id: string,
+    @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(rollbackSchema)) body: { version: string },
   ): Promise<AdminGame> {
     return this.games.rollback(id, body.version);
