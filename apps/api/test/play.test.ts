@@ -89,34 +89,3 @@ describe('play info and SDK registry', () => {
     expect((await get('/v1/sdk/1')).json()).toMatchObject({ status: 'lts', sri: 'sha384-def' });
   });
 });
-
-describe('POST /v1/games/:id/scores (stub)', () => {
-  let t: TestApp;
-
-  beforeAll(async () => {
-    t = await createTestApp({ seed: true });
-  });
-
-  afterAll(async () => {
-    await t.close();
-  });
-
-  const post = (id: string, payload: unknown) =>
-    t.app.inject({ method: 'POST', url: `/v1/games/${id}/scores`, payload: payload as object });
-
-  it('accepts a valid score', async () => {
-    const res = await post('sample', { score: 1200 });
-    expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ accepted: true });
-  });
-
-  it('validates the body with the protocol schema', async () => {
-    const res = await post('sample', { score: 'lots' });
-    expect(res.statusCode).toBe(400);
-    expect(res.json()).toMatchObject({ issues: [{ path: 'score' }] });
-  });
-
-  it('404s for unknown games', async () => {
-    expect((await post('nope', { score: 1 })).statusCode).toBe(404);
-  });
-});

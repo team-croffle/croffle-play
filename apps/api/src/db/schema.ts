@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  doublePrecision,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -84,6 +86,40 @@ export const users = pgTable('users', {
   ...timestamps,
 });
 
+/** Every submitted score; the leaderboard is each player's best. */
+export const scores = pgTable(
+  'scores',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gameId: text('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    score: doublePrecision('score').notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index('scores_game_user_score_idx').on(t.gameId, t.userId, t.score)],
+);
+
+/** Game save slots per player (Tier 1: the shell stores them on the player's behalf). */
+export const saves = pgTable(
+  'saves',
+  {
+    gameId: text('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    slot: text('slot').notNull(),
+    data: text('data').notNull(),
+    updatedAt: timestamps.updatedAt,
+  },
+  (t) => [primaryKey({ columns: [t.gameId, t.userId, t.slot] })],
+);
+
 /** Per-game publish credential. Only the SHA-256 of the key is stored. */
 export const deployKeys = pgTable('deploy_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -130,4 +166,6 @@ export const schema = {
   deployKeys,
   users,
   userRole,
+  scores,
+  saves,
 };

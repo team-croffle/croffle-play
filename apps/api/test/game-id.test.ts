@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { adminAuth, createTestApp, type TestApp } from './support/test-app.js';
+import { bearerFor } from './support/test-issuer.js';
 
 describe('game id route parameters', () => {
   let t: TestApp;
@@ -28,6 +29,7 @@ describe('game id route parameters', () => {
     const res = await t.app.inject({
       method: 'POST',
       url: '/v1/games/Bad_Id/scores',
+      headers: await bearerFor('someone'),
       payload: { score: 1 },
     });
     expect(res.statusCode).toBe(404);
