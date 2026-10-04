@@ -1,11 +1,6 @@
 {
-  "files": [],
-  "references": [
-    {
-      "path": "apps/api"
-    },
-    {
-      "path": "packages/protocol"
-    }
-  ]
+  // Packages are not project references: workspace imports resolve to source through the
+  // "@croffledev/source" export condition (tsconfig.base.json customConditions), so every
+  // package typechecks on its own before anything is built.
+  "files": []
 }

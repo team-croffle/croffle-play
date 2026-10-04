@@ -1,0 +1,41 @@
+{
+  "name": "@croffledev/play-sdk",
+  "version": "0.0.0",
+  "description": "SDK for Croffle Play games: handshake with the platform, scores, saves, user",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/team-croffle/croffle-play.git",
+    "directory": "packages/sdk"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@croffledev/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@croffledev/play-protocol": "workspace:^",
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.23.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}

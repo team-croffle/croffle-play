@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "composite": false,
     "incremental": false,
     // Workspace packages resolve to their built dist here, not to source.
     "customConditions": [],
