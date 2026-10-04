@@ -18,7 +18,10 @@ import { defaultStorage, type MockStorage } from './storage.js';
 export interface MockHostOptions {
   /** Player returned by `getUser`. `null` simulates a guest. */
   user?: PublicUser | null;
-  /** Capabilities announced in `__welcome`. Default: all v1 capabilities. */
+  /**
+   * Capabilities announced in `__welcome`. Default: every v1 capability except `token` and
+   * `rooms` — multiplayer needs the real rooms server (`pnpm dev:rooms` with the platform).
+   */
   capabilities?: string[];
   /** Where saves go. Default: localStorage (memory when unavailable). */
   storage?: MockStorage;
@@ -48,7 +51,8 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
     options.user === undefined
       ? { id: 'mock-user', nickname: 'Player', avatar: null }
       : options.user;
-  const caps = options.capabilities ?? [...allCapabilities];
+  const caps =
+    options.capabilities ?? allCapabilities.filter((c) => c !== 'token' && c !== 'rooms');
   const storage = options.storage ?? defaultStorage();
   const log = options.log ?? true;
   const listeners = new Set<(message: unknown, origin: string) => void>();
@@ -93,6 +97,9 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
       }
       case 'fullscreen':
         return { on: (payload as { on: boolean }).on };
+      case 'getToken':
+      case 'getRoomsUrl':
+        throw new Error('unsupported');
       case 'getLeaderboard': {
         const best = scores.length > 0 && user ? Math.max(...scores) : null;
         return { entries: best === null || !user ? [] : [{ rank: 1, user, score: best }] };
@@ -134,7 +141,13 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
         toGame(fail(req.id, { code: 'auth_required', message: 'Guests cannot save' }));
         return;
       }
-      toGame(ok(req.id, handle(req.type, req.payload)));
+      try {
+        toGame(ok(req.id, handle(req.type, req.payload)));
+      } catch {
+        toGame(
+          fail(req.id, { code: 'unsupported', message: `The mock host has no '${req.type}'` }),
+        );
+      }
     },
   };
 }
