@@ -58,6 +58,22 @@ export const envSchema = v.object({
   ),
   /** JWKS location when not `<issuer>/jwks` (e.g. an internal URL). */
   OIDC_JWKS_URL: v.optional(v.pipe(v.string(), v.url())),
+  /**
+   * ES256 private key (PKCS8 PEM; `\n` escapes allowed) signing game tokens. Required in
+   * production; development generates a throwaway key.
+   */
+  JWT_SIGNING_KEY: v.optional(v.string()),
+  JWT_KEY_ID: v.optional(v.string(), 'game-1'),
+  /** This API's public origin: the `iss` of game tokens (e.g. https://api.play.croffledev.kr). */
+  PUBLIC_API_ORIGIN: v.optional(v.pipe(v.string(), v.url()), 'http://localhost:3001'),
+  /** Lifetime of game tokens (`aud: game:<id>`), 60–900 s. */
+  GAME_TOKEN_TTL_SECONDS: v.pipe(
+    v.optional(v.string(), '600'),
+    v.transform(Number),
+    v.integer(),
+    v.minValue(60),
+    v.maxValue(900),
+  ),
   GAME_URL_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
     v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
@@ -78,8 +94,15 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
     throw new Error(`Invalid environment:\n${lines.join('\n')}`);
   }
   const env = result.output;
-  if (env.NODE_ENV === 'production' && !env.GAME_URL_TEMPLATE.startsWith('https://')) {
-    throw new Error('Invalid environment:\n  GAME_URL_TEMPLATE: must be https:// in production');
+  if (env.NODE_ENV === 'production') {
+    const problems = [
+      !env.GAME_URL_TEMPLATE.startsWith('https://') && 'GAME_URL_TEMPLATE: must be https://',
+      !env.PUBLIC_API_ORIGIN.startsWith('https://') && 'PUBLIC_API_ORIGIN: must be https://',
+      !env.JWT_SIGNING_KEY && 'JWT_SIGNING_KEY: required in production',
+    ].filter(Boolean);
+    if (problems.length > 0) {
+      throw new Error(`Invalid environment:\n${problems.map((p) => `  ${p}`).join('\n')}`);
+    }
   }
   return env;
 }

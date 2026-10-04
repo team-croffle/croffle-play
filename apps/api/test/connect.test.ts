@@ -23,6 +23,8 @@ describe('connect', () => {
           DATABASE_URL: 'pglite://memory',
           NODE_ENV: 'production',
           GAME_URL_TEMPLATE: 'https://{id}.games.test/{version}/',
+          PUBLIC_API_ORIGIN: 'https://api.test',
+          JWT_SIGNING_KEY: 'unused',
         }),
       ),
     ).rejects.toThrow(/local development/);

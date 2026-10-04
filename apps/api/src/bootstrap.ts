@@ -11,8 +11,8 @@ export async function createApp(options: AppOptions = {}): Promise<NestFastifyAp
     new FastifyAdapter({ trustProxy: true }),
     options.env?.NODE_ENV === 'test' ? { logger: false } : { bufferLogs: true },
   );
-  // Everything is versioned under /v1 except probes.
-  app.setGlobalPrefix('v1', { exclude: ['healthz'] });
+  // Everything is versioned under /v1 except probes and well-known documents.
+  app.setGlobalPrefix('v1', { exclude: ['healthz', '.well-known/jwks.json'] });
   app.enableShutdownHooks();
   return app;
 }

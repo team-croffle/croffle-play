@@ -38,7 +38,10 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...base, GAME_URL_TEMPLATE: 'https://x.test/' })).toThrow(/GAME_URL/);
     expect(() =>
       parseEnv({ ...base, NODE_ENV: 'production', GAME_URL_TEMPLATE: 'http://{id}.t/{version}/' }),
-    ).toThrow(/https/);
+    ).toThrow(/GAME_URL_TEMPLATE: must be https/);
+    expect(() =>
+      parseEnv({ ...base, NODE_ENV: 'production', GAME_URL_TEMPLATE: 'https://{id}.t/{version}/' }),
+    ).toThrow(/JWT_SIGNING_KEY/);
   });
 
   it('lists invalid variables', () => {
