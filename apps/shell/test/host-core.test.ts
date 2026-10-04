@@ -18,6 +18,8 @@ function core(fetchJson = vi.fn().mockResolvedValue({ ok: true })) {
       onGameReady: vi.fn(),
       onNotify: vi.fn(),
       onExit: vi.fn(),
+      onLoginRequested: vi.fn(),
+      getUser: async () => null,
       fetchJson,
       doc,
     }),
@@ -42,7 +44,13 @@ describe('createHostCore', () => {
     expect(fetchJson).not.toHaveBeenCalled();
   });
 
-  it('treats everyone as a guest until accounts exist', async () => {
-    expect(await core().core.identity.getUser()).toBeNull();
+  it('allows simple query strings', async () => {
+    const { core: c, fetchJson } = core();
+    await c.api('GET', 'games/tetris/leaderboard?limit=5');
+    expect(fetchJson).toHaveBeenCalledWith('/api/games/tetris/leaderboard?limit=5', {
+      method: 'GET',
+      body: undefined,
+    });
+    await expect(c.api('GET', 'games/x?a=<script>')).rejects.toMatchObject({ status: 400 });
   });
 });

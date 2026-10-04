@@ -35,6 +35,25 @@ $('fullscreen').addEventListener('click', async () => {
   log(`fullscreen → ${await sdk.setFullscreen(true)}`);
 });
 $('exit').addEventListener('click', () => void sdk.exit());
+const attempt = (name: string, fn: () => Promise<unknown>) => async () => {
+  try {
+    log(`${name} → ${JSON.stringify(await fn())}`);
+  } catch (err) {
+    log(`${name} failed: ${(err as { code?: string }).code ?? (err as Error).message}`);
+  }
+};
+$('save').addEventListener(
+  'click',
+  attempt('save', () => sdk.save('main', `{"at":${Date.now()}}`)),
+);
+$('load').addEventListener(
+  'click',
+  attempt('load', () => sdk.load('main')),
+);
+$('board').addEventListener(
+  'click',
+  attempt('leaderboard', () => sdk.getLeaderboard(5)),
+);
 
 await sdk.ready();
 log('ready');

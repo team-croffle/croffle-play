@@ -17,3 +17,11 @@ export interface PlayInfo {
   sdkMajor: number;
   sdk: SdkInfo | null;
 }
+
+/** `GET /v1/games/:id/leaderboard`. */
+export interface LeaderboardEntry {
+  rank: number;
+  user: { id: string; nickname: string; avatar: string | null };
+  score: number;
+  at: string;
+}

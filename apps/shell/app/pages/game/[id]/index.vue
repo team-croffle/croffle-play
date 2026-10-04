@@ -15,13 +15,16 @@
 </script>
 
 <template>
-  <article v-if="game" class="game-detail">
-    <div class="game-detail__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
-    <div>
-      <h1 class="page-title">{{ game.name }}</h1>
-      <p>{{ game.description }}</p>
-      <p class="muted">v{{ game.version }}</p>
-      <NuxtLink :to="`/game/${game.id}/play`" class="button">플레이</NuxtLink>
-    </div>
-  </article>
+  <div v-if="game">
+    <article class="game-detail">
+      <div class="game-detail__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
+      <div>
+        <h1 class="page-title">{{ game.name }}</h1>
+        <p>{{ game.description }}</p>
+        <p class="muted">v{{ game.version }}</p>
+        <NuxtLink :to="`/game/${game.id}/play`" class="button">플레이</NuxtLink>
+      </div>
+    </article>
+    <LeaderboardTable :game-id="game.id" />
+  </div>
 </template>
