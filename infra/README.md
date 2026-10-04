@@ -43,6 +43,21 @@ platform domain could set cookies for it or make same-site requests with the pla
 | `PLATFORM_ORIGIN`         | games-edge        | Only origin allowed to frame games and fetch adapters          |
 | `ROOMS_ORIGIN`            | games-edge        | Rooms server, allowed in games' `connect-src`                  |
 
+## Identity (Logto)
+
+`logto` runs on the same PostgreSQL server in its own database (`postgres/init/01-logto.sql`, applied
+on a fresh volume). Public endpoint `https://auth.play.croffledev.kr`; the admin console listens on
+127.0.0.1:3302 only (SSH tunnel). In the console:
+
+1. **API resource**: identifier `https://api.play.croffledev.kr` (= API `OIDC_AUDIENCE`).
+2. **Traditional web application** for the shell: redirect URI
+   `https://play.croffledev.kr/auth/callback`, post sign-out redirect `https://play.croffledev.kr/`;
+   copy its id/secret to `NUXT_OIDC_CLIENT_ID` / `NUXT_OIDC_CLIENT_SECRET`.
+3. The first platform admin: sign in once, then
+   `docker compose exec api node dist/auth/grant-admin-cli.js <sub>`.
+
+Locally, `pnpm dev:oidc` runs a stand-in provider on `http://localhost:4300` (any login name).
+
 ## Game domain rules (`nginx/templates/game-domain.conf.template`)
 
 - `<id>.<game domain>/<version>/<path>` → `games/<id>/<version>/<path>`; directories serve

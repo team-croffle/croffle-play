@@ -12,7 +12,8 @@
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
-    "dev:games": "node dev/serve-games.ts"
+    "dev:games": "node dev/serve-games.ts",
+    "dev:oidc": "node dev/dev-oidc.ts"
   },
   "dependencies": {
     "@croffledev/play-protocol": "workspace:^",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@croffledev/play-sdk": "workspace:^",
     "@types/node": "^24.19.1",
+    "oidc-provider": "^9.12.2",
     "typescript": "~6.0.3",
     "vite": "^8.3.2",
     "vitest": "^5.0.3",
