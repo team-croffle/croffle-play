@@ -29,6 +29,7 @@ const CAPABILITIES = [
   'exit',
   'token',
   'rooms',
+  'server',
 ];
 
 const game = (core: HostCore) => `games/${encodeURIComponent(core.lifecycle.gameId)}`;
@@ -61,6 +62,7 @@ const handlers: Partial<Record<RequestType, Handler>> = {
   },
   getToken: (core) => core.api('POST', `${game(core)}/token`),
   getRoomsUrl: (core) => core.api('GET', 'rooms'),
+  getServerInfo: (core) => core.api('GET', `${game(core)}/server`),
   exit: async (core) => {
     core.lifecycle.exit();
   },

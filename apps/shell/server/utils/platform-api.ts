@@ -34,6 +34,9 @@ export function createPlatformApi(baseURL: string, fetcher: Fetcher) {
         query: { limit: String(limit) },
       });
     },
+    getServer(gameId: string): Promise<{ url: string; protocol: string }> {
+      return fetcher(`/v1/games/${id(gameId)}/server`, { baseURL });
+    },
     getSdk(major: number): Promise<SdkInfo> {
       return fetcher<SdkInfo>(`/v1/sdk/${major}`, { baseURL });
     },

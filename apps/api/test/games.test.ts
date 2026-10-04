@@ -33,6 +33,7 @@ describe('/v1/games', () => {
       name: 'Block Drop',
       description: 'Falling blocks.',
       version: '1.2.0',
+      serverProtocol: null,
     });
   });
 

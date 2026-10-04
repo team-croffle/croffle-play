@@ -59,6 +59,7 @@ describe('host adapter v1', () => {
       'exit',
       'token',
       'rooms',
+      'server',
     ]);
   });
 
@@ -115,6 +116,15 @@ describe('host adapter v1', () => {
     expect(await send(request('2', 'getRoomsUrl', {}))).toMatchObject({
       payload: { url: 'wss://rooms.test' },
     });
+  });
+
+  it('reports a missing game server as unsupported', async () => {
+    const api = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { status: 404 }));
+    const { send } = setup({ api: api as HostCore['api'] });
+    expect(await send(request('1', 'getServerInfo', {}))).toMatchObject({
+      error: { code: 'unsupported' },
+    });
+    expect(api).toHaveBeenCalledWith('GET', 'games/tetris/server');
   });
 
   it('answers unsupported and invalid requests', async () => {

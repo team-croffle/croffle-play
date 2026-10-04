@@ -10,6 +10,8 @@ export function toProtocolError(err: unknown): ProtocolError {
       return { code: 'invalid_request', message: 'The platform rejected the request' };
     case 401:
       return { code: 'auth_required', message: 'Sign in to use this feature' };
+    case 404:
+      return { code: 'unsupported', message: 'Not available for this game' };
     case 429:
       return { code: 'rate_limited', message: 'Too many requests' };
     default:
