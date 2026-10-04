@@ -16,6 +16,7 @@
     "**/dist/**",
     "**/.nuxt/**",
     "**/.output/**",
+    "**/.out/**",
     "**/node_modules/**",
     "**/coverage/**",
     "pnpm-lock.yaml",
