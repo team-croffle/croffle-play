@@ -28,6 +28,17 @@ export const envSchema = v.object({
   DB_MIGRATE: bool('true'),
   /** Insert the dummy catalog on boot (development only). */
   DB_SEED: bool('false'),
+  /** With DB_SEED: register this adapter manifest as SDK v1 (e.g. from `pnpm dev:games`). */
+  SEED_ADAPTER_MANIFEST_URL: v.optional(v.pipe(v.string(), v.url())),
+  /**
+   * Where a game version is served. `{id}` and `{version}` are replaced, e.g.
+   * `https://{id}.croffle-play.link/{version}/`. Must end with `/`.
+   */
+  GAME_URL_TEMPLATE: v.pipe(
+    v.optional(v.string(), 'http://localhost:4100/{id}/{version}/'),
+    v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
+    v.endsWith('/'),
+  ),
 });
 
 export type Env = v.InferOutput<typeof envSchema>;
@@ -42,5 +53,9 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
     });
     throw new Error(`Invalid environment:\n${lines.join('\n')}`);
   }
-  return result.output;
+  const env = result.output;
+  if (env.NODE_ENV === 'production' && !env.GAME_URL_TEMPLATE.startsWith('https://')) {
+    throw new Error('Invalid environment:\n  GAME_URL_TEMPLATE: must be https:// in production');
+  }
+  return env;
 }

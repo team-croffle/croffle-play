@@ -34,6 +34,13 @@ describe('parseEnv', () => {
     });
   });
 
+  it('checks the game URL template', () => {
+    expect(() => parseEnv({ ...base, GAME_URL_TEMPLATE: 'https://x.test/' })).toThrow(/GAME_URL/);
+    expect(() =>
+      parseEnv({ ...base, NODE_ENV: 'production', GAME_URL_TEMPLATE: 'http://{id}.t/{version}/' }),
+    ).toThrow(/https/);
+  });
+
   it('lists invalid variables', () => {
     expect(() => parseEnv({ ...base, PORT: 'abc' })).toThrow(/PORT/);
     expect(() => parseEnv({})).toThrow(/DATABASE_URL/);

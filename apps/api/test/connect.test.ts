@@ -18,7 +18,13 @@ describe('connect', () => {
 
   it('refuses pglite and seeding in production', async () => {
     await expect(
-      connect(testEnv({ DATABASE_URL: 'pglite://memory', NODE_ENV: 'production' })),
+      connect(
+        testEnv({
+          DATABASE_URL: 'pglite://memory',
+          NODE_ENV: 'production',
+          GAME_URL_TEMPLATE: 'https://{id}.games.test/{version}/',
+        }),
+      ),
     ).rejects.toThrow(/local development/);
   });
 });
