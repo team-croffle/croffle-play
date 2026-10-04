@@ -1,7 +1,1 @@
-export default defineEventHandler(async () => {
-  try {
-    return await usePlatformApi().listGames();
-  } catch (err) {
-    rethrowApiError(err);
-  }
-});
+export default defineEventHandler(() => proxied(() => usePlatformApi().listGames()));
