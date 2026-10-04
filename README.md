@@ -62,7 +62,8 @@ pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/
 pnpm dev:shell                           # http://localhost:3000
 ```
 
-Full stack in containers (PostgreSQL, MinIO, API, shell):
+Full stack in containers (PostgreSQL, MinIO, game-domain edge, API, shell); deployment details in
+[infra/README.md](./infra/README.md):
 
 ```bash
 cp infra/.env.example infra/.env         # replace the CHANGE_ME values

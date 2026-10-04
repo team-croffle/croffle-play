@@ -135,19 +135,21 @@ https://<id>.croffle-play.link/<version>/index.html
   지원한다. 외부 개발자에게 열 정도로 커지면 Public Suffix List 등록 검토.
 - 예약 서브도메인: `www`, `api`, `admin`, `cdn`, `play`, `rooms`, `auth`, `static`, `preview`.
 
-nginx 매핑 (개인 서버):
+nginx 매핑 (개인 서버, 실제 규칙은 `infra/nginx/templates/game-domain.conf.template`):
 
-```nginx
-server {
-  server_name ~^(?<game>[a-z0-9-]+)\.croffle-play\.link$;
-  location / {
-    proxy_pass http://minio:9000/games/$game$request_uri;
-    proxy_hide_header Set-Cookie;
-    add_header Content-Security-Policy "frame-ancestors https://<플랫폼 도메인>";
-    add_header Cache-Control "public, max-age=31536000, immutable";
-  }
-}
-```
+- `<id>.croffle-play.link/<버전>/<경로>` → 버킷 `games`의 `<id>/<버전>/<경로>`. 디렉터리는 `index.html`.
+  버전 없는 경로, 예약 서브도메인, GET/HEAD 외 메서드는 거부.
+- **경로 순회 차단**: raw 경로에 `..`·`%2e`·`%2f`·`%5c`·`//`가 있으면 400. 막지 않으면
+  `tetris.…/1.0.0/../../other/…`가 다른 게임의 코드를 tetris origin에서 실행해 그 게임의 로컬 저장소를
+  읽을 수 있다.
+- 응답: `Set-Cookie`·스토리지 헤더(CORS 포함) 제거, 게임별 CSP(`connect-src`는 룸 서버와 자기
+  `<id>.srv.` 호스트만, `frame-ancestors`는 플랫폼 origin), `nosniff`, `no-referrer`. 성공 응답만 1년
+  `immutable`, 오류는 `no-store`.
+- 어댑터 호스트(`static.<플랫폼>`)는 `/adapters/v<N>/<버전>/{index.js,manifest.json}`만, CORS는 플랫폼
+  origin만.
+
+셸 CSP는 `frame-src`를 게임 도메인으로, `connect-src`를 어댑터 호스트로 제한하고
+`frame-ancestors 'none'`이다(값은 env). 개발 환경도 게임마다 origin이 다르다(`http://<id>.localhost:4100`).
 
 (Cloudflare Worker + R2 대안은 서버 다운과 무관하게 게임이 뜨고 egress가 무료지만, 파일 하나가 요청
 1회라 무료 플랜 10만 req/일에 금방 닿는다. 당장은 개인 서버 + MinIO, 필요해지면 에셋만 R2로.)
