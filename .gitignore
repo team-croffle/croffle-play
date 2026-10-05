@@ -49,3 +49,6 @@ desktop.ini
 
 # Local AI workspace (never committed)
 .ai/
+
+# Docs site (VitePress)
+docs/.vitepress/cache

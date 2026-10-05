@@ -1,6 +1,7 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  - 'docs'
 
 # Native/postinstall builds must be allow-listed explicitly (pnpm ≥ 10).
 allowBuilds:

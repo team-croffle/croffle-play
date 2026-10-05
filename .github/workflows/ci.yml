@@ -42,6 +42,7 @@ jobs:
             code:
               - 'apps/**'
               - 'packages/**'
+              - 'docs/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
