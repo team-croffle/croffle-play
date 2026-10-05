@@ -10,7 +10,7 @@
 | 하고 싶은 일       | 가는 곳                                                                                   |
 | ------------------ | ----------------------------------------------------------------------------------------- |
 | 게임 만들기        | 각자의 저장소: `npm create @croffledev/play-game <폴더>`. 게임은 이 저장소에 넣지 않는다. |
-| 게임 배포·업데이트 | [docs/publishing.md](./docs/publishing.md) (배포 키는 관리자에게)                         |
+| 게임 호스팅·등록   | [docs/game-hosting.md](./docs/game-hosting.md) (id 등록은 관리자에게)                     |
 | 버그 신고, 질문    | [이슈](https://github.com/team-croffle/croffle-play/issues/new/choose)                    |
 | 기능·SDK 변경 제안 | 코드보다 먼저 기능 요청 이슈                                                              |
 | 보안 문제          | **비공개로** — [SECURITY.md](./SECURITY.md). 공개 이슈 금지                               |
@@ -64,7 +64,7 @@ Docker 없이 로컬에서 플랫폼 실행하기(임베디드 PostgreSQL, 로�
 
 ## 특히 조심할 규칙
 
-- **설계 불변식**([AGENTS.md](./AGENTS.md)) — 셸은 게임 코드를 품지 않는다, 번들은 불변, 인증은 셸에만,
+- **설계 불변식**([AGENTS.md](./AGENTS.md)) — 포털은 게임 코드를 품지 않는다, 게임은 팀이 호스팅한다, 인증은 포털에만,
   게임 서버는 신뢰하지 않는다, 스토리지는 S3 API로만 등. 바꾸려면 이슈, [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)에
   결정 기록, 관리자 승인이 필요하다.
 - **SDK 프로토콜은 공개 계약이다.** `__hello`/`__welcome` 핸드셰이크는 절대 바뀌지 않는다. 새 메시지는

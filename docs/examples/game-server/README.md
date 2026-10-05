@@ -17,4 +17,4 @@ servers read-only as uid 10001 with no capabilities on an isolated network (see
 generated compose fragment:
 
 `GAME_ID`, `PORT`, `PROTOCOL_VERSION`, `PLATFORM_JWKS_URL`, `TOKEN_ISSUER`, `TOKEN_AUDIENCE`,
-`ALLOWED_ORIGIN` (defaults to `https://<GAME_ID>.croffle-play.link`).
+`ALLOWED_ORIGIN` (defaults to `https://<GAME_ID>.play.croffle-play.link`).
