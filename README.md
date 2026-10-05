@@ -103,8 +103,12 @@ game on its own. Publishing (deploy keys, `play-cli`, review and approval):
 [docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). Operating the platform:
 [docs/operations.md](./docs/operations.md), [docs/security.md](./docs/security.md).
 
-Contribution rules for humans and agents: [AGENTS.md](./AGENTS.md).
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) (workflow, commit format, review) and
+[AGENTS.md](./AGENTS.md) (design invariants, conventions — also read by AI agents). Security issues:
+[SECURITY.md](./SECURITY.md).
 
 ## License
 
-MIT
+[MIT](./LICENSE) © Croffle Dev. (Team Croffle)
