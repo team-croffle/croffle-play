@@ -11,7 +11,7 @@ goes through review and the same checks as CI.
 | You want to…                       | Go to                                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------------------------ |
 | Make a game                        | Your own repository: `npm create @croffledev/play-game <dir>`. Games are never added here. |
-| Publish or update a game           | [docs/publishing.md](./docs/publishing.md) (deploy key from an admin)                      |
+| Host or register a game            | [docs/game-hosting.md](./docs/game-hosting.md) (an admin registers the id)                 |
 | Report a bug or ask a question     | [Issues](https://github.com/team-croffle/croffle-play/issues/new/choose)                   |
 | Propose a feature or an SDK change | A feature request issue first, before any code                                             |
 | Report a security problem          | **Privately** — see [SECURITY.md](./SECURITY.md), never a public issue                     |
@@ -70,8 +70,8 @@ fixture games) is described in the [README](./README.md#development).
 
 ## Rules that need extra care
 
-- **Design invariants** (in [AGENTS.md](./AGENTS.md)) — the shell never embeds game code, bundles
-  are immutable, authentication lives in the shell only, game servers are untrusted, storage goes
+- **Design invariants** (in [AGENTS.md](./AGENTS.md)) — the portal never embeds game code, games
+  are hosted by their teams, authentication lives in the portal only, game servers are untrusted, storage goes
   through the S3 API only, and the rest. Changing one needs an issue, a decision recorded in
   [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md), and a maintainer's approval.
 - **The SDK protocol is a public contract.** The `__hello` / `__welcome` handshake never changes.

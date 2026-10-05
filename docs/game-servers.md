@@ -30,7 +30,7 @@ publish가 끝나면 서버가 **승인 요청** 상태가 된다. 같은 이미
 
 - 연결 직후 **첫 메시지**로 받은 게임 토큰을 플랫폼 JWKS로 검증한다: 서명, `iss`(`TOKEN_ISSUER`),
   `aud = game:<id>`(`TOKEN_AUDIENCE`), 만료. 토큰을 URL로 받지 않는다.
-- `Origin`이 게임 도메인(`https://<id>.croffle-play.link`)인지 확인한다.
+- `Origin`이 게임 origin(`https://<id>.play.croffle-play.link`)인지 확인한다.
 - 쿠키를 쓰지 않는다(엣지에서 `Set-Cookie`가 제거된다). 저장할 데이터는 플랫폼 공개 API로.
 - 읽기 전용 파일시스템, uid 10001, 권한 없음, CPU 1·메모리 512MB·프로세스 256개로 돈다고 가정한다.
   쓰기는 `/tmp`(64MB)만.
@@ -47,11 +47,10 @@ ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', token }));
 ## 3. 플랫폼 관리자
 
 1. `/admin/games/<id>`의 **전용 서버** 섹션에서 이미지·프로토콜을 확인하고 승인한다.
-2. **compose 내려받기**로 받은 파일을 서버의 `infra/game-servers/<id>.yml`에 두고 실행한다:
-   ```bash
-   docker compose -f infra/compose.yml -f infra/game-servers/<id>.yml up -d game-<id>
-   ```
-3. 승인 폐기는 실행 중인 컨테이너를 멈추지 않는다: `docker compose … stop game-<id>`.
+2. **compose 내려받기**로 받은 서비스 정의를 운영 환경에 적용한다(배포는 이 저장소 밖의 일이다).
+3. 승인 폐기는 실행 중인 컨테이너를 멈추지 않는다. 운영 환경에서 직접 멈춘다.
+
+> v0.11에서 이 승인제는 `game.json`에 자체 서버 주소를 선언하는 방식으로 바뀐다.
 
 생성된 서비스는 `games-net`에만 붙고(DB·스토리지·플랫폼 내부 네트워크 없음), 읽기 전용·비루트·
 `cap_drop: ALL`·`no-new-privileges`·자원 제한이 걸리며, 리버스 프록시(Traefik)가

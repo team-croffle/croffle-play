@@ -3,7 +3,7 @@
 //
 // Environment (set by the platform's compose fragment):
 //   GAME_ID, PORT, PROTOCOL_VERSION, PLATFORM_JWKS_URL, TOKEN_ISSUER, TOKEN_AUDIENCE
-//   ALLOWED_ORIGIN (default https://<GAME_ID>.croffle-play.link)
+//   ALLOWED_ORIGIN (default https://<GAME_ID>.play.croffle-play.link)
 import { createServer } from 'node:http';
 
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 const env = process.env;
 const port = Number(env.PORT ?? 8080);
 const protocol = env.PROTOCOL_VERSION ?? '1.0.0';
-const allowedOrigin = env.ALLOWED_ORIGIN ?? `https://${env.GAME_ID}.croffle-play.link`;
+const allowedOrigin = env.ALLOWED_ORIGIN ?? `https://${env.GAME_ID}.play.croffle-play.link`;
 const jwks = createRemoteJWKSet(new URL(env.PLATFORM_JWKS_URL));
 
 /** The token's player, or null. Checks signature, issuer, audience (`game:<id>`), and expiry. */

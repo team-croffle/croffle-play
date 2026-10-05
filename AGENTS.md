@@ -4,90 +4,87 @@ Working agreement for AI agents on `croffle-play`.
 
 ## Project
 
-**Croffle Play** — a web game platform run by Team Croffle. Team members build
-games in their own repositories, with any engine, and publish them to the
-platform; the platform provides the catalog, one shared account, scores and
-saves, multiplayer rooms, and the SDK that games talk to.
+**Croffle Play** — a web game platform run by Team Croffle. One account plays every game, like a
+Steam account: the portal provides sign-in, the catalog, a dashboard, scores, saves, and
+multiplayer rooms, and shows each game in its own iframe. Team members build games in their own
+repositories, with any engine, and **host them themselves**.
 
 ```
-[Shell: Nuxt] ── catalog / login / play page
-     │ iframe   https://<game>.croffle-play.link/<version>/index.html
-[Game bundle] ── built by the team member, immutable per version
+[Portal: Nuxt, www.<domain>] ── catalog / sign-in / dashboard / play page (common UI)
+     │ iframe   https://<game>.play.<domain>/<entry>     (hosted by the game's team, anywhere)
+[Game site] ── built and deployed by the team; serves game.json and allows the portal to frame it
      │ postMessage (SDK protocol, pinned at build time)
-[Host adapter vN] ── one per SDK major, loaded by the shell at runtime
+[Host adapter vN] ── one per SDK major, picked from the game's __hello, loaded at runtime
      │ Core API (small, rarely changes)
-[Shell core] ──► [API: NestJS] ──► PostgreSQL · S3 storage (MinIO)
+[Portal core] ──► [API: NestJS] ──► PostgreSQL · S3 API (platform files: adapters, avatars)
 ```
 
-Category peers: CrazyGames, Poki, itch.io. The point of this repository is the
-_platform_: it must not grow with the number of games, and SDK releases must
-not require a shell deploy.
+Category peers: CrazyGames, Poki, itch.io. The point of this repository is the _platform_: it must
+not grow with the number of games, and SDK releases must not require a portal deploy. Deployment and
+operations (servers, proxies, DNS, backups) are **not** part of this repository.
 
 ### Purpose of this repository
 
-Platform monorepo: shell, API, rooms server, host adapters, and the published
-packages (`protocol`, `sdk`, `cli`, `create-game`). Games live in **their own
-repositories** (created with `npm create @croffledev/play-game`, the template in
-`packages/create-game/template`) and are never checked in here.
+Platform monorepo: portal (`apps/shell`), API, rooms server, host adapters, and the published
+packages (`protocol`, `sdk`, `cli`, `create-game`). Games live in **their own repositories**
+(created with `npm create @croffledev/play-game`, the template in `packages/create-game/template`)
+and are never checked in here.
 
 ### Current state
 
-- Exists: `apps/api` (NestJS 12 on Fastify, Drizzle; catalog, play info, SDK registry),
-  `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading),
-  `apps/adapters` (v1), `packages/protocol`, `packages/sdk` (+ `/mock`), `packages/cli`
-  (validate/publish), accounts (Logto/OIDC, admin by role), Dockerfiles, `infra/compose.yml`.
-  `apps/rooms` (shared WebSocket relay; game tokens from the API's JWKS), Tier 2 game
-  server approval with API-generated compose fragments (`games-net`), SDK lifecycle
-  automation (date-driven status, hourly sync, GitHub notices), developer dashboard (`/dev`),
-  per-subject rate limits, score trust policy (server keys), backups and health alerts
-  (`infra/ops`). Security model: `docs/security.md`.
-- The game template ships as `packages/create-game` (`npm create @croffledev/play-game`); its
-  tests build and validate a generated game against the workspace SDK.
-- Game domain edge: `infra/nginx/templates/game-domain.conf.template` (nginx in front of
-  storage; rules in `infra/README.md`). Shell CSP origins come from `NUXT_CSP_*`.
-- `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) and adapter bundles on
-  `:4100`, a separate origin like production.
+- Exists: `apps/api` (NestJS 12 on Fastify, Drizzle; game registry, catalog, play info, SDK
+  registry and lifecycle, scores, saves, game tokens + JWKS, server keys, members),
+  `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading, admin and
+  developer pages), `apps/adapters` (v1), `apps/rooms` (shared WebSocket relay), `packages/protocol`,
+  `packages/sdk` (+ `/mock`), `packages/cli` (`validate`, `check`), `packages/create-game`.
+  Accounts: Logto (OIDC), admin by role. Per-subject rate limits, score trust policy.
+- Games are registered by id; their origin comes from `GAME_ORIGIN_TEMPLATE`
+  (`https://{id}.play.croffle-play.link`). The API reads `<origin>/game.json` on registration and
+  refresh; `listed` decides catalog visibility. There are no uploads or versions.
+- Host adapters are uploaded to storage (`sdk:register <dist dir>`), served by the API at
+  `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked).
+- Tier 2 game servers (approval + generated compose) still exist in the API; v0.11 replaces them
+  with servers declared in `game.json`.
+- `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) at `<id>.localhost:4100/` and adapter
+  bundles at `localhost:4100/adapters/`, separate origins like production.
 - API tests run the real migrations on in-memory PGlite; `DATABASE_URL=pglite://memory` also runs
   the API locally without Docker (development only).
 - Remote: `team-croffle/croffle-play` (public). `master` is protected by a ruleset: PRs only,
   rebase merge, required checks `CI result`, `TruffleHog`, `Gitleaks`.
-- `docs/ARCHITECTURE.md` is the design record (Korean); `docs/ROADMAP.md`
-  the public roadmap. `README.md` describes the _target_ product.
-- Game asset domain `croffle-play.link` is registered (Cloudflare). Platform domain:
-  `play.croffledev.kr` (code reads it from env only).
+- `docs/ARCHITECTURE.md` is the design record (Korean); `docs/ROADMAP.md` the public roadmap.
+  Security model: `docs/security.md`. `README.md` describes the _target_ product.
+- Domains (code reads them from env only): portal `www.croffle-play.link`, games
+  `<id>.play.croffle-play.link`.
 
 ### Planned layout
 
-| Path                   | Package                        | Ships as                     |
-| ---------------------- | ------------------------------ | ---------------------------- |
-| `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private |
-| `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private |
-| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private |
-| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage     |
-| `packages/protocol`    | `@croffledev/play-protocol`    | npm                          |
-| `packages/sdk`         | `@croffledev/play-sdk`         | npm                          |
-| `packages/cli`         | `@croffledev/play-cli`         | npm                          |
-| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)           |
-| `infra/`               | —                              | Compose, nginx, env examples |
+| Path                   | Package                        | Ships as                       |
+| ---------------------- | ------------------------------ | ------------------------------ |
+| `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private   |
+| `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private   |
+| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private   |
+| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage (API) |
+| `packages/protocol`    | `@croffledev/play-protocol`    | npm                            |
+| `packages/sdk`         | `@croffledev/play-sdk`         | npm                            |
+| `packages/cli`         | `@croffledev/play-cli`         | npm                            |
+| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)             |
 
-`apps/*` are `"private": true`. Workspace packages export a
-`"@croffledev/source"` condition pointing at `src/`; `tsconfig.base.json`
-(`customConditions`) and each vitest config resolve it, so packages typecheck
-and test against each other's source without a build. Builds use `dist`.
+`apps/*` are `"private": true`. Workspace packages export a `"@croffledev/source"` condition
+pointing at `src/`; `tsconfig.base.json` (`customConditions`) and each vitest config resolve it, so
+packages typecheck and test against each other's source without a build. Builds use `dist`.
 
 ### Stack
 
 - Node ≥ 24, pnpm (Corepack, version pinned in `package.json`), TypeScript.
-- Shell: Nuxt (SSR for catalog/detail pages). API: NestJS on Fastify. Rooms: custom
-  WebSocket server (`ws`, relay only).
-- Data: PostgreSQL via Drizzle (migrations in `apps/api/drizzle`). Storage: **S3 API
-  only** (MinIO on the home server now; R2/S3 later without code changes).
+- Portal: Nuxt (SSR for catalog/detail pages). API: NestJS on Fastify. Rooms: custom WebSocket
+  server (`ws`, relay only).
+- Data: PostgreSQL via Drizzle (migrations in `apps/api/drizzle`). Storage: **S3 API only**, one
+  bucket for platform files (`adapters/`, `avatars/`).
 - Validation: valibot (env, protocol messages, manifests). Identity: Logto (OIDC).
-- Edge: Cloudflare in front (DNS, cache, Tunnel), Traefik on the server, nginx
-  for the game domain mapping (`<id>.croffle-play.link/<ver>/` →
-  `games/<id>/<ver>/`).
-- Quality: oxlint (`.oxlintrc.json`), oxfmt (`.oxfmtrc.json`), lefthook
-  (`lefthook.yml`), Changesets for `packages/*`.
+- The code depends on protocols (PostgreSQL, S3 API, OIDC, Redis protocol when used), never on a
+  particular product or host. How and where it runs is decided outside this repository.
+- Quality: oxlint (`.oxlintrc.json`), oxfmt (`.oxfmtrc.json`), lefthook (`lefthook.yml`),
+  Changesets for `packages/*`.
 
 ### Commands
 
@@ -99,93 +96,86 @@ pnpm check                   # completion gate: secret-files, format, lint, type
 pnpm format / pnpm lint:fix  # rewrite
 pnpm format:check / pnpm lint / pnpm typecheck / pnpm test / pnpm build
 
-pnpm dev:shell               # apps/shell  (once it exists)
+pnpm dev:shell               # apps/shell (portal)
 pnpm dev:api                 # apps/api
+pnpm dev:games               # fixture games + adapters on :4100
 pnpm --filter <pkg> <script> # single package
 
 pnpm changeset               # after changing packages/*
 ```
 
-Hooks: `pre-commit` (secret files, oxfmt + restage, oxlint, typecheck),
-`commit-msg` (`scripts/hooks/check-commit-msg.sh`), `pre-push` (tests).
-Never bypass with `--no-verify`; fix the cause. `pnpm check` is the same gate
-CI runs.
+Hooks: `pre-commit` (secret files, oxfmt + restage, oxlint, typecheck), `commit-msg`
+(`scripts/hooks/check-commit-msg.sh`), `pre-push` (tests). Never bypass with `--no-verify`; fix the
+cause. `pnpm check` is the same gate CI runs.
 
 ### Versioning
 
-- **Platform (`apps/*`)**: git tags `vX.Y.Z` / `vX.Y.Z-rc.N` are the source
-  of truth; nothing in the tree is bumped. The release workflow builds one
-  image per app (`ghcr.io/team-croffle/croffle-play/<app>:<version>`).
-- **Packages (`packages/*`)**: independent semver via Changesets, published
-  to npm by the `Publish Packages` workflow through npm trusted publishing
-  (OIDC). The workflow only stages versions (`npm stage publish`); a maintainer
-  approves them with 2FA (`npm stage approve`) to go live. No npm token exists
-  in the repository or its secrets; never add one.
-  Never publish by hand (the one-time `0.0.0` name placeholders excepted).
-- **SDK majors** are the platform's public contract and have their own
-  lifecycle (`current → lts → maintenance → deprecated → eol`) stored in the
-  database, not in code. See _Design invariants_ 5–6.
+- **Platform (`apps/*`)**: git tags `vX.Y.Z` / `vX.Y.Z-rc.N` are the source of truth; nothing in the
+  tree is bumped. The release workflow builds one image per app
+  (`ghcr.io/team-croffle/croffle-play/<app>:<version>`).
+- **Packages (`packages/*`)**: independent semver via Changesets, published to npm by the
+  `Publish Packages` workflow through npm trusted publishing (OIDC). The workflow only stages
+  versions (`npm stage publish`); a maintainer approves them with 2FA (`npm stage approve`) to go
+  live. No npm token exists in the repository or its secrets; never add one. Never publish by hand
+  (the one-time `0.0.0` name placeholders excepted).
+- **SDK majors** are the platform's public contract and have their own lifecycle
+  (`current → lts → old → deprecated`) stored in the database, not in code. See _Design invariants_
+  5–6 and `docs/sdk-lifecycle.md`.
+- **Games** have no platform version: their teams deploy them whenever they like.
 
 ### Design invariants
 
 Changing any of these requires a decision entry in `.ai/history/`.
 
-1. **The shell never embeds game code.** Every game runs in an `iframe` from
-   `https://<id>.croffle-play.link/<version>/`. Shell bundle size and deploy
-   frequency are independent of the number of games. Games are registered
-   through the API and storage, never through a shell release.
-2. **Game bundles are immutable.** `games/<id>/<version>/` is written once;
-   re-uploading an existing version is refused by the API. What users see is
-   a database pointer (`stable_version`, `preview_version`); rollback is a
-   pointer move. Objects are served with `immutable` cache headers.
-3. **Bundles are self-contained.** Relative paths only, no external resources
-   (CSP-enforced), no cookies (`Set-Cookie` is stripped at the edge),
-   `frame-ancestors` limited to the platform origin. One registered domain
-   per concern: the game domain is never a subdomain of the platform domain.
-4. **Authentication lives in the shell only.** A game never holds a platform
-   session. Tier 1 (default): the SDK proxies score/save calls through the
-   shell via `postMessage`; the game sees only a public profile. Tier 2
-   (approval only): a short-lived JWT with `aud: game:<id>` delivered by
-   `postMessage` — never in a query string — and verified by the game server
-   against the platform JWKS.
-5. **The handshake is the only frozen protocol.** `__hello { sdk, game }` /
-   `__welcome { capabilities }` never changes. Everything else is versioned
-   by SDK major; a game is pinned to the SDK it was built with. Minor
-   features are discovered via capabilities, never by version comparison.
-6. **One host adapter per SDK major, loaded at runtime** from storage with
-   SRI verification. The shell core exposes only `identity`, `api()`, `ui`,
-   `lifecycle`. A new SDK feature is an API endpoint plus an adapter
-   release — not a shell release. `deprecated` SDK majors cannot publish new
-   game versions; `eol` majors cannot be played.
-7. **Game servers are untrusted tenants.** They join `games-net` only — never
-   the database or Redis networks — talk to the platform through the public
-   API, verify tokens via JWKS, and run with CPU/memory limits,
-   `read_only`, `cap_drop: ALL`. Default multiplayer is the shared rooms
+1. **The portal never embeds game code.** Every game runs in an `iframe` from its own origin,
+   `https://<id>.play.<domain>/`, built from one `{id}` template. Portal bundle size and deploy
+   frequency are independent of the number of games. Games are registered through the API, never
+   through a portal release.
+2. **Games are hosted by their teams.** The platform stores no game files and tracks no game
+   versions. What it keeps is the registration (id, name, listing) and the game's `game.json`, read
+   from `<origin>/game.json`; whether a game is shown is the `listed` flag.
+3. **Games are same-site, so the portal defends itself.** The portal session cookie is host-only
+   (`__Host-`), state-changing portal requests must come from the portal's own origin, and the API
+   authenticates with tokens, never cookies. Games must allow the portal in `frame-ancestors`; the
+   platform checks this (`play-cli check`) but cannot enforce what a game host serves.
+4. **Authentication lives in the portal only.** A game never holds a platform session. Tier 1
+   (default): the SDK proxies score/save calls through the portal via `postMessage`; the game sees
+   only a public profile. Game servers get a short-lived JWT with `aud: game:<id>` delivered by
+   `postMessage` — never in a query string — and verify it against the platform JWKS.
+5. **The handshake is the only frozen protocol.** `__hello { sdk, game }` / `__welcome
+{ capabilities }` never changes. Everything else is versioned by SDK major; a game is pinned to
+   the SDK it was built with. Minor features are discovered via capabilities, never by version
+   comparison.
+6. **One host adapter per SDK major, loaded at runtime** with SRI verification. The portal picks
+   it from the major in the game's `__hello`, fetches it from its own origin (`/adapters/…`, served
+   by the API from storage), and exposes only `identity`, `api()`, `ui`, `lifecycle`. A new SDK
+   feature is an API endpoint plus an adapter release — not a portal release. `old` SDK majors
+   cannot be newly listed or refreshed; `deprecated` majors cannot be played.
+7. **Game servers are untrusted tenants.** They join `games-net` only — never the database or
+   Redis networks — talk to the platform through the public API, verify tokens via JWKS, and run
+   with CPU/memory limits, `read_only`, `cap_drop: ALL`. Default multiplayer is the shared rooms
    server; per-game authoritative servers are approval-only.
-8. **Storage through the S3 API only**, with per-game deploy keys and
-   presigned URLs scoped to one version path. No admin storage credentials
-   leave the platform.
-9. **Monorepo for the platform, one repository per game.** Game engines,
-   build tools, and release cadence are the game author's choice; the
-   platform constrains only the bundle contract (`game.json`, entry,
-   thumbnail, size limit, SDK range).
+8. **Storage through the S3 API only**, for platform-owned files (host adapters, avatars) in one
+   bucket. No storage credentials leave the platform; browsers never reach storage directly.
+9. **Monorepo for the platform, one repository per game.** Game engines, build tools, hosting, and
+   release cadence are the game team's choice; the platform constrains only the game contract
+   (`game.json` at the origin root, an entry the portal may frame, an SDK major that is not old or
+   deprecated).
 
 ### Domain notes
 
-- `game.json` manifest: `id`, `name`, `version`, `entry`, `thumbnail`, `sdk`
-  (semver range), `needsServer`, `orientation`, optional `server.protocol`.
-- Reserved game ids / subdomains: `www`, `api`, `admin`, `cdn`, `play`,
-  `rooms`, `auth`, `static`, `preview`, `srv` (`RESERVED_GAME_IDS` in
-  `packages/protocol`; game servers live at `<id>.srv.<game domain>`).
-- Publish flow: tag push → CI builds → `play-cli validate` →
-  `POST /games/:id/versions` (refused when the SDK major is deprecated/eol) →
-  presigned uploads → `…/complete` (hash + file list check) → `preview`
-  pointer → admin approval → `stable` pointer.
-- Rooms (WebSocket): auth as the **first message** after connect, `Origin`
-  check against the game domain, 30 s ping, exponential-backoff reconnect
-  with room re-join handled inside the SDK.
-- Shell routes: `/game/:id` (SSR detail), `/game/:id/play` (iframe),
-  `/game/:id/play?version=` (admin preview), `/admin/games/:id/versions/:v`.
+- `game.json`: `id`, `name`, `sdk` (semver range on one major), optional `version`, `entry`
+  (default `index.html`), `thumbnail`, `orientation`, `needsServer`, `server`.
+- Reserved game ids: `www`, `api`, `admin`, `cdn`, `play`, `rooms`, `auth`, `static`
+  (`RESERVED_GAME_IDS` in `packages/protocol`).
+- Registration flow: admin registers an id → the team deploys at `<id>.play.<domain>` →
+  `play-cli check <url>` → admin refreshes `game.json` (id must match, SDK major current or lts) →
+  admin lists the game.
+- Rooms (WebSocket): auth as the **first message** after connect, `Origin` check against the
+  game origin template, 30 s ping, exponential-backoff reconnect with room re-join handled inside
+  the SDK.
+- Portal routes: `/game/:id` (SSR detail), `/game/:id/play` (iframe),
+  `/game/:id/play?preview=1` (admin preview of unlisted games), `/admin/games/:id`, `/dev`.
 
 ## Workflow
 
@@ -219,8 +209,8 @@ Changing any of these requires a decision entry in `.ai/history/`.
   on purpose — NestJS DI needs runtime imports for constructor parameters.
   Do not re-enable it. Inject with explicit tokens (`@Inject(TOKEN)`): tests
   (vitest) and dev (tsx) do not emit decorator metadata.
-- Shell (Nuxt): no game-specific code, no per-game branches. Anything a game
-  needs goes through the protocol → adapter → API path.
+- Portal (Nuxt, `apps/shell`): no game-specific code, no per-game branches. Anything a
+  game needs goes through the protocol → adapter → API path.
 - Protocol/SDK: every message type is defined once in `packages/protocol`;
   `sdk` and `adapters` import it. Breaking a message = new SDK major.
 - Secrets: `.env*` are never read or committed. `*.example` files document

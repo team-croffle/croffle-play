@@ -4,7 +4,7 @@
 // Environment (set by the platform's compose fragment):
 //
 //	GAME_ID, PORT, PROTOCOL_VERSION, PLATFORM_JWKS_URL, TOKEN_ISSUER, TOKEN_AUDIENCE
-//	ALLOWED_ORIGIN (default https://<GAME_ID>.croffle-play.link)
+//	ALLOWED_ORIGIN (default https://<GAME_ID>.play.croffle-play.link)
 package main
 
 import (
@@ -41,7 +41,7 @@ func getenv(key, fallback string) string {
 func main() {
 	gameID := os.Getenv("GAME_ID")
 	protocol := getenv("PROTOCOL_VERSION", "1.0.0")
-	allowedOrigin := getenv("ALLOWED_ORIGIN", "https://"+gameID+".croffle-play.link")
+	allowedOrigin := getenv("ALLOWED_ORIGIN", "https://"+gameID+".play.croffle-play.link")
 
 	jwks, err := keyfunc.NewDefaultCtx(context.Background(), []string{os.Getenv("PLATFORM_JWKS_URL")})
 	if err != nil {
