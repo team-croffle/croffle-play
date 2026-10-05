@@ -7,7 +7,7 @@ themselves; the portal shows each game in an iframe.
 
 [한국어](./README.ko.md)
 
-> Status: **pre-release.** Portal (catalog, play page, admin and developer pages), SDK v1, runtime
+> Status: **pre-release.** Portal (catalog, play page, player dashboard, admin and developer pages), SDK v1, runtime
 > host adapters, game registration by `game.json`, accounts (sign-in, scores, leaderboards, saves),
 > and multiplayer rooms work; see the [roadmap](./docs/ROADMAP.md). Design record:
 > [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).

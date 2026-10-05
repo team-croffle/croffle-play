@@ -121,6 +121,11 @@ gamepad"`. `allow-same-origin`은 게임 자신의 origin이다(게임 origin �
 - API는 `iss`·`aud`·서명·만료를 검증하고 IdP `sub`를 내부 계정(uuid)에 매핑한다. 게임이 받는 건
   `{ id, nickname, avatar }`뿐이고 `sub`·역할·토큰은 나가지 않는다.
 - 관리자 = 계정의 `admin` 역할. 첫 관리자는 `ADMIN_SUBS`(로그인 시 승격) 또는 `grant-admin`.
+- 세션 저장: 기본은 봉인 쿠키. `NUXT_SESSION_REDIS_URL`이 있으면 Redis 프로토콜 서버(Valkey 등)에 데이터를 두고
+  쿠키에는 봉인된 세션 id만 둔다.
+- 플레이어 대시보드 `/me`: 닉네임, 프로필 사진 직접 업로드(PNG·JPEG·WebP, 헤더로 판별, 64px 이상, 512KB 이하,
+  JPEG EXIF 제거). 스토리지 `avatars/<user>/<hash>.<ext>`, API 서빙 + 포털 `/avatars/…` 중계. 올린 사진은
+  로그인 때 IdP 사진으로 덮이지 않는다. 게임에는 절대 URL로 전달된다.
 - 로컬 개발은 `pnpm dev:oidc`(oidc-provider)가 Logto를 대신한다. 포털은 표준 OIDC만 쓰므로 동작이 같다.
 
 ## 5. 게임 등록과 호스팅
@@ -162,8 +167,9 @@ https://<id>.play.croffle-play.link/            ← 팀원이 호스팅 (어디�
 - 게임 iframe이 룸 서버에 **직접** 연결한다. 포털을 거쳐 postMessage로 중계하지 않는다.
 - SDK가 숨기는 것: 30초 ping, 지수 백오프 재연결 + 같은 방 재입장, `reconnecting` 이벤트. 인증은 연결 직후
   **첫 메시지**로 토큰 전송(쿼리스트링 금지), 서버는 `Origin`을 게임 origin 템플릿과 대조.
-- 권위 서버가 필요한 게임은 **자체 서버**를 둔다. v0.11에서 플랫폼 승인 컨테이너 대신 `game.json`에 서버를
-  선언하는 방식으로 바뀐다(토큰·JWKS 검증은 그대로). 현재 절차는 [game-servers.md](./game-servers.md).
+- 권위 서버가 필요한 게임은 **자체 서버**를 둔다. 팀이 호스팅하고 `game.json`의 `server: { url, protocol }`로
+  알린다. 플랫폼은 서버를 실행·승인·연결하지 않고 게임 토큰(JWKS)과 검증 점수용 서버 키만 준다. 절차는
+  [game-servers.md](./game-servers.md).
 - 구현 세부: 방 키는 `<게임>:<방>`, 방장은 가장 오래 있은 멤버, 프레임 16KB, 연결당 초당 30개, 인증 5초, 상태는
   메모리(단일 인스턴스). 토큰 `sub`는 공개 계정 id, `nickname` 클레임 포함 → 룸 서버는 DB 없이 동작. 사용법은
   [multiplayer.md](./multiplayer.md).

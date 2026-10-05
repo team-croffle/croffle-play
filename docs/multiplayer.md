@@ -54,4 +54,5 @@ pnpm dev:oidc & pnpm dev:games & pnpm dev:api & pnpm dev:rooms & pnpm dev:shell
 # 브라우저 두 개(또는 시크릿 창)로 각각 로그인 → http://localhost:3000/game/duo/play
 ```
 
-자체 서버가 필요한 게임(권위 서버)은 Tier 2 승인 대상이다.
+자체 서버가 필요한 게임(권위 서버, 방이 끝나도 남는 상태)은 팀이 서버를 호스팅하고 `game.json`에 선언한다:
+[game-servers.md](./game-servers.md). 혼자 하는 진행은 SDK 저장, 순위는 점수·리더보드로 충분하다.
