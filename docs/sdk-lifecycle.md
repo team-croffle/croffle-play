@@ -3,6 +3,8 @@
 게임은 빌드할 때의 `@croffledev/play-sdk` 메이저에 고정된다. 플랫폼은 메이저마다 호스트 어댑터를
 유지하고, 오래된 메이저는 정해진 일정에 따라 은퇴시킨다. 설계 배경은 [ARCHITECTURE.md](./ARCHITECTURE.md).
 
+처음부터 끝까지의 흐름은 [게임 개발자 가이드](./guide/developer.md)에 있다.
+
 ## 상태
 
 `current → lts → old → deprecated` 순서로만 움직인다.
