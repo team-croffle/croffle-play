@@ -70,6 +70,13 @@ describe('host adapters from storage', () => {
     expect(storage.objects.has('adapters/v1/0.10.1/index.js')).toBe(false);
   });
 
+  it('answers errors as uncached JSON', async () => {
+    const res = await get('/v1/adapters/v1/9.9.9/index.js');
+    expect(res.statusCode).toBe(404);
+    expect(res.headers['content-type']).toContain('application/json');
+    expect(res.headers['cache-control']).toBeUndefined();
+  });
+
   it('404s unknown bundles and malformed paths', async () => {
     for (const url of [
       '/v1/adapters/v1/9.9.9/index.js',
