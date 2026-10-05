@@ -1,17 +1,17 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { deployKeys } from '../src/db/schema.js';
-import { DeployKeysService } from '../src/deploy-keys/deploy-keys.service.js';
+import { serverKeys } from '../src/db/schema.js';
+import { ServerKeysService } from '../src/server-keys/server-keys.service.js';
 import { createTestApp, type TestApp } from './support/test-app.js';
 
-describe('admin deploy keys', () => {
+describe('admin server keys', () => {
   let t: TestApp;
-  let keys: DeployKeysService;
+  let keys: ServerKeysService;
 
   beforeAll(async () => {
     t = await createTestApp({ seed: true });
-    keys = t.app.get(DeployKeysService);
+    keys = t.app.get(ServerKeysService);
   });
 
   afterAll(async () => {
@@ -25,22 +25,22 @@ describe('admin deploy keys', () => {
   ) => t.app.inject({ method, url, headers, ...(method === 'POST' ? { payload: {} } : {}) });
 
   it('refuses requests without an admin access token', async () => {
-    expect((await call('GET', '/v1/admin/games/sample/deploy-keys', {} as never)).statusCode).toBe(
+    expect((await call('GET', '/v1/admin/games/sample/server-keys', {} as never)).statusCode).toBe(
       401,
     );
     const wrong = { authorization: 'Bearer nope' };
-    expect((await call('GET', '/v1/admin/games/sample/deploy-keys', wrong)).statusCode).toBe(401);
+    expect((await call('GET', '/v1/admin/games/sample/server-keys', wrong)).statusCode).toBe(401);
   });
 
   it('issues a key once and stores only its hash', async () => {
-    const res = await call('POST', '/v1/admin/games/sample/deploy-keys');
+    const res = await call('POST', '/v1/admin/games/sample/server-keys');
     expect(res.statusCode).toBe(201);
     const { key, id, prefix } = res.json<{ key: string; id: string; prefix: string }>();
-    expect(key).toMatch(/^cpk_sample_[\w-]{43}$/);
+    expect(key).toMatch(/^csk_sample_[\w-]{43}$/);
     expect(key.startsWith(prefix)).toBe(true);
-    const [row] = await t.db.select().from(deployKeys).where(eq(deployKeys.id, id));
+    const [row] = await t.db.select().from(serverKeys).where(eq(serverKeys.id, id));
     expect(row?.keyHash).not.toContain(key);
-    const list = (await call('GET', '/v1/admin/games/sample/deploy-keys')).json<{
+    const list = (await call('GET', '/v1/admin/games/sample/server-keys')).json<{
       items: object[];
     }>();
     expect(list.items).toHaveLength(1);
@@ -48,7 +48,7 @@ describe('admin deploy keys', () => {
   });
 
   it('verifies active keys and rejects revoked or expired ones', async () => {
-    const a = (await call('POST', '/v1/admin/games/block-drop/deploy-keys')).json<{
+    const a = (await call('POST', '/v1/admin/games/block-drop/server-keys')).json<{
       key: string;
       id: string;
     }>();
@@ -56,24 +56,24 @@ describe('admin deploy keys', () => {
     expect(await keys.verify(`${a.key}x`)).toBeNull();
     expect(await keys.verify('not-a-key')).toBeNull();
 
-    const del = await call('DELETE', `/v1/admin/games/block-drop/deploy-keys/${a.id}`);
+    const del = await call('DELETE', `/v1/admin/games/block-drop/server-keys/${a.id}`);
     expect(del.statusCode).toBe(204);
     expect(await keys.verify(a.key)).toBeNull();
 
     const b = await keys.issue('block-drop');
     await t.db
-      .update(deployKeys)
+      .update(serverKeys)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(deployKeys.id, b.id));
+      .where(eq(serverKeys.id, b.id));
     expect(await keys.verify(b.key)).toBeNull();
   });
 
   it('rotates: a new key now, the old one for 24 more hours', async () => {
-    const old = await keys.issue('sample', 'ci', 'deploy');
-    const res = await call('POST', `/v1/admin/games/sample/deploy-keys/${old.id}/rotate`);
+    const old = await keys.issue('sample', 'ci');
+    const res = await call('POST', `/v1/admin/games/sample/server-keys/${old.id}/rotate`);
     expect(res.statusCode).toBe(201);
-    const fresh = res.json<{ key: string; label: string; kind: string }>();
-    expect(fresh).toMatchObject({ label: 'ci', kind: 'deploy' });
+    const fresh = res.json<{ key: string; label: string }>();
+    expect(fresh).toMatchObject({ label: 'ci' });
     expect(await keys.verify(fresh.key)).not.toBeNull();
     const stillValid = await keys.verify(old.key);
     expect(stillValid?.expiresAt?.getTime()).toBeGreaterThan(Date.now() + 23 * 3_600_000);
@@ -81,8 +81,8 @@ describe('admin deploy keys', () => {
   });
 
   it('404s for unknown games and keys', async () => {
-    expect((await call('POST', '/v1/admin/games/nope/deploy-keys')).statusCode).toBe(404);
-    const missing = '/v1/admin/games/sample/deploy-keys/00000000-0000-4000-8000-000000000000';
+    expect((await call('POST', '/v1/admin/games/nope/server-keys')).statusCode).toBe(404);
+    const missing = '/v1/admin/games/sample/server-keys/00000000-0000-4000-8000-000000000000';
     expect((await call('DELETE', missing)).statusCode).toBe(404);
   });
 });

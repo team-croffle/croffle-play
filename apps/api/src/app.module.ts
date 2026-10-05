@@ -7,17 +7,16 @@ import { ConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
 import { DbModule } from './db/db.module.js';
-import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
 import { GameServersModule } from './game-servers/game-servers.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
 import { MembersModule } from './members/members.module.js';
 import type { Notifier } from './notify/notifier.js';
 import { NotifyModule } from './notify/notify.module.js';
-import { PublishModule } from './publish/publish.module.js';
 import { SavesModule } from './saves/saves.module.js';
 import { ScoresModule } from './scores/scores.module.js';
 import { SdkModule } from './sdk/sdk.module.js';
+import { ServerKeysModule } from './server-keys/server-keys.module.js';
 import type { Storage } from './storage/storage.js';
 import { StorageModule } from './storage/storage.module.js';
 import { TokensModule } from './tokens/tokens.module.js';
@@ -49,8 +48,7 @@ export class AppModule {
         StorageModule.forRoot(options.storage),
         UsersModule.forRoot(options.jwks),
         GamesModule,
-        DeployKeysModule,
-        PublishModule,
+        ServerKeysModule,
         AdminModule,
         SdkModule,
         ScoresModule,

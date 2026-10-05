@@ -86,3 +86,31 @@ describe('migration 0010: SDK lifecycle current → lts → old → deprecated',
     expect(rows[0]?.status).toBe('current');
   });
 });
+
+describe('migration 0011: deploy keys removed, server keys kept', () => {
+  const db = new PGlite();
+
+  beforeAll(async () => {
+    await applyUntil(db, '0011');
+    await db.exec(`
+      INSERT INTO games (id, name) VALUES ('g', 'G');
+      INSERT INTO deploy_keys (game_id, kind, key_hash, prefix) VALUES
+        ('g', 'deploy', 'h1', 'cpk_g_aaaa'),
+        ('g', 'server', 'h2', 'csk_g_bbbb');
+    `);
+    await runFile(db, '0011_server_keys.sql');
+  });
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it('keeps only server keys, in server_keys', async () => {
+    const { rows } = await db.query<{ prefix: string }>('SELECT prefix FROM server_keys');
+    expect(rows).toEqual([{ prefix: 'csk_g_bbbb' }]);
+    const old = await db.query<{ n: number }>(
+      "SELECT count(*)::int AS n FROM pg_type WHERE typname = 'key_kind'",
+    );
+    expect(old.rows[0]?.n).toBe(0);
+  });
+});

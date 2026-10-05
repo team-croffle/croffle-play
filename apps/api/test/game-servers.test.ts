@@ -1,9 +1,7 @@
 import { parseManifest } from '@croffledev/play-protocol';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { DeployKeysService } from '../src/deploy-keys/deploy-keys.service.js';
 import { GameServersService } from '../src/game-servers/game-servers.service.js';
-import { FakeStorage, sha256b64 } from './support/fake-storage.js';
 import { createTestApp, type TestApp } from './support/test-app.js';
 import { bearerFor } from './support/test-issuer.js';
 
@@ -23,12 +21,10 @@ function manifest(version: string, server: { protocol: string; image: string }) 
 
 describe('game servers', () => {
   let t: TestApp;
-  let storage: FakeStorage;
   let servers: GameServersService;
 
   beforeAll(async () => {
-    storage = new FakeStorage();
-    t = await createTestApp({ seed: true, storage });
+    t = await createTestApp({ seed: true });
     servers = t.app.get(GameServersService);
   });
 
@@ -40,33 +36,9 @@ describe('game servers', () => {
     t.app.inject({ method, url, headers: t.adminAuth });
   const publicInfo = () => t.app.inject({ method: 'GET', url: '/v1/games/block-drop/server' });
 
-  it('requests approval when a needsServer version finishes uploading', async () => {
-    const key = (await t.app.get(DeployKeysService).issue('block-drop')).key;
-    const m = manifest('2.0.0', { protocol: '1.0.0', image: IMAGE });
-    const files = { 'index.html': 'x', 't.png': 'p', 'game.json': JSON.stringify(m) };
-    const declared = await t.app.inject({
-      method: 'POST',
-      url: '/v1/games/block-drop/versions',
-      headers: { authorization: `Bearer ${key}` },
-      payload: {
-        manifest: m,
-        files: Object.entries(files).map(([path, body]) => ({
-          path,
-          size: body.length,
-          sha256: sha256b64(body),
-        })),
-      },
-    });
-    expect(declared.statusCode).toBe(201);
-    for (const [path, body] of Object.entries(files)) {
-      storage.upload(`block-drop/2.0.0/${path}`, body);
-    }
-    const done = await t.app.inject({
-      method: 'POST',
-      url: '/v1/games/block-drop/versions/2.0.0/complete',
-      headers: { authorization: `Bearer ${key}` },
-    });
-    expect(done.statusCode).toBe(200);
+  it('records a request for a needsServer manifest', async () => {
+    const m = parseManifest(manifest('2.0.0', { protocol: '1.0.0', image: IMAGE }));
+    await servers.onVersionUploaded('block-drop', m.ok ? m.manifest : (undefined as never));
     expect((await admin('GET', '/v1/admin/game-servers')).json()).toMatchObject({
       items: [{ gameId: 'block-drop', image: IMAGE, status: 'requested' }],
     });

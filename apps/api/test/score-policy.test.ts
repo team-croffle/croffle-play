@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { DeployKeysService } from '../src/deploy-keys/deploy-keys.service.js';
+import { ServerKeysService } from '../src/server-keys/server-keys.service.js';
 import { UsersService } from '../src/users/users.service.js';
 import { createTestApp, type TestApp } from './support/test-app.js';
 import { bearerFor } from './support/test-issuer.js';
@@ -8,14 +8,11 @@ import { bearerFor } from './support/test-issuer.js';
 describe('score trust policy', () => {
   let t: TestApp;
   let serverKey: string;
-  let deployKey: string;
   let aliceId: string;
 
   beforeAll(async () => {
     t = await createTestApp({ seed: true });
-    const keys = t.app.get(DeployKeysService);
-    serverKey = (await keys.issue('block-drop', 'server', 'server')).key;
-    deployKey = (await keys.issue('block-drop')).key;
+    serverKey = (await t.app.get(ServerKeysService).issue('block-drop', 'server')).key;
     aliceId = (await t.app.get(UsersService).ensure('idp|alice')).id;
   });
 
@@ -43,9 +40,9 @@ describe('score trust policy', () => {
       items: { score: number; verified: boolean }[];
     }>();
 
-  it('issues server keys with their own prefix; deploy keys cannot submit scores', async () => {
+  it('issues server keys with their own prefix; nothing else submits verified scores', async () => {
     expect(serverKey).toMatch(/^csk_block-drop_/);
-    expect((await fromServer(1, deployKey)).statusCode).toBe(401);
+    expect((await fromServer(1, 'cpk_block-drop_old-deploy-key')).statusCode).toBe(401);
     expect((await fromServer(1, 'csk_nope')).statusCode).toBe(401);
     const publish = await t.app.inject({
       method: 'POST',
@@ -53,7 +50,7 @@ describe('score trust policy', () => {
       headers: { authorization: `Bearer ${serverKey}` },
       payload: {},
     });
-    expect(publish.statusCode).toBe(401);
+    expect(publish.statusCode).toBe(404);
   });
 
   it('client policy: browser scores count and are marked unverified', async () => {

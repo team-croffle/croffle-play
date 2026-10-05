@@ -2,8 +2,8 @@
   import type {
     AdminGame,
     AdminVersion,
-    DeployKeyView,
     GameServerView,
+    ServerKeyView,
   } from '~~/shared/types/admin';
 
   definePageMeta({ middleware: 'admin' });
@@ -14,8 +14,8 @@
   const { data: game, refresh: refreshGame } = await useFetch<
     AdminGame & { versions: AdminVersion[] }
   >(`/api/admin/games/${id}`);
-  const { data: keys, refresh: refreshKeys } = await useFetch<{ items: DeployKeyView[] }>(
-    `/api/admin/games/${id}/deploy-keys`,
+  const { data: keys, refresh: refreshKeys } = await useFetch<{ items: ServerKeyView[] }>(
+    `/api/admin/games/${id}/server-keys`,
   );
   const { data: server, refresh: refreshServer } = await useFetch<GameServerView | null>(
     `/api/admin/games/${id}/server`,
@@ -31,7 +31,6 @@
     min: game.value?.scoreMin ?? null,
     max: game.value?.scoreMax ?? null,
   });
-  const keyKind = ref<'deploy' | 'server'>('deploy');
   const newKey = ref<string | null>(null);
   const keyLabel = ref('');
 
@@ -74,7 +73,7 @@
   }
 
   async function issueKey() {
-    const res = await call<{ key: string }>('POST', `games/${id}/deploy-keys`, {
+    const res = await call<{ key: string }>('POST', `games/${id}/server-keys`, {
       label: keyLabel.value,
     });
     newKey.value = res?.key ?? null;
@@ -83,13 +82,13 @@
   }
 
   async function rotateKey(keyId: string) {
-    const res = await call<{ key: string }>('POST', `games/${id}/deploy-keys/${keyId}/rotate`);
+    const res = await call<{ key: string }>('POST', `games/${id}/server-keys/${keyId}/rotate`);
     newKey.value = res?.key ?? null;
     await refreshKeys();
   }
 
   async function revokeKey(keyId: string) {
-    await call('DELETE', `games/${id}/deploy-keys/${keyId}`);
+    await call('DELETE', `games/${id}/server-keys/${keyId}`);
     await refreshKeys();
   }
 </script>
@@ -240,7 +239,7 @@
       <button class="button" type="submit" :disabled="busy">저장</button>
     </form>
 
-    <h2>배포 키</h2>
+    <h2>게임 서버 키</h2>
     <p v-if="newKey" class="notice">
       새 키 (지금만 표시됩니다): <code>{{ newKey }}</code>
     </p>
@@ -280,12 +279,8 @@
       </tbody>
     </table>
     <form class="row" @submit.prevent="issueKey">
-      <input v-model="keyLabel" class="input" placeholder="라벨 (예: github-actions)" />
-      <select v-model="keyKind" class="input">
-        <option value="deploy">배포 키 (cpk)</option>
-        <option value="server">게임 서버 키 (csk)</option>
-      </select>
-      <button class="button" type="submit" :disabled="busy">키 발급</button>
+      <input v-model="keyLabel" class="input" placeholder="라벨 (예: game-server)" />
+      <button class="button" type="submit" :disabled="busy">서버 키 발급</button>
     </form>
   </section>
 </template>

@@ -13,7 +13,7 @@ import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 
 /**
- * Rate limits keyed by who is acting — the player, the deploy/server key — not by IP: players
+ * Rate limits keyed by who is acting — the player, the server key — not by IP: players
  * reach the API through the shell server, so they all share its address. Put it after the guard
  * that authenticates the request.
  */
@@ -34,7 +34,7 @@ export class SubjectThrottlerGuard extends ThrottlerGuard {
 
   protected override async getTracker(req: Record<string, unknown>): Promise<string> {
     const user = req.user as { id?: string } | undefined;
-    const key = req.deployKey as { id?: string } | undefined;
+    const key = req.serverKey as { id?: string } | undefined;
     if (user?.id) {
       return `user:${user.id}`;
     }
@@ -46,12 +46,9 @@ export class SubjectThrottlerGuard extends ThrottlerGuard {
 }
 
 const minute = 60_000;
-const hour = 60 * minute;
 
 /** Per-route limits (requests per window, per subject). */
 export const Limit = {
-  publish: () => Throttle({ default: { limit: 10, ttl: hour } }),
-  complete: () => Throttle({ default: { limit: 30, ttl: hour } }),
   score: () => Throttle({ default: { limit: 30, ttl: minute } }),
   serverScore: () => Throttle({ default: { limit: 600, ttl: minute } }),
   token: () => Throttle({ default: { limit: 30, ttl: minute } }),
