@@ -100,8 +100,11 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 [docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). 운영: [docs/operations.md](./docs/operations.md),
 [docs/security.md](./docs/security.md).
 
-사람과 에이전트 공통 기여 규칙: [AGENTS.md](./AGENTS.md).
+## 기여
+
+[CONTRIBUTING.ko.md](./CONTRIBUTING.ko.md)(작업 흐름, 커밋 형식, 리뷰)와 [AGENTS.md](./AGENTS.md)(설계 불변식,
+컨벤션 — AI 에이전트도 읽음) 참고. 보안 문제: [SECURITY.md](./SECURITY.md).
 
 ## 라이선스
 
-MIT
+[MIT](./LICENSE) © Croffle Dev. (Team Croffle)
