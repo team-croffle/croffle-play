@@ -1,6 +1,6 @@
 {
   "name": "@croffledev/play-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Check Croffle Play games before and after deploying them",
   "license": "MIT",
   "repository": {

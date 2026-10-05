@@ -1,5 +1,13 @@
 # @croffledev/play-cli
 
+## 0.2.1
+
+### Patch Changes
+
+- fdf4b30: Examples use the portal at `game.croffle-play.link`.
+- Updated dependencies [3281ea6]
+  - @croffledev/play-protocol@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
