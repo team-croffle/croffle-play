@@ -14,6 +14,15 @@ export async function createApp(options: AppOptions = {}): Promise<NestFastifyAp
   // Everything is versioned under /v1 except probes and well-known documents.
   app.setGlobalPrefix('v1', { exclude: ['healthz', '.well-known/jwks.json'] });
   app.enableShutdownHooks();
+  // Avatar uploads arrive as raw image bytes (checked by their header, not this type).
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(
+      ['image/png', 'image/jpeg', 'image/webp'],
+      { parseAs: 'buffer', bodyLimit: 512 * 1024 },
+      (_req, body, done) => done(null, body),
+    );
   // A JSON API: nothing to render, frame, or sniff. No CORS — browsers reach it only through the
   // shell server (BFF), so cross-origin calls from pages are refused by default.
   app

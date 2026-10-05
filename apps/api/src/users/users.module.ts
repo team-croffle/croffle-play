@@ -5,6 +5,7 @@ import { JWKS, JwtVerifier, jwksFromEnv } from '../auth/jwt-verifier.js';
 import { UserGuard } from '../auth/user.guard.js';
 import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
+import { AvatarsController } from './avatars.controller.js';
 import { MeController } from './me.controller.js';
 import { UsersService } from './users.service.js';
 
@@ -15,7 +16,7 @@ export class UsersModule {
   static forRoot(jwks?: JWTVerifyGetKey): DynamicModule {
     return {
       module: UsersModule,
-      controllers: [MeController],
+      controllers: [MeController, AvatarsController],
       providers: [
         jwks
           ? { provide: JWKS, useValue: jwks }

@@ -1,6 +1,7 @@
 export * from './capabilities.js';
 export * from './game-origin.js';
 export * from './handshake.js';
+export * from './image-info.js';
 export * from './manifest.js';
 export * from './rooms.js';
 export * from './v1/envelope.js';

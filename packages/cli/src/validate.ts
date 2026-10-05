@@ -1,9 +1,8 @@
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { type GameManifest, parseManifest, THUMBNAIL } from '@croffledev/play-protocol';
+import { type GameManifest, imageInfo, parseManifest, THUMBNAIL } from '@croffledev/play-protocol';
 
-import { imageInfo } from './image-size.js';
 import { checkSdkStatus, type Findings } from './sdk-status.js';
 
 export interface ValidateOptions {

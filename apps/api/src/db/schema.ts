@@ -64,6 +64,8 @@ export const users = pgTable('users', {
   sub: text('sub').notNull().unique(),
   nickname: text('nickname').notNull(),
   avatar: text('avatar'),
+  /** The player uploaded their avatar: sign-in no longer replaces it with the IdP picture. */
+  avatarUploaded: boolean('avatar_uploaded').notNull().default(false),
   role: userRole('role').notNull().default('user'),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
   ...timestamps,

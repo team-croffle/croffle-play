@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { imageInfo } from '../src/image-size.js';
-import { pngHeader } from './fixture.js';
+import { imageInfo } from '../src/index.js';
+
+/** A PNG header (all imageInfo reads) for an image of the given size. */
+function pngHeader(width: number, height: number): Uint8Array {
+  const b = new Uint8Array(33);
+  const view = new DataView(b.buffer);
+  b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  view.setUint32(8, 13);
+  b.set(new TextEncoder().encode('IHDR'), 12);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return b;
+}
 
 function jpeg(width: number, height: number): Uint8Array {
   // SOI, an APP0 segment to skip, then SOF0 with height/width.
