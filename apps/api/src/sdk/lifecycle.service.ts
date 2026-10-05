@@ -12,9 +12,9 @@ import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
 import { sdkVersionEvents, sdkVersions } from '../db/schema.js';
 import {
-  ACTIVE_STATUSES,
   effectiveStatus,
-  MAX_ACTIVE_MAJORS,
+  MAX_PLAYABLE_MAJORS,
+  PLAYABLE_STATUSES,
   type SdkStatus,
 } from './lifecycle.js';
 
@@ -22,8 +22,8 @@ export interface SdkTransition {
   major: number;
   from: SdkStatus;
   to: SdkStatus;
+  oldAt: Date | null;
   deprecatedAt: Date | null;
-  eolAt: Date | null;
 }
 
 export type TransitionListener = (t: SdkTransition) => Promise<void>;
@@ -79,8 +79,8 @@ export class SdkLifecycleService implements OnApplicationBootstrap, OnApplicatio
         major: row.major,
         from: row.status,
         to,
+        oldAt: row.oldAt,
         deprecatedAt: row.deprecatedAt,
-        eolAt: row.eolAt,
       };
       await this.db.transaction(async (tx) => {
         await tx.update(sdkVersions).set({ status: to }).where(eq(sdkVersions.major, row.major));
@@ -91,10 +91,10 @@ export class SdkLifecycleService implements OnApplicationBootstrap, OnApplicatio
       this.logger.log(`SDK v${row.major}: ${row.status} → ${to}`);
       transitions.push(t);
     }
-    const active = rows.filter((r) => ACTIVE_STATUSES.includes(effectiveStatus(r, now)));
-    if (active.length > MAX_ACTIVE_MAJORS) {
+    const playable = rows.filter((r) => PLAYABLE_STATUSES.includes(effectiveStatus(r, now)));
+    if (playable.length > MAX_PLAYABLE_MAJORS) {
       this.logger.warn(
-        `${active.length} SDK majors are active; policy allows ${MAX_ACTIVE_MAJORS}`,
+        `${playable.length} SDK majors are playable; policy allows ${MAX_PLAYABLE_MAJORS}`,
       );
     }
     for (const t of transitions) {

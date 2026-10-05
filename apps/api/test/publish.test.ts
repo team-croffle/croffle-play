@@ -190,21 +190,17 @@ describe('publish', () => {
     await t.db.update(sdkVersions).set({ status: 'current' }).where(eq(sdkVersions.major, 1));
   });
 
-  it('warns about majors in maintenance but accepts them', async () => {
+  it('accepts lts majors without warnings', async () => {
     await t.db
       .update(sdkVersions)
-      .set({ status: 'maintenance', eolAt: new Date('2099-01-01T00:00:00Z') })
+      .set({ status: 'lts', deprecatedAt: null })
       .where(eq(sdkVersions.major, 1));
     const res = await declare('4.1.0');
     expect(res.statusCode).toBe(201);
-    expect(res.json<{ warnings: string[] }>().warnings).toEqual([
-      expect.stringMatching(
-        /^SDK v1 is in maintenance \(end of life 2099-01-01\); plan an upgrade/,
-      ),
-    ]);
+    expect(res.json<{ warnings: string[] }>().warnings).toEqual([]);
     await t.db
       .update(sdkVersions)
-      .set({ status: 'current', eolAt: null })
+      .set({ status: 'current', deprecatedAt: null })
       .where(eq(sdkVersions.major, 1));
   });
 });

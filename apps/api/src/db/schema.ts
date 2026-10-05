@@ -192,14 +192,11 @@ export const deployKeys = pgTable('deploy_keys', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
-/** SDK major lifecycle (docs/ARCHITECTURE.md §3). Data, not code: policy changes are row edits. */
-export const sdkStatus = pgEnum('sdk_status', [
-  'current',
-  'lts',
-  'maintenance',
-  'deprecated',
-  'eol',
-]);
+/**
+ * SDK major lifecycle (docs/sdk-lifecycle.md). Data, not code: policy changes are row edits.
+ * `old`: no new games or updates on it; `deprecated`: games on it no longer run.
+ */
+export const sdkStatus = pgEnum('sdk_status', ['current', 'lts', 'old', 'deprecated']);
 
 export const sdkVersions = pgTable('sdk_versions', {
   major: integer('major').primaryKey(),
@@ -208,8 +205,10 @@ export const sdkVersions = pgTable('sdk_versions', {
   adapterUrl: text('adapter_url'),
   /** Subresource integrity of the adapter bundle (`sha384-…`). */
   sri: text('sri'),
+  /** From this time the major is `old` (unless already deprecated). */
+  oldAt: timestamp('old_at', { withTimezone: true }),
+  /** From this time the major is `deprecated`: games on it stop running. */
   deprecatedAt: timestamp('deprecated_at', { withTimezone: true }),
-  eolAt: timestamp('eol_at', { withTimezone: true }),
   ...timestamps,
 });
 

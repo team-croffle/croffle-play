@@ -1,3 +1,5 @@
+import type { SdkStatus } from './play';
+
 /** Catalog entry as served by the platform API (`GET /v1/games`). */
 export interface GameSummary {
   id: string;
@@ -7,8 +9,8 @@ export interface GameSummary {
   serverProtocol: string | null;
   sdk: {
     major: number;
-    status: 'current' | 'lts' | 'maintenance' | 'deprecated' | 'eol';
+    status: SdkStatus;
+    oldAt: string | null;
     deprecatedAt: string | null;
-    eolAt: string | null;
   } | null;
 }

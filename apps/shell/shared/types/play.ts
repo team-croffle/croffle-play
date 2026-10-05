@@ -1,11 +1,14 @@
+/** SDK major lifecycle (docs/sdk-lifecycle.md). */
+export type SdkStatus = 'current' | 'lts' | 'old' | 'deprecated';
+
 /** `GET /v1/sdk/:major`. */
 export interface SdkInfo {
   major: number;
-  status: 'current' | 'lts' | 'maintenance' | 'deprecated' | 'eol';
+  status: SdkStatus;
   adapterUrl: string | null;
   sri: string | null;
+  oldAt: string | null;
   deprecatedAt: string | null;
-  eolAt: string | null;
 }
 
 /** `GET /v1/games/:id/play`. */

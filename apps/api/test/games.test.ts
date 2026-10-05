@@ -34,7 +34,7 @@ describe('/v1/games', () => {
       description: 'Falling blocks.',
       version: '1.2.0',
       serverProtocol: null,
-      sdk: { major: 1, status: 'current', deprecatedAt: null, eolAt: null },
+      sdk: { major: 1, status: 'current', oldAt: null, deprecatedAt: null },
     });
   });
 

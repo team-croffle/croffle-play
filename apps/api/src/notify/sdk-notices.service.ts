@@ -9,7 +9,7 @@ import { SdkLifecycleService, type SdkTransition } from '../sdk/lifecycle.servic
 import { NOTIFIER, type Notifier } from './notifier.js';
 
 /**
- * When a major becomes deprecated or end-of-life, tells every game still on it — once per game,
+ * When a major becomes old or deprecated, tells every game still on it — once per game,
  * major, and status — through the configured notifier.
  */
 @Injectable()
@@ -30,7 +30,7 @@ export class SdkNoticesService implements OnModuleInit {
   }
 
   async onTransition(t: SdkTransition): Promise<number> {
-    if (t.to !== 'deprecated' && t.to !== 'eol') {
+    if (t.to !== 'old' && t.to !== 'deprecated') {
       return 0;
     }
     const affected = await this.gamesOn(t.major);
@@ -49,7 +49,7 @@ export class SdkNoticesService implements OnModuleInit {
           game,
           major: t.major,
           status: t.to,
-          eolAt: t.eolAt,
+          deprecatedAt: t.deprecatedAt,
           guideUrl: this.env.SDK_MIGRATION_GUIDE_URL,
         });
         sent++;

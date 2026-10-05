@@ -14,7 +14,7 @@ export interface MyGame {
   stableVersion: string | null;
   previewVersion: string | null;
   latest: { version: string; status: string; sdkMajor: number; uploadedAt: string | null } | null;
-  sdk: { major: number; status: SdkStatus; eolAt: string | null } | null;
+  sdk: { major: number; status: SdkStatus; deprecatedAt: string | null } | null;
   /** Things the team should act on. */
   warnings: string[];
 }
@@ -86,7 +86,7 @@ export class MembersService {
         ? {
             major: latest.sdk.major,
             status: effectiveStatus(latest.sdk),
-            eolAt: latest.sdk.eolAt?.toISOString() ?? null,
+            deprecatedAt: latest.sdk.deprecatedAt?.toISOString() ?? null,
           }
         : null;
       out.push({
@@ -117,10 +117,14 @@ function warningsFor(
   server: string | null,
 ): string[] {
   const w: string[] = [];
-  const eol = sdk?.eolAt ? ` (end of life ${sdk.eolAt.slice(0, 10)})` : '';
-  if (sdk && ['maintenance', 'deprecated', 'eol'].includes(sdk.status)) {
+  if (sdk?.status === 'deprecated') {
     w.push(
-      `SDK v${sdk.major} is ${sdk.status}${eol}: upgrade with \`npx @croffledev/play-sdk migrate\``,
+      `SDK v${sdk.major} is deprecated: the game no longer runs. Upgrade with \`npx @croffledev/play-sdk migrate\``,
+    );
+  } else if (sdk?.status === 'old') {
+    const until = sdk.deprecatedAt ? ` (deprecated from ${sdk.deprecatedAt.slice(0, 10)})` : '';
+    w.push(
+      `SDK v${sdk.major} is old${until}: updates are refused until you upgrade with \`npx @croffledev/play-sdk migrate\``,
     );
   }
   if (game.previewVersion && game.previewVersion !== game.stableVersion) {

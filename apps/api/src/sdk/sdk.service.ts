@@ -12,8 +12,8 @@ export interface SdkInfo {
   status: SdkStatus;
   adapterUrl: string | null;
   sri: string | null;
+  oldAt: string | null;
   deprecatedAt: string | null;
-  eolAt: string | null;
 }
 
 @Injectable()
@@ -45,7 +45,7 @@ export function toInfo(row: typeof sdkVersions.$inferSelect): SdkInfo {
     status: effectiveStatus(row),
     adapterUrl: row.adapterUrl,
     sri: row.sri,
+    oldAt: row.oldAt?.toISOString() ?? null,
     deprecatedAt: row.deprecatedAt?.toISOString() ?? null,
-    eolAt: row.eolAt?.toISOString() ?? null,
   };
 }

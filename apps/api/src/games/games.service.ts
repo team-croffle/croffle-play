@@ -17,8 +17,8 @@ export interface GameSummary {
   sdk: {
     major: number;
     status: SdkStatus;
+    oldAt: string | null;
     deprecatedAt: string | null;
-    eolAt: string | null;
   } | null;
 }
 
@@ -69,8 +69,8 @@ function toSummary(row: {
       ? {
           major: row.sdk.major,
           status: effectiveStatus(row.sdk),
+          oldAt: row.sdk.oldAt?.toISOString() ?? null,
           deprecatedAt: row.sdk.deprecatedAt?.toISOString() ?? null,
-          eolAt: row.sdk.eolAt?.toISOString() ?? null,
         }
       : null,
   };
