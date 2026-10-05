@@ -1,3 +1,4 @@
+/** Pure header parsing, shared by play-cli (thumbnails) and the API (avatars). */
 /** Format and pixel size from an image's header (PNG, JPEG, WebP), or null when unrecognised. */
 export function imageInfo(
   b: Uint8Array,
