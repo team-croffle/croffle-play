@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -83,8 +84,8 @@ describe('a generated game', () => {
       sdkVersion: '0.0.0',
       cliVersion: '0.0.0',
     });
-    const tsc = fileURLToPath(new URL('../node_modules/.bin/tsc', import.meta.url));
-    execFileSync(tsc, ['--noEmit', '-p', g.dir], { stdio: 'pipe' });
+    const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
+    execFileSync(process.execPath, [tsc, '--noEmit', '-p', g.dir], { stdio: 'pipe' });
     await build({
       root: g.dir,
       configFile: join(g.dir, 'vite.config.ts'),
@@ -93,7 +94,7 @@ describe('a generated game', () => {
         conditions: ['@croffledev/source', 'module', 'browser', 'development|production'],
       },
     });
-    execFileSync('node', ['scripts/write-manifest.mjs'], {
+    execFileSync(process.execPath, ['scripts/write-manifest.mjs'], {
       cwd: g.dir,
       env: { ...process.env, GAME_VERSION: 'v1.2.3' },
     });
