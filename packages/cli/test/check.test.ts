@@ -27,7 +27,7 @@ afterAll(async () => {
   await new Promise((resolve) => server.close(resolve));
 });
 
-const portal = 'https://www.croffle-play.link';
+const portal = 'https://game.croffle-play.link';
 // Every request goes to the local server; the URL keeps the game host name.
 const local: typeof fetch = (input, init) => {
   const url = new URL(String(input instanceof Request ? input.url : input));

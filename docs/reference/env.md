@@ -24,13 +24,13 @@ compose·프록시·DNS 같은 배포 설정은 이 저장소 밖의 일이라 �
 
 ### 데이터베이스
 
-| 이름                        | 필수 | 기본값  | 예                                                | 설명                                                   |
-| --------------------------- | ---- | ------- | ------------------------------------------------- | ------------------------------------------------------ |
-| `DATABASE_URL`              | 예   |         | `postgres://play:…@db:5432/croffle_play`          | PostgreSQL 주소. `pglite://memory`는 로컬 개발 전용    |
-| `DB_POOL_SIZE`              |      | `10`    |                                                   | 연결 풀 크기                                           |
-| `DB_MIGRATE`                |      | `true`  |                                                   | 시작할 때 마이그레이션 적용(`apps/api/drizzle`)        |
-| `DB_SEED`                   |      | `false` |                                                   | 시작할 때 더미 카탈로그 넣기. 개발 전용                |
-| `SEED_ADAPTER_MANIFEST_URL` |      |         | `http://localhost:4100/adapters/v1/manifest.json` | `DB_SEED`와 함께: 이 어댑터를 SDK v1로 등록. 개발 전용 |
+| 이름                        | 필수 | 기본값  | 예                                                    | 설명                                                   |
+| --------------------------- | ---- | ------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `DATABASE_URL`              | 예   |         | `postgres://play:…@db:5432/croffle_play`              | PostgreSQL 주소. `pglite://memory`는 로컬 개발 전용    |
+| `DB_POOL_SIZE`              |      | `10`    |                                                       | 연결 풀 크기                                           |
+| `DB_MIGRATE`                |      | `true`  |                                                       | 시작할 때 마이그레이션 적용(`apps/api/drizzle`)        |
+| `DB_SEED`                   |      | `false` |                                                       | 시작할 때 더미 카탈로그 넣기. 개발 전용                |
+| `SEED_ADAPTER_MANIFEST_URL` |      |         | `http://localhost:4100/adapters/v1/dev/manifest.json` | `DB_SEED`와 함께: 이 어댑터를 SDK v1로 등록. 개발 전용 |
 
 ### 게임
 

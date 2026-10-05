@@ -5,7 +5,7 @@ portal shows them in an iframe and reads their `game.json`.
 
 ```bash
 npx @croffledev/play-cli validate dist --api https://api.croffle-play.link
-npx @croffledev/play-cli check https://<id>.play.croffle-play.link/ --portal https://www.croffle-play.link
+npx @croffledev/play-cli check https://<id>.play.croffle-play.link/ --portal https://game.croffle-play.link
 ```
 
 `validate` checks the build: `game.json` against the schema, that its entry and thumbnail exist (size
