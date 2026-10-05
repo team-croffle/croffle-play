@@ -1,0 +1,9 @@
+{
+  "id": "my-game",
+  "name": "My Game",
+  "entry": "index.html",
+  "thumbnail": "thumb.png",
+  "sdk": "^1.0.0",
+  "needsServer": false,
+  "orientation": "landscape"
+}

@@ -9,7 +9,7 @@
    (`<id>.croffle-play.link`).
 2. 관리자가 게임 페이지에서 **배포 키**를 발급한다. 키는 발급 직후 한 번만 보이고, 플랫폼에는 해시만
    남는다. 게임마다 따로 발급하므로 한 저장소의 키가 새도 다른 게임은 건드릴 수 없다.
-3. 게임 저장소(게임 템플릿에서 생성)에 시크릿 `CROFFLE_PLAY_DEPLOY_KEY`, 변수 `CROFFLE_PLAY_API`를 설정한다.
+3. 게임 저장소(`npm create @croffledev/play-game`으로 생성)에 시크릿 `CROFFLE_PLAY_DEPLOY_KEY`, 변수 `CROFFLE_PLAY_API`를 설정한다.
 
 ## 매 버전: 태그 push
 

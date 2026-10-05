@@ -26,9 +26,9 @@ not require a shell deploy.
 ### Purpose of this repository
 
 Platform monorepo: shell, API, rooms server, host adapters, and the published
-packages (`protocol`, `sdk`, `cli`). Games live in **their own repositories**
-(created from the `play-game-template` repository, to be made separately) and
-are never checked in here.
+packages (`protocol`, `sdk`, `cli`, `create-game`). Games live in **their own
+repositories** (created with `npm create @croffledev/play-game`, the template in
+`packages/create-game/template`) and are never checked in here.
 
 ### Current state
 
@@ -41,7 +41,8 @@ are never checked in here.
   automation (date-driven status, hourly sync, GitHub notices), developer dashboard (`/dev`),
   per-subject rate limits, score trust policy (server keys), backups and health alerts
   (`infra/ops`). Security model: `docs/security.md`.
-- The game template lives in a separate repository (`play-game-template`).
+- The game template ships as `packages/create-game` (`npm create @croffledev/play-game`); its
+  tests build and validate a generated game against the workspace SDK.
 - Game domain edge: `infra/nginx/templates/game-domain.conf.template` (nginx in front of
   storage; rules in `infra/README.md`). Shell CSP origins come from `NUXT_CSP_*`.
 - `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) and adapter bundles on
@@ -57,16 +58,17 @@ are never checked in here.
 
 ### Planned layout
 
-| Path                | Package                     | Ships as                     |
-| ------------------- | --------------------------- | ---------------------------- |
-| `apps/shell`        | `@croffledev/play-shell`    | Docker image (GHCR), private |
-| `apps/api`          | `@croffledev/play-api`      | Docker image (GHCR), private |
-| `apps/rooms`        | `@croffledev/play-rooms`    | Docker image (GHCR), private |
-| `apps/adapters`     | `@croffledev/play-adapters` | Static bundles → storage     |
-| `packages/protocol` | `@croffledev/play-protocol` | npm                          |
-| `packages/sdk`      | `@croffledev/play-sdk`      | npm                          |
-| `packages/cli`      | `@croffledev/play-cli`      | npm                          |
-| `infra/`            | —                           | Compose, nginx, env examples |
+| Path                   | Package                        | Ships as                     |
+| ---------------------- | ------------------------------ | ---------------------------- |
+| `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private |
+| `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private |
+| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private |
+| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage     |
+| `packages/protocol`    | `@croffledev/play-protocol`    | npm                          |
+| `packages/sdk`         | `@croffledev/play-sdk`         | npm                          |
+| `packages/cli`         | `@croffledev/play-cli`         | npm                          |
+| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)           |
+| `infra/`               | —                              | Compose, nginx, env examples |
 
 `apps/*` are `"private": true`. Workspace packages export a
 `"@croffledev/source"` condition pointing at `src/`; `tsconfig.base.json`

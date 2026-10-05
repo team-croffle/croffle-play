@@ -6,7 +6,7 @@
 
 - 게임 ↔ 플랫폼 프로토콜(`@croffledev/play-protocol`)과 SDK v1(`@croffledev/play-sdk`)
 - 플랫폼 없이 게임을 단독 실행하는 mock 호스트
-- 게임 템플릿 저장소 (`game.json`, 빌드 규칙, 배포 워크플로)
+- 게임 템플릿 (`npm create @croffledev/play-game`: `game.json`, 빌드 규칙, 배포 워크플로)
 
 ## Phase 2 — 플랫폼 최소 기능
 

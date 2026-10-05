@@ -1,7 +1,7 @@
 # @croffledev/play-cli
 
 Validates and publishes Croffle Play game bundles. Normally run by the game repository's publish
-workflow (from the game template), not by hand.
+workflow (created by `npm create @croffledev/play-game`), not by hand.
 
 ```bash
 npx @croffledev/play-cli validate dist --api https://api.play.croffledev.kr

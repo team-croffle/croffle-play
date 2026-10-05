@@ -243,16 +243,19 @@ services:
 ```
 croffle-play/   (이 저장소, 플랫폼 담당 관리)
 ├─ apps/shell  apps/api  apps/rooms  apps/adapters
-├─ packages/protocol  packages/sdk  packages/cli
+├─ packages/protocol  packages/sdk  packages/cli  packages/create-game (게임 템플릿)
 └─ infra/
 
-play-game-template/   GitHub 템플릿 저장소 (별도)
-<game>/               게임마다 독립 저장소 (템플릿에서 생성)
+<game>/               게임마다 독립 저장소 (`npm create @croffledev/play-game`으로 생성)
 ```
 
 게임을 모노레포에 넣지 않는 이유: 엔진·빌드 자유, 게임 단위 권한, 플랫폼 CI가 게임 수에 비례하지
 않음. 템플릿에는 `game.json`, `@croffledev/play-sdk` + 개발용 mock 호스트(플랫폼 없이 단독 실행),
 배포 워크플로(태그 push → publish)가 들어간다.
+
+게임 템플릿은 별도 GitHub 템플릿 저장소 대신 `packages/create-game`에 둔다(0.9.0에서 변경). SDK·CLI와 같은
+릴리스로 버전이 맞춰지고, 이 저장소 CI가 템플릿에서 만든 게임을 워크스페이스 SDK로 실제 빌드·검증한다.
+생성된 게임은 여전히 게임마다 독립 저장소다.
 
 ## 9. 진행 순서
 

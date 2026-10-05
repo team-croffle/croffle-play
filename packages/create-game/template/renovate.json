@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "SDK/CLI minors and patches are safe: features are discovered via sdk.has().",
+      "matchPackageNames": ["@croffledev/play-sdk", "@croffledev/play-cli"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Croffle Play SDK",
+      "automerge": true
+    },
+    {
+      "description": "A new SDK major needs code changes (see `npx @croffledev/play-sdk migrate`).",
+      "matchPackageNames": ["@croffledev/play-sdk"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["sdk-major"]
+    }
+  ]
+}

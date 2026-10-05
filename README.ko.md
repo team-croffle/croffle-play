@@ -30,17 +30,19 @@ Shell core  ──►  API (NestJS)  ──►  PostgreSQL · S3 스토리지
 
 ## 저장소 구성 (계획)
 
-| 경로                | 패키지                      | 배포 형태     |
-| ------------------- | --------------------------- | ------------- |
-| `apps/shell`        | `@croffledev/play-shell`    | Docker 이미지 |
-| `apps/api`          | `@croffledev/play-api`      | Docker 이미지 |
-| `apps/rooms`        | `@croffledev/play-rooms`    | Docker 이미지 |
-| `apps/adapters`     | `@croffledev/play-adapters` | 정적 번들     |
-| `packages/protocol` | `@croffledev/play-protocol` | npm           |
-| `packages/sdk`      | `@croffledev/play-sdk`      | npm           |
-| `packages/cli`      | `@croffledev/play-cli`      | npm           |
+| 경로                   | 패키지                         | 배포 형태          |
+| ---------------------- | ------------------------------ | ------------------ |
+| `apps/shell`           | `@croffledev/play-shell`       | Docker 이미지      |
+| `apps/api`             | `@croffledev/play-api`         | Docker 이미지      |
+| `apps/rooms`           | `@croffledev/play-rooms`       | Docker 이미지      |
+| `apps/adapters`        | `@croffledev/play-adapters`    | 정적 번들          |
+| `packages/protocol`    | `@croffledev/play-protocol`    | npm                |
+| `packages/sdk`         | `@croffledev/play-sdk`         | npm                |
+| `packages/cli`         | `@croffledev/play-cli`         | npm                |
+| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`) |
 
-게임은 이 저장소에 **없다.** 게임 템플릿 저장소에서 생성하고 `play-cli`로 배포한다.
+게임은 이 저장소에 **없다.** 게임마다 독립 저장소를 두며, `npm create @croffledev/play-game <폴더>`로
+만들고 `play-cli`로 배포한다.
 
 ## 개발
 

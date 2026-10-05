@@ -1,0 +1,24 @@
+{
+  "name": "{{PACKAGE_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/write-manifest.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "validate": "play-cli validate dist"
+  },
+  "dependencies": {
+    "@croffledev/play-sdk": "{{SDK_RANGE}}"
+  },
+  "devDependencies": {
+    "@croffledev/play-cli": "{{CLI_RANGE}}",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
