@@ -46,10 +46,13 @@ export class UsersService {
   /** Sign-in sync: the IdP picture never replaces an uploaded avatar. */
   async updateProfile(
     id: string,
-    profile: { nickname: string; avatar: string | null },
+    profile: { nickname: string; avatar?: string | null | undefined },
   ): Promise<User> {
     const [current] = await this.db.select().from(users).where(eq(users.id, id));
-    const set = current?.avatarUploaded ? { nickname: profile.nickname } : profile;
+    const keepAvatar = current?.avatarUploaded || profile.avatar === undefined;
+    const set = keepAvatar
+      ? { nickname: profile.nickname }
+      : { nickname: profile.nickname, avatar: profile.avatar ?? null };
     const [row] = await this.db.update(users).set(set).where(eq(users.id, id)).returning();
     if (!row) {
       throw new NotFoundException('User not found');

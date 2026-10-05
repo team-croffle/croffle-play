@@ -8,7 +8,10 @@ import { type PublicUser, toPublicUser, type User, UsersService } from './users.
 
 const profileSchema = v.object({
   nickname: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(24)),
-  avatar: v.nullable(v.pipe(v.string(), v.url(), v.startsWith('https://'), v.maxLength(500))),
+  /** IdP picture (sign-in sync). Omit to change only the nickname. */
+  avatar: v.optional(
+    v.nullable(v.pipe(v.string(), v.url(), v.startsWith('https://'), v.maxLength(500))),
+  ),
 });
 
 type Me = PublicUser & { role: User['role'] };
@@ -23,7 +26,7 @@ export class MeController {
     return { ...toPublicUser(user), role: user.role };
   }
 
-  /** The shell syncs the IdP profile here after sign-in. */
+  /** The portal syncs the IdP profile here after sign-in; the dashboard edits the nickname. */
   @Put()
   @UseGuards(SubjectThrottlerGuard)
   @Limit.profile()
