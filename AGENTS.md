@@ -118,7 +118,9 @@ CI runs.
   image per app (`ghcr.io/team-croffle/croffle-play/<app>:<version>`).
 - **Packages (`packages/*`)**: independent semver via Changesets, published
   to npm by the `Publish Packages` workflow through npm trusted publishing
-  (OIDC). No npm token exists in the repository or its secrets; never add one.
+  (OIDC). The workflow only stages versions (`npm stage publish`); a maintainer
+  approves them with 2FA (`npm stage approve`) to go live. No npm token exists
+  in the repository or its secrets; never add one.
   Never publish by hand (the one-time `0.0.0` name placeholders excepted).
 - **SDK majors** are the platform's public contract and have their own
   lifecycle (`current → lts → maintenance → deprecated → eol`) stored in the

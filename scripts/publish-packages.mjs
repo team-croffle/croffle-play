@@ -1,9 +1,10 @@
-// Publishes every public workspace package under packages/* whose version is not on npm yet.
+// Stages every public workspace package under packages/* whose version is not on npm yet.
 // Auth is npm trusted publishing (OIDC from GitHub Actions) only: no token is read or written.
-// `pnpm pack` rewrites `workspace:` ranges; `npm publish` (>= 11.5.1) does the OIDC exchange.
+// Staged versions go live only when a maintainer approves them with 2FA (`npm stage approve`).
+// `pnpm pack` rewrites `workspace:` ranges; `npm stage publish` (npm >= 12) does the OIDC exchange.
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { appendFileSync, existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -42,7 +43,7 @@ const internalDeps = ({ manifest }) =>
 packages.sort((a, b) => internalDeps(a) - internalDeps(b));
 
 const outDir = mkdtempSync(join(tmpdir(), 'croffle-publish-'));
-const published = [];
+const staged = [];
 
 for (const pkg of packages) {
   const { name, version } = pkg.manifest;
@@ -54,14 +55,30 @@ for (const pkg of packages) {
   const packed = run('pnpm', ['pack', '--json', '--pack-destination', outDir], pkg.dir);
   const tarball = JSON.parse(packed).filename;
   const tag = version.includes('-') ? 'next' : 'latest';
-  run('npm', ['publish', tarball, '--access', 'public', '--provenance', '--tag', tag]);
-  console.log(`published ${name}@${version} (${tag})`);
-  published.push(`${name}@${version}`);
+  const args = ['stage', 'publish', tarball, '--access', 'public', '--provenance', '--tag', tag];
+  const result = spawnSync('npm', args, { cwd: root, encoding: 'utf8', shell });
+  const output = `${result.stdout}${result.stderr}`;
+  process.stdout.write(output);
+  if (result.status !== 0) {
+    // Re-runs before approval find the version already staged; that is not a failure.
+    if (/already staged|E409|409 Conflict/i.test(output)) {
+      console.log(`skip ${name}@${version} (already staged)`);
+      continue;
+    }
+    throw new Error(`npm stage publish failed for ${name}@${version}`);
+  }
+  console.log(`staged ${name}@${version} (${tag})`);
+  staged.push({ spec: `${name}@${version}`, output: output.trim() });
 }
 
-if (published.length > 0) {
-  for (const tag of published) {
-    run('git', ['tag', tag]);
-  }
-  run('git', ['push', 'origin', ...published.map((tag) => `refs/tags/${tag}`)]);
+const summary = process.env.GITHUB_STEP_SUMMARY;
+if (summary && staged.length > 0) {
+  const lines = [
+    '## Staged on npm — approve to publish',
+    '',
+    'Approve in this order (dependencies first) on npmjs.com or with `npm stage approve <stage-id>`:',
+    '',
+    ...staged.flatMap(({ spec, output }) => [`### ${spec}`, '', '```', output, '```', '']),
+  ];
+  appendFileSync(summary, `${lines.join('\n')}\n`);
 }

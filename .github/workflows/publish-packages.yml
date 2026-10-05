@@ -4,7 +4,8 @@
 #
 # npm auth is trusted publishing (OIDC) only. Each package on npmjs.com trusts
 # team-croffle/croffle-play + this workflow file name; no npm token exists in
-# this repository and none may be added.
+# this repository and none may be added. The workflow only stages versions
+# (`npm stage publish`); a maintainer approves them with 2FA to go live.
 
 name: Publish Packages
 
@@ -45,8 +46,8 @@ jobs:
           node-version: '24'
           cache: pnpm
 
-      - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@^11.5.1 && npm --version
+      - name: Ensure npm supports staged trusted publishing
+        run: npm install -g npm@^12 && npm --version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -61,6 +62,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to npm (OIDC)
+      - name: Stage on npm (OIDC)
         if: steps.changesets.outputs.hasChangesets == 'false'
         run: pnpm run release
