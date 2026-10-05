@@ -40,8 +40,9 @@ Next:
   pnpm install
   pnpm dev          # runs alone with the SDK mock host
 
-Then ask a platform admin to register '${game.id}' and give you a deploy key, push the folder to
-its own GitHub repository, and tag a version to publish (see README.md).`);
+Then push the folder to its own GitHub repository, host the build at
+https://${game.id}.play.<platform domain>/, and ask a platform admin to register '${game.id}'
+(see README.md and the game developer guide).`);
 } catch (err) {
   console.error(`error: ${err instanceof CreateError ? err.message : String(err)}`);
   process.exitCode = 1;
