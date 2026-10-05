@@ -1,7 +1,8 @@
 # 운영 가이드
 
-개인 서버 한 대(Docker Compose) + Cloudflare 기준. 서비스·환경변수 표는 [infra/README.md](../infra/README.md),
-보안 모델은 [security.md](./security.md).
+개인 서버 한 대(Docker Compose) + Cloudflare 기준. PostgreSQL과 S3 스토리지(MinIO AIStor)는 서버에 이미
+있는 것을 쓰고, `infra/compose.yml`은 env(`DATABASE_URL`, `S3_ENDPOINT` 등)로 그쪽을 가리킨다.
+서비스·환경변수 표는 [infra/README.md](../infra/README.md), 보안 모델은 [security.md](./security.md).
 
 ## 배포 (릴리스 → 서버)
 
@@ -29,21 +30,21 @@
 ### 복구
 
 ```bash
-# 1) 데이터베이스 (예: 플랫폼 DB)
+# 1) 데이터베이스 (예: 플랫폼 DB). PG_HOST·관리자 계정은 서버의 PostgreSQL 기준
 docker compose … stop api
-docker compose … exec -T postgres psql -U play -d postgres -c 'drop database play' -c 'create database play'
-docker compose … exec -T postgres pg_restore -U play -d play --no-owner < backups/pg/play-<시각>.dump
+docker compose … exec -T ops sh -c 'PGPASSWORD=$POSTGRES_PASSWORD psql -h $PG_HOST -U $POSTGRES_USER -d postgres -c "drop database play" -c "create database play"'
+docker compose … exec -T ops sh -c 'PGPASSWORD=$POSTGRES_PASSWORD pg_restore -h $PG_HOST -U $POSTGRES_USER -d play --no-owner' < backups/pg/play-<시각>.dump
 docker compose … start api
 
-# 2) 스토리지
-mc mirror backups/storage/games local/games
+# 2) 스토리지: 쓰기 권한이 있는 키로(백업 사용자는 읽기 전용). 이미 있는 객체는 건너뛴다
+rclone copy backups/storage/games ":s3,provider=Minio,endpoint=<S3 주소>,access_key_id=<키>,secret_access_key=<비밀>:games"
 ```
 
 복구 리허설을 분기마다 한 번 한다(새 DB 이름으로 `pg_restore` 후 게임 수 확인).
 
 ## 모니터링
 
-`ops` 서비스가 매분 `HEALTH_URLS`(api, shell, rooms, games-edge, logto)를 확인하고, 상태가 **바뀔 때만**
+`ops` 서비스가 매분 `HEALTH_URLS`(api, shell, rooms, games-edge `/healthz`, logto)를 확인하고, 상태가 **바뀔 때만**
 `ALERT_WEBHOOK_URL`(Discord)에 알린다. 상태 파일은 컨테이너 안 `/var/lib/healthcheck`에 있다.
 
 ## 정기 작업

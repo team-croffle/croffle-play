@@ -61,12 +61,13 @@ pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/
 pnpm dev:shell                           # http://localhost:3000
 ```
 
-컨테이너로 전체 스택(PostgreSQL, MinIO, 게임 도메인 엣지, API, 셸). 배포 세부 사항은
-[infra/README.md](./infra/README.md):
+컨테이너로 전체 스택(게임 도메인 엣지, API, 룸, 셸, Logto). PostgreSQL과 S3 스토리지는
+`compose.local.yml`이 로컬용으로 붙이고, 운영에서는 기존 PostgreSQL·S3 스토리지를 가리킨다
+(세부 사항은 [infra/README.md](./infra/README.md)):
 
 ```bash
 cp infra/.env.example infra/.env         # CHANGE_ME 값 교체
-docker compose -f infra/compose.yml --env-file infra/.env up --build
+docker compose -f infra/compose.yml -f infra/compose.local.yml --env-file infra/.env up --build
 ```
 
 로컬에서 게임 실행 (`sample` 픽스처, 실제 게임처럼 별도 origin에서 서빙):
