@@ -24,6 +24,9 @@ export default defineNuxtConfig({
     sessionPassword: '',
     // Session lifetime in seconds (NUXT_SESSION_MAX_AGE); sign-in is needed again after it.
     sessionMaxAge: 43_200,
+    // Server-only. Redis-protocol URL (e.g. Valkey) for session data (NUXT_SESSION_REDIS_URL).
+    // Empty: the sealed cookie holds the session.
+    sessionRedisUrl: '',
     // Public URL of this shell (NUXT_SITE_URL); OIDC redirect URIs are built from it.
     siteUrl: 'http://localhost:3000',
     oidc: {
