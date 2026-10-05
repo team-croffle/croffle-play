@@ -1,15 +1,12 @@
-/**
- * State-changing `/api` requests must come from this site's own pages. SameSite=Lax already keeps
- * the session cookie off cross-site POSTs; this also stops same-site neighbours.
- */
+/** State-changing `/api` requests only from this site's own pages (server/utils/request-guard.ts). */
 export default defineEventHandler((event) => {
-  const method = event.method;
-  if (!event.path.startsWith('/api/') || method === 'GET' || method === 'HEAD') {
-    return;
-  }
-  const origin = getRequestHeader(event, 'origin');
-  const host = getRequestHost(event, { xForwardedHost: true });
-  if (!origin || new URL(origin).host !== host) {
+  const allowed = isAllowedRequest({
+    method: event.method,
+    path: event.path,
+    origin: getRequestHeader(event, 'origin'),
+    host: getRequestHost(event, { xForwardedHost: true }),
+  });
+  if (!allowed) {
     throw createError({ statusCode: 403, statusMessage: 'Cross-origin request refused' });
   }
 });

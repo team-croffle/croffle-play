@@ -117,9 +117,7 @@
       class="player__frame"
       :src="info.url"
       :title="info.name"
-      sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-      allow="fullscreen; autoplay; gamepad"
-      referrerpolicy="no-referrer"
+      v-bind="GAME_FRAME"
     />
     <p v-if="failure" class="player__message">{{ failure }}</p>
     <div v-else-if="!loaded" class="player__overlay" aria-live="polite">불러오는 중…</div>
