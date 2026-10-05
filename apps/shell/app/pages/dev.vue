@@ -26,10 +26,9 @@
         <span class="muted"> · {{ g.role }}</span>
       </h2>
       <p class="muted">
-        stable {{ g.stableVersion ?? '—' }} · preview {{ g.previewVersion ?? '—' }}
-        <template v-if="g.latest">
-          · 최근 {{ g.latest.version }} ({{ g.latest.status }}, SDK v{{ g.latest.sdkMajor }})
-        </template>
+        <a :href="g.url" target="_blank" rel="noopener">{{ g.url }}</a>
+        · {{ g.listed ? '공개' : '비공개' }}
+        <template v-if="g.sdk"> · SDK v{{ g.sdk.major }} ({{ g.sdk.status }})</template>
       </p>
       <ul v-if="g.warnings.length" class="dev-game__warnings">
         <li v-for="w in g.warnings" :key="w">{{ w }}</li>

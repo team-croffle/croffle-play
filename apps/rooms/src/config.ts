@@ -15,7 +15,7 @@ export const configSchema = v.object({
   JWKS_URL: v.optional(v.pipe(v.string(), v.url()), 'http://localhost:3001/.well-known/jwks.json'),
   /** Expected `iss` of game tokens (the API's PUBLIC_API_ORIGIN). */
   TOKEN_ISSUER: v.optional(v.string(), 'http://localhost:3001'),
-  /** Origin a game's frame has, `{id}` replaced: https://{id}.croffle-play.link */
+  /** Origin a game frame has, `{id}` replaced: https://{id}.play.croffle-play.link */
   ALLOWED_ORIGIN_TEMPLATE: v.pipe(
     v.optional(v.string(), 'http://{id}.localhost:4100'),
     v.includes('{id}'),

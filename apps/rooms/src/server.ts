@@ -17,7 +17,7 @@ import { type Member, RoomRegistry } from './registry.js';
 
 export interface RoomsServerOptions {
   verify: VerifyToken;
-  /** `https://{id}.croffle-play.link` — the Origin a game's frame must have. */
+  /** `https://{id}.play.croffle-play.link` — the Origin a game frame must have. */
   originTemplate: string;
   /** Server-side liveness ping (dead connections are dropped). */
   heartbeatMs?: number;

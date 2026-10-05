@@ -1,14 +1,13 @@
 <script setup lang="ts">
+  import type { PlayInfo } from '~~/shared/types/play';
+
   const route = useRoute();
   const id = computed(() => String(route.params.id));
-  const version = computed(() =>
-    typeof route.query.version === 'string' && route.query.version
-      ? route.query.version
-      : undefined,
+  // Admins preview unlisted games from the admin page (`?preview=1`).
+  const preview = computed(() => route.query.preview === '1');
+  const { data: info, error } = await useFetch<PlayInfo>(() =>
+    preview.value ? `/api/admin/games/${id.value}/play` : `/api/games/${id.value}/play`,
   );
-  const { data: info, error } = await useFetch(() => `/api/games/${id.value}/play`, {
-    query: { version },
-  });
 
   if (error.value) {
     throw createError({
@@ -24,8 +23,10 @@
 <template>
   <section v-if="info" class="play">
     <div class="play__bar">
-      <NuxtLink :to="`/game/${info.id}`">← {{ info.name }}</NuxtLink>
-      <span class="muted">v{{ info.version }}</span>
+      <NuxtLink :to="preview ? `/admin/games/${info.id}` : `/game/${info.id}`">
+        ← {{ info.name }}
+      </NuxtLink>
+      <span v-if="preview" class="badge">미리보기</span>
     </div>
     <ClientOnly>
       <GamePlayer :info="info" />

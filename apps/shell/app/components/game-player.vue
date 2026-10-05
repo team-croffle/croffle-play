@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { parseHello, sdkMajor, type Welcome } from '@croffledev/play-protocol';
   import type { MountedAdapter } from '@croffledev/play-protocol/host';
-  import type { PlayInfo } from '~~/shared/types/play';
+  import type { PlayInfo, SdkInfo } from '~~/shared/types/play';
 
   const props = defineProps<{ info: PlayInfo }>();
 
@@ -13,9 +13,9 @@
   const loginPrompt = ref(false);
   const route = useRoute();
 
-  const sdk = props.info.sdk;
-  const blocked = !sdk || sdk.status === 'deprecated' || !sdk.adapterUrl || !sdk.sri;
   const gameOrigin = new URL(props.info.url).origin;
+  const NOT_UPDATED =
+    '이 게임은 업데이트되지 않아 실행할 수 없습니다. 제작자가 업데이트하면 다시 플레이할 수 있습니다.';
 
   let mounted: MountedAdapter | null = null;
   let welcome: Welcome | null = null;
@@ -36,14 +36,25 @@
     noticeTimer = setTimeout(() => (notice.value = ''), 4000);
   }
 
+  /** The SDK major the game says it was built with decides the host adapter (and whether it runs). */
+  async function adapterFor(version: string) {
+    const major = sdkMajor(version);
+    const sdk =
+      major === null ? null : await $fetch<SdkInfo>(`/api/sdk/${major}`).catch(() => null);
+    if (!sdk || sdk.status === 'deprecated' || !sdk.adapterUrl || !sdk.sri) {
+      return null;
+    }
+    const mod = await loadAdapter(sdk.adapterUrl, sdk.sri);
+    if (mod.major !== major) {
+      throw new Error(`Adapter is for SDK v${mod.major}`);
+    }
+    return mod;
+  }
+
   onMounted(() => {
-    if (blocked || !frame.value || !sdk?.adapterUrl || !sdk.sri) {
+    if (!frame.value) {
       return;
     }
-    // Start downloading the adapter while the game boots.
-    const adapter = loadAdapter(sdk.adapterUrl, sdk.sri);
-    adapter.catch(() => undefined);
-
     const port = createGamePort(frame.value, gameOrigin, window);
     offHello = port.onMessage(async (raw) => {
       const hello = parseHello(raw);
@@ -59,18 +70,20 @@
         return;
       }
       starting = true;
-      if (hello.game !== props.info.id || sdkMajor(hello.sdk) !== props.info.sdkMajor) {
-        fail('게임 번들이 등록 정보와 맞지 않아 실행할 수 없습니다.');
+      if (hello.game !== props.info.id) {
+        fail('게임이 등록 정보와 맞지 않아 실행할 수 없습니다.');
         return;
       }
       try {
-        const mod = await adapter;
-        if (mod.major !== props.info.sdkMajor) {
-          throw new Error(`Adapter is for SDK v${mod.major}`);
+        const mod = await adapterFor(hello.sdk);
+        if (!mod) {
+          fail(NOT_UPDATED);
+          return;
         }
         const core = createHostCore({
           gameId: props.info.id,
-          version: props.info.version,
+          // The platform does not track game versions (the team hosts the game).
+          version: '',
           stage: () => stage.value,
           onGameReady: () => (loaded.value = true),
           onNotify: notify,
@@ -98,24 +111,18 @@
 
 <template>
   <div ref="stage" class="player">
-    <p v-if="blocked" class="player__message">
-      이 게임은 업데이트되지 않아 실행할 수 없습니다. 제작자가 업데이트하면 다시 플레이할 수
-      있습니다.
-    </p>
-    <template v-else>
-      <iframe
-        v-if="!failure"
-        ref="frame"
-        class="player__frame"
-        :src="info.url"
-        :title="info.name"
-        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-        allow="fullscreen; autoplay; gamepad"
-        referrerpolicy="no-referrer"
-      />
-      <p v-if="failure" class="player__message">{{ failure }}</p>
-      <div v-else-if="!loaded" class="player__overlay" aria-live="polite">불러오는 중…</div>
-    </template>
+    <iframe
+      v-if="!failure"
+      ref="frame"
+      class="player__frame"
+      :src="info.url"
+      :title="info.name"
+      sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+      allow="fullscreen; autoplay; gamepad"
+      referrerpolicy="no-referrer"
+    />
+    <p v-if="failure" class="player__message">{{ failure }}</p>
+    <div v-else-if="!loaded" class="player__overlay" aria-live="polite">불러오는 중…</div>
     <div v-if="notice" class="player__toast" role="status">{{ notice }}</div>
     <div v-if="loginPrompt" class="player__toast player__toast--action" role="status">
       로그인하면 점수와 저장이 기록됩니다.

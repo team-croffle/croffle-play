@@ -81,3 +81,12 @@ describe('host adapters from storage', () => {
     }
   });
 });
+
+describe('adapter versions', () => {
+  it('uploads only release versions; dev builds are registered by URL', async () => {
+    const storage = new FakeStorage();
+    const dir = await adapterDir({ major: 1, version: 'dev', file: 'index.js', integrity: sri });
+    await expect(publishAdapterDir({} as never, storage, dir)).rejects.toThrow(/release adapters/);
+    await rm(dir, { recursive: true, force: true });
+  });
+});

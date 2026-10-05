@@ -2,9 +2,10 @@ export interface MyGame {
   id: string;
   name: string;
   role: 'owner' | 'developer';
-  stableVersion: string | null;
-  previewVersion: string | null;
-  latest: { version: string; status: string; sdkMajor: number; uploadedAt: string | null } | null;
+  listed: boolean;
+  /** Where the team hosts the game. */
+  url: string;
+  manifestFetchedAt: string | null;
   sdk: { major: number; status: string; deprecatedAt: string | null } | null;
   warnings: string[];
 }

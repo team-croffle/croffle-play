@@ -117,6 +117,12 @@ a {
   font-weight: 700;
 }
 
+img.game-card__thumb,
+img.game-detail__thumb {
+  width: 100%;
+  object-fit: cover;
+}
+
 .game-card__body {
   padding: 12px;
 }

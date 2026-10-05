@@ -22,11 +22,8 @@ export function createPlatformApi(baseURL: string, fetcher: Fetcher) {
     getGame(gameId: string): Promise<GameSummary> {
       return fetcher<GameSummary>(`/v1/games/${id(gameId)}`, { baseURL });
     },
-    getPlayInfo(gameId: string, version?: string): Promise<PlayInfo> {
-      return fetcher<PlayInfo>(`/v1/games/${id(gameId)}/play`, {
-        baseURL,
-        ...(version ? { query: { version } } : {}),
-      });
+    getPlayInfo(gameId: string): Promise<PlayInfo> {
+      return fetcher<PlayInfo>(`/v1/games/${id(gameId)}/play`, { baseURL });
     },
     getLeaderboard(gameId: string, limit: number): Promise<Leaderboard> {
       return fetcher(`/v1/games/${id(gameId)}/leaderboard`, {

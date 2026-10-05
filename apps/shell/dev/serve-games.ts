@@ -1,12 +1,12 @@
-// `pnpm dev:games` — builds the fixture games and the host adapters, then serves them like the game
-// domain and the adapter host in production, one origin per game:
-//   http://<game>.localhost:4100/<version>/…   fixture bundles (dev/games/<game>, version 1.0.0)
-//   http://localhost:4100/adapters/v<N>/<ver>/… apps/adapters/dist (CORS: the shell fetches them)
+// `pnpm dev:games` — builds the fixture games and the host adapters, then serves them the way
+// self-hosted games are served in production, one origin per game:
+//   http://<game>.localhost:4100/…              fixture sites (dev/games/<game>, with game.json)
+//   http://localhost:4100/adapters/v<N>/<ver>/… apps/adapters/dist (development adapter host)
 // Chrome and Firefox resolve *.localhost to loopback; Safari needs hosts-file entries.
 import { execFileSync } from 'node:child_process';
 import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, posix, resolve } from 'node:path';
 
 import { build } from 'vite';
 
@@ -14,9 +14,14 @@ const port = Number(process.env.GAMES_PORT ?? 4100);
 const here = import.meta.dirname;
 const out = join(here, '.out');
 const adaptersDist = resolve(here, '../../adapters/dist');
-const FIXTURE_VERSION = '1.0.0';
+// Like a real game host: only the portal may frame the game.
+const PORTAL_ORIGIN = process.env.PORTAL_ORIGIN ?? 'http://localhost:3000';
 
-execFileSync('pnpm', ['--filter', '@croffledev/play-adapters', 'build'], { stdio: 'inherit' });
+// pnpm is a .cmd shim on Windows: spawn it through the shell there.
+execFileSync('pnpm', ['--filter', '@croffledev/play-adapters', 'build'], {
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+});
 for (const game of readdirSync(join(here, 'games'))) {
   await build({
     configFile: false,
@@ -24,7 +29,7 @@ for (const game of readdirSync(join(here, 'games'))) {
     base: './',
     logLevel: 'warn',
     resolve: { conditions: ['@croffledev/source', 'module', 'browser', 'development|production'] },
-    build: { outDir: join(out, game, FIXTURE_VERSION), emptyOutDir: true, target: 'es2022' },
+    build: { outDir: join(out, game), emptyOutDir: true, target: 'es2022' },
   });
 }
 
@@ -39,7 +44,8 @@ const types: Record<string, string> = {
 };
 
 createServer((req, res) => {
-  const path = normalize(decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
+  // URL paths are POSIX on every OS (node:path normalize uses backslashes on Windows).
+  const path = posix.normalize(decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
   const game = /^([a-z0-9-]+)\.localhost(?::\d+)?$/.exec(req.headers.host ?? '')?.[1];
   const isAdapter = !game && path.startsWith('/adapters/');
   if (!game && !isAdapter) {
@@ -62,10 +68,12 @@ createServer((req, res) => {
   res.writeHead(200, {
     'Content-Type': types[extname(file)] ?? 'application/octet-stream',
     'Cache-Control': 'no-store',
-    ...(isAdapter ? { 'Access-Control-Allow-Origin': '*' } : {}),
+    ...(isAdapter
+      ? { 'Access-Control-Allow-Origin': '*' }
+      : { 'Content-Security-Policy': `frame-ancestors ${PORTAL_ORIGIN}` }),
   });
   createReadStream(file).pipe(res);
 }).listen(port, () => {
-  console.log(`dev games on http://<game>.localhost:${port}/<version>/`);
+  console.log(`dev games on http://<game>.localhost:${port}/ (game.json at the root)`);
   console.log(`  adapter manifest: http://localhost:${port}/adapters/v1/dev/manifest.json`);
 });

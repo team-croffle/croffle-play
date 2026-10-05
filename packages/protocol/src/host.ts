@@ -35,6 +35,7 @@ export interface HostCore {
   };
   lifecycle: {
     readonly gameId: string;
+    /** Game version if the host knows it; empty on Croffle Play (teams host their own games). */
     readonly version: string;
     /** Leave the game (back to its detail page). */
     exit(): void;
