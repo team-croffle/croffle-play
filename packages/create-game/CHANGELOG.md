@@ -1,5 +1,16 @@
 # @croffledev/create-play-game
 
+## 0.2.1
+
+### Patch Changes
+
+- f8c6777: Generated games pin pnpm in `packageManager`, so their CI (`pnpm/action-setup`) and Dockerfile
+  (Corepack) work out of the box. The README lists the commands and links the developer guide and
+  SDK reference; examples use the portal at `game.croffle-play.link`. The closing message describes
+  self-hosting instead of the removed deploy keys.
+- Updated dependencies [3281ea6]
+  - @croffledev/play-protocol@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

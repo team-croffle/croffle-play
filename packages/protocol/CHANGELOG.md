@@ -1,5 +1,13 @@
 # @croffledev/play-protocol
 
+## 0.2.1
+
+### Patch Changes
+
+- 3281ea6: Document the public API: TSDoc on every `SdkClient` method and `Room` member, a README that lists
+  methods, capabilities, and error codes, and a link to the SDK reference. `getServerInfo` now
+  describes servers declared in `game.json` (no approval step).
+
 ## 0.2.0
 
 ### Minor Changes
