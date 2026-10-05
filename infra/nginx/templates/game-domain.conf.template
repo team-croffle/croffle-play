@@ -34,7 +34,17 @@ map $raw_path $object_path {
 server {
     listen 8080 default_server;
     server_name _;
-    return 404;
+
+    # Liveness for the ops health watcher; carries no game or storage data.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 404;
+    }
 }
 
 server {
