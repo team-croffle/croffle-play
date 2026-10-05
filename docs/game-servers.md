@@ -5,6 +5,8 @@
 알려 준다. 설계 배경은 [ARCHITECTURE.md](./ARCHITECTURE.md) §6. 공용 룸으로 충분한지는
 [multiplayer.md](./multiplayer.md)에서 먼저 확인한다.
 
+처음부터 끝까지의 흐름은 [게임 개발자 가이드](./guide/developer.md)에 있다.
+
 ## 1. 선언
 
 `game.json`:

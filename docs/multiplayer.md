@@ -4,6 +4,8 @@
 클라이언트가 돌리고, 방장(`room.isHost`)이 판정·상태 동기화를 맡는 구조를 권장한다. 설계 배경은
 [ARCHITECTURE.md](./ARCHITECTURE.md) §6.
 
+처음부터 끝까지의 흐름은 [게임 개발자 가이드](./guide/developer.md)에 있다.
+
 ## 사용법
 
 ```ts
