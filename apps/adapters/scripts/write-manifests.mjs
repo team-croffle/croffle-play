@@ -3,8 +3,9 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const dist = new URL('../dist/', import.meta.url).pathname;
+const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 for (const majorDir of readdirSync(dist)) {
   const major = Number(/^v(\d+)$/.exec(majorDir)?.[1]);
   if (!major) {
