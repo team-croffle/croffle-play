@@ -1,7 +1,7 @@
 {
   "name": "@croffledev/play-protocol",
-  "version": "0.0.0",
-  "description": "Croffle Play game \u2194 platform protocol: frozen handshake, SDK v1 messages, host core contract",
+  "version": "0.1.0",
+  "description": "Croffle Play game ↔ platform protocol: frozen handshake, SDK v1 messages, host core contract",
   "license": "MIT",
   "repository": {
     "type": "git",
