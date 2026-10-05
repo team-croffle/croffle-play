@@ -1,19 +1,23 @@
+import { gameUrl } from '@croffledev/play-protocol';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 
+import { ENV } from '../config/config.module.js';
+import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
-import { gameVersions, games, sdkVersions } from '../db/schema.js';
+import { games, sdkVersions } from '../db/schema.js';
 import { effectiveStatus, type SdkStatus } from '../sdk/lifecycle.js';
 
-/** Public catalog entry. Only games with a stable version are visible. */
+/** Public catalog entry. Only listed games are visible. */
 export interface GameSummary {
   id: string;
   name: string;
   description: string;
-  version: string;
-  /** Client↔server protocol of the stable version, for games with their own server. */
+  /** `<game origin>/<thumbnail>` from the game's `game.json`, if it declares one. */
+  thumbnailUrl: string | null;
+  /** Client↔server protocol, for games with their own server. */
   serverProtocol: string | null;
-  /** Lifecycle of the SDK major the stable version was built with. */
+  /** Lifecycle of the SDK major the game is built with (from its `game.json`). */
   sdk: {
     major: number;
     status: SdkStatus;
@@ -24,54 +28,54 @@ export interface GameSummary {
 
 @Injectable()
 export class GamesService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
 
   async list(): Promise<GameSummary[]> {
-    const rows = await this.stable().orderBy(asc(games.name));
-    return rows.map(toSummary);
+    const rows = await this.listed().orderBy(asc(games.name));
+    return rows.map((r) => this.toSummary(r));
   }
 
   async get(id: string): Promise<GameSummary> {
-    const [row] = await this.stable().where(and(eq(games.id, id), isNotNull(games.stableVersion)));
+    const [row] = await this.listed().where(and(eq(games.id, id), eq(games.listed, true)));
     if (!row) {
       throw new NotFoundException(`Game '${id}' not found`);
     }
-    return toSummary(row);
+    return this.toSummary(row);
   }
 
-  /** Games with a stable version, joined with that version's manifest. */
-  private stable() {
+  private listed() {
     return this.db
-      .select({ game: games, manifest: gameVersions.manifest, sdk: sdkVersions })
+      .select({ game: games, sdk: sdkVersions })
       .from(games)
-      .innerJoin(
-        gameVersions,
-        and(eq(gameVersions.gameId, games.id), eq(gameVersions.version, games.stableVersion)),
-      )
-      .leftJoin(sdkVersions, eq(sdkVersions.major, gameVersions.sdkMajor))
+      .leftJoin(sdkVersions, eq(sdkVersions.major, games.sdkMajor))
+      .where(eq(games.listed, true))
       .$dynamic();
   }
-}
 
-function toSummary(row: {
-  game: typeof games.$inferSelect;
-  manifest: Record<string, unknown>;
-  sdk: typeof sdkVersions.$inferSelect | null;
-}): GameSummary {
-  const server = row.manifest.server as { protocol?: unknown } | undefined;
-  return {
-    id: row.game.id,
-    name: row.game.name,
-    description: row.game.description,
-    version: row.game.stableVersion ?? '',
-    serverProtocol: typeof server?.protocol === 'string' ? server.protocol : null,
-    sdk: row.sdk
-      ? {
-          major: row.sdk.major,
-          status: effectiveStatus(row.sdk),
-          oldAt: row.sdk.oldAt?.toISOString() ?? null,
-          deprecatedAt: row.sdk.deprecatedAt?.toISOString() ?? null,
-        }
-      : null,
-  };
+  private toSummary(row: {
+    game: typeof games.$inferSelect;
+    sdk: typeof sdkVersions.$inferSelect | null;
+  }): GameSummary {
+    const manifest = row.game.manifest;
+    return {
+      id: row.game.id,
+      name: row.game.name,
+      description: row.game.description,
+      thumbnailUrl: manifest?.thumbnail
+        ? gameUrl(this.env.GAME_ORIGIN_TEMPLATE, row.game.id, manifest.thumbnail)
+        : null,
+      serverProtocol: manifest?.server?.protocol ?? null,
+      sdk: row.sdk
+        ? {
+            major: row.sdk.major,
+            status: effectiveStatus(row.sdk),
+            oldAt: row.sdk.oldAt?.toISOString() ?? null,
+            deprecatedAt: row.sdk.deprecatedAt?.toISOString() ?? null,
+          }
+        : null,
+    };
+  }
 }

@@ -31,10 +31,22 @@ export const envSchema = v.object({
   /** With DB_SEED: register this adapter manifest as SDK v1 (e.g. from `pnpm dev:games`). */
   SEED_ADAPTER_MANIFEST_URL: v.optional(v.pipe(v.string(), v.url())),
   /**
-   * Where a game version is served. `{id}` and `{version}` are replaced, e.g.
-   * `https://{id}.croffle-play.link/{version}/`. Must end with `/`.
+   * Origin of every game, `{id}` replaced, e.g. `https://{id}.play.croffle-play.link`. Games are hosted
+   * by their teams; the portal frames `<origin>/<entry>` and reads `<origin>/game.json`.
    */
-  /** Object storage (S3 API). Publishing is disabled until these are set. */
+  GAME_ORIGIN_TEMPLATE: v.pipe(
+    v.optional(v.string(), 'http://{id}.localhost:4100'),
+    v.includes('{id}'),
+    v.check((t) => !t.slice(t.indexOf('//') + 2).includes('/'), 'must be an origin (no path)'),
+  ),
+  /** How long registering or refreshing a game waits for its `game.json`. */
+  GAME_MANIFEST_TIMEOUT_MS: v.pipe(
+    v.optional(v.string(), '5000'),
+    v.transform(Number),
+    v.integer(),
+    v.minValue(100),
+  ),
+  /** Object storage (S3 API) for platform-owned files. Disabled until these are set. */
   S3_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
   /** Endpoint in presigned upload URLs (reachable by CI runners). Defaults to S3_ENDPOINT. */
   S3_PUBLIC_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
@@ -64,7 +76,7 @@ export const envSchema = v.object({
    */
   JWT_SIGNING_KEY: v.optional(v.string()),
   JWT_KEY_ID: v.optional(v.string(), 'game-1'),
-  /** This API's public origin: the `iss` of game tokens (e.g. https://api.play.croffledev.kr). */
+  /** This API's public origin: the `iss` of game tokens (e.g. https://api.croffle-play.link). */
   PUBLIC_API_ORIGIN: v.optional(v.pipe(v.string(), v.url()), 'http://localhost:3001'),
   /** Lifetime of game tokens (`aud: game:<id>`), 60–900 s. */
   GAME_TOKEN_TTL_SECONDS: v.pipe(
@@ -76,7 +88,7 @@ export const envSchema = v.object({
   ),
   /** Public address of an approved game server, `{id}` replaced. */
   GAME_SERVER_URL_TEMPLATE: v.pipe(
-    v.optional(v.string(), 'https://{id}.srv.croffle-play.link'),
+    v.optional(v.string(), 'http://{id}.srv.localhost:4100'),
     v.includes('{id}'),
   ),
   /** Linked from publish refusals and warnings about old SDK majors. */
@@ -99,11 +111,6 @@ export const envSchema = v.object({
     v.integer(),
     v.minValue(0),
   ),
-  GAME_URL_TEMPLATE: v.pipe(
-    v.optional(v.string(), 'http://{id}.localhost:4100/{version}/'),
-    v.check((t) => t.includes('{id}') && t.includes('{version}'), 'needs {id} and {version}'),
-    v.endsWith('/'),
-  ),
 });
 
 export type Env = v.InferOutput<typeof envSchema>;
@@ -121,7 +128,7 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
   const env = result.output;
   if (env.NODE_ENV === 'production') {
     const problems = [
-      !env.GAME_URL_TEMPLATE.startsWith('https://') && 'GAME_URL_TEMPLATE: must be https://',
+      !env.GAME_ORIGIN_TEMPLATE.startsWith('https://') && 'GAME_ORIGIN_TEMPLATE: must be https://',
       !env.PUBLIC_API_ORIGIN.startsWith('https://') && 'PUBLIC_API_ORIGIN: must be https://',
       !env.JWT_SIGNING_KEY && 'JWT_SIGNING_KEY: required in production',
     ].filter(Boolean);

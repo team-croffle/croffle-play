@@ -114,3 +114,42 @@ describe('migration 0011: deploy keys removed, server keys kept', () => {
     expect(old.rows[0]?.n).toBe(0);
   });
 });
+
+describe('migration 0012: game registry instead of uploaded versions', () => {
+  const db = new PGlite();
+
+  beforeAll(async () => {
+    await applyUntil(db, '0012');
+    await db.exec(`
+      INSERT INTO games (id, name, stable_version, preview_version) VALUES
+        ('live', 'Live', '1.0.0', '1.1.0'),
+        ('draft', 'Draft', NULL, '0.1.0');
+      INSERT INTO game_versions (game_id, version, status, manifest, sdk_major) VALUES
+        ('live', '1.0.0', 'approved', '{"id":"live","sdk":"^1.0.0"}', 1),
+        ('live', '1.1.0', 'uploaded', '{"id":"live","sdk":"^2.0.0"}', 2),
+        ('draft', '0.1.0', 'uploaded', '{"id":"draft","sdk":"^1.0.0"}', 1);
+    `);
+    await runFile(db, '0012_game_registry.sql');
+  });
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it('lists games that had a stable version, with that version manifest', async () => {
+    const { rows } = await db.query<{
+      id: string;
+      listed: boolean;
+      sdk_major: number | null;
+      manifest: { sdk: string } | null;
+    }>('SELECT id, listed, sdk_major, manifest FROM games ORDER BY id');
+    expect(rows).toEqual([
+      { id: 'draft', listed: false, sdk_major: null, manifest: null },
+      { id: 'live', listed: true, sdk_major: 1, manifest: { id: 'live', sdk: '^1.0.0' } },
+    ]);
+    const tables = await db.query<{ n: number }>(
+      "SELECT count(*)::int AS n FROM information_schema.tables WHERE table_name = 'game_versions'",
+    );
+    expect(tables.rows[0]?.n).toBe(0);
+  });
+});

@@ -22,7 +22,7 @@ describe('connect', () => {
         testEnv({
           DATABASE_URL: 'pglite://memory',
           NODE_ENV: 'production',
-          GAME_URL_TEMPLATE: 'https://{id}.games.test/{version}/',
+          GAME_ORIGIN_TEMPLATE: 'https://{id}.play.test',
           PUBLIC_API_ORIGIN: 'https://api.test',
           JWT_SIGNING_KEY: 'unused',
         }),

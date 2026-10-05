@@ -16,10 +16,7 @@ import { AdminGuard } from '../auth/admin.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import { type PlayInfo, PlayService } from '../games/play.service.js';
-import { type AdminGame, AdminGamesService, type AdminVersion } from './admin-games.service.js';
-
-/** Upper bound an admin may grant for one game's bundles. */
-const MAX_APPROVABLE_BUNDLE_BYTES = 200 * 1024 * 1024;
+import { type AdminGame, AdminGamesService } from './admin-games.service.js';
 
 const name = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(60));
 const description = v.pipe(v.string(), v.maxLength(2000));
@@ -27,18 +24,14 @@ const createSchema = v.object({ id: gameIdSchema, name, description: v.optional(
 const updateSchema = v.object({
   name: v.optional(name),
   description: v.optional(description),
+  /** Shown in the catalog; needs a valid `game.json` on a registrable SDK major. */
+  listed: v.optional(v.boolean()),
   scorePolicy: v.optional(v.picklist(['client', 'server'])),
   scoreMin: v.optional(v.nullable(v.pipe(v.number(), v.finite()))),
   scoreMax: v.optional(v.nullable(v.pipe(v.number(), v.finite()))),
   /** GitHub repository for platform notices (`owner/name`). */
   repo: v.optional(v.nullable(v.pipe(v.string(), v.regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)))),
-  maxBundleBytes: v.optional(
-    v.nullable(
-      v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_APPROVABLE_BUNDLE_BYTES)),
-    ),
-  ),
 });
-const rollbackSchema = v.object({ version: v.string() });
 
 @Controller('admin/games')
 @UseGuards(AdminGuard)
@@ -61,7 +54,7 @@ export class AdminGamesController {
   }
 
   @Get(':id')
-  get(@Param('id', GameIdPipe) id: string): Promise<AdminGame & { versions: AdminVersion[] }> {
+  get(@Param('id', GameIdPipe) id: string): Promise<AdminGame> {
     return this.games.get(id);
   }
 
@@ -73,38 +66,16 @@ export class AdminGamesController {
     return this.games.update(id, body);
   }
 
-  @Get(':id/versions/:version/play')
-  playInfo(
-    @Param('id', GameIdPipe) id: string,
-    @Param('version') version: string,
-  ): Promise<PlayInfo> {
-    return this.play.info(id, version, { anyVersion: true });
+  /** Reads the game's `game.json` again (after the team redeployed it). */
+  @Post(':id/refresh')
+  @HttpCode(200)
+  refresh(@Param('id', GameIdPipe) id: string): Promise<AdminGame> {
+    return this.games.refresh(id);
   }
 
-  @Post(':id/versions/:version/approve')
-  @HttpCode(200)
-  approve(
-    @Param('id', GameIdPipe) id: string,
-    @Param('version') version: string,
-  ): Promise<AdminGame> {
-    return this.games.approve(id, version);
-  }
-
-  @Post(':id/versions/:version/reject')
-  @HttpCode(200)
-  reject(
-    @Param('id', GameIdPipe) id: string,
-    @Param('version') version: string,
-  ): Promise<AdminGame> {
-    return this.games.reject(id, version);
-  }
-
-  @Post(':id/rollback')
-  @HttpCode(200)
-  rollback(
-    @Param('id', GameIdPipe) id: string,
-    @Body(new ValibotPipe(rollbackSchema)) body: { version: string },
-  ): Promise<AdminGame> {
-    return this.games.rollback(id, body.version);
+  /** Play info for any registered game, listed or not (admin preview). */
+  @Get(':id/play')
+  playInfo(@Param('id', GameIdPipe) id: string): Promise<PlayInfo> {
+    return this.play.info(id, { includeUnlisted: true });
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Param } from '@nestjs/common';
 
 import { GameIdPipe } from '../common/game-id.pipe.js';
 import { type GameSummary, GamesService } from './games.service.js';
@@ -22,10 +22,7 @@ export class GamesController {
   }
 
   @Get(':id/play')
-  playInfo(
-    @Param('id', GameIdPipe) id: string,
-    @Query('version') version?: string,
-  ): Promise<PlayInfo> {
-    return this.play.info(id, version || undefined);
+  playInfo(@Param('id', GameIdPipe) id: string): Promise<PlayInfo> {
+    return this.play.info(id);
   }
 }

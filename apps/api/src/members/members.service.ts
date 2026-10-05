@@ -1,8 +1,11 @@
+import { gameUrl } from '@croffledev/play-protocol';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, eq, ilike, or } from 'drizzle-orm';
 
+import { ENV } from '../config/config.module.js';
+import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
-import { gameMembers, gameServers, gameVersions, games, sdkVersions, users } from '../db/schema.js';
+import { gameMembers, gameServers, games, sdkVersions, users } from '../db/schema.js';
 import { effectiveStatus, type SdkStatus } from '../sdk/lifecycle.js';
 
 export type MemberRole = (typeof gameMembers.$inferSelect)['role'];
@@ -11,9 +14,10 @@ export interface MyGame {
   id: string;
   name: string;
   role: MemberRole;
-  stableVersion: string | null;
-  previewVersion: string | null;
-  latest: { version: string; status: string; sdkMajor: number; uploadedAt: string | null } | null;
+  listed: boolean;
+  /** Where the team hosts the game. */
+  url: string;
+  manifestFetchedAt: string | null;
   sdk: { major: number; status: SdkStatus; deprecatedAt: string | null } | null;
   /** Things the team should act on. */
   warnings: string[];
@@ -21,7 +25,10 @@ export interface MyGame {
 
 @Injectable()
 export class MembersService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
 
   async list(gameId: string) {
     return this.db
@@ -67,47 +74,32 @@ export class MembersService {
 
   async myGames(userId: string): Promise<MyGame[]> {
     const rows = await this.db
-      .select({ game: games, role: gameMembers.role, server: gameServers.status })
+      .select({ game: games, role: gameMembers.role, server: gameServers.status, sdk: sdkVersions })
       .from(gameMembers)
       .innerJoin(games, eq(games.id, gameMembers.gameId))
       .leftJoin(gameServers, eq(gameServers.gameId, games.id))
+      .leftJoin(sdkVersions, eq(sdkVersions.major, games.sdkMajor))
       .where(eq(gameMembers.userId, userId))
       .orderBy(asc(games.name));
-    const out: MyGame[] = [];
-    for (const r of rows) {
-      const [latest] = await this.db
-        .select({ v: gameVersions, sdk: sdkVersions })
-        .from(gameVersions)
-        .leftJoin(sdkVersions, eq(sdkVersions.major, gameVersions.sdkMajor))
-        .where(eq(gameVersions.gameId, r.game.id))
-        .orderBy(desc(gameVersions.createdAt))
-        .limit(1);
-      const sdk = latest?.sdk
+    return rows.map((r) => {
+      const sdk = r.sdk
         ? {
-            major: latest.sdk.major,
-            status: effectiveStatus(latest.sdk),
-            deprecatedAt: latest.sdk.deprecatedAt?.toISOString() ?? null,
+            major: r.sdk.major,
+            status: effectiveStatus(r.sdk),
+            deprecatedAt: r.sdk.deprecatedAt?.toISOString() ?? null,
           }
         : null;
-      out.push({
+      return {
         id: r.game.id,
         name: r.game.name,
         role: r.role,
-        stableVersion: r.game.stableVersion,
-        previewVersion: r.game.previewVersion,
-        latest: latest
-          ? {
-              version: latest.v.version,
-              status: latest.v.status,
-              sdkMajor: latest.v.sdkMajor,
-              uploadedAt: latest.v.uploadedAt?.toISOString() ?? null,
-            }
-          : null,
+        listed: r.game.listed,
+        url: gameUrl(this.env.GAME_ORIGIN_TEMPLATE, r.game.id, r.game.manifest?.entry ?? ''),
+        manifestFetchedAt: r.game.manifestFetchedAt?.toISOString() ?? null,
         sdk,
         warnings: warningsFor(r.game, sdk, r.server),
-      });
-    }
-    return out;
+      };
+    });
   }
 }
 
@@ -127,8 +119,10 @@ function warningsFor(
       `SDK v${sdk.major} is old${until}: updates are refused until you upgrade with \`npx @croffledev/play-sdk migrate\``,
     );
   }
-  if (game.previewVersion && game.previewVersion !== game.stableVersion) {
-    w.push(`Version ${game.previewVersion} is waiting for approval`);
+  if (game.manifestError) {
+    w.push(`game.json could not be read: ${game.manifestError}`);
+  } else if (!game.manifest) {
+    w.push('game.json has not been read yet: ask an admin to refresh the game once it is online');
   }
   if (server === 'requested') {
     w.push('The game server is waiting for approval');

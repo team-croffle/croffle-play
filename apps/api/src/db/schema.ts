@@ -1,6 +1,6 @@
+import type { GameManifest } from '@croffledev/play-protocol';
 import { sql } from 'drizzle-orm';
 import {
-  bigint,
   boolean,
   doublePrecision,
   index,
@@ -13,14 +13,6 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-
-/** Upload lifecycle of one immutable game version (`games/<id>/<version>/`). */
-export const gameVersionStatus = pgEnum('game_version_status', [
-  'pending',
-  'uploaded',
-  'approved',
-  'rejected',
-]);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -40,48 +32,26 @@ export const games = pgTable('games', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
-  /** Version players get. Moving this pointer is how releases and rollbacks happen. */
-  stableVersion: text('stable_version'),
-  /** Latest uploaded version, reachable by admins for review. */
-  previewVersion: text('preview_version'),
+  /** Shown in the catalog. Only admins can play unlisted games. */
+  listed: boolean('listed').notNull().default(false),
+  /**
+   * The game's `game.json`, as last fetched from `<game origin>/game.json` (the game is hosted by
+   * its team, not by the platform). Null until the first successful refresh.
+   */
+  manifest: jsonb('manifest').$type<GameManifest>(),
+  /** SDK major of `manifest.sdk`; the SDK lifecycle gates listing and refreshes on it. */
+  sdkMajor: integer('sdk_major'),
+  manifestFetchedAt: timestamp('manifest_fetched_at', { withTimezone: true }),
+  /** Why the last refresh failed (null after a successful one). */
+  manifestError: text('manifest_error'),
   scorePolicy: scorePolicy('score_policy').notNull().default('client'),
   /** Scores outside [min, max] are refused (sanity bounds; null = unbounded). */
   scoreMin: doublePrecision('score_min'),
   scoreMax: doublePrecision('score_max'),
   /** GitHub repository (`owner/name`) for platform notices. Set by admins only. */
   repo: text('repo'),
-  /** Bundle size limit when an admin approved more than the default. */
-  maxBundleBytes: bigint('max_bundle_bytes', { mode: 'number' }),
   ...timestamps,
 });
-
-/** One file of an uploaded bundle, as declared at publish time and verified on completion. */
-export interface BundleFile {
-  path: string;
-  size: number;
-  /** Base64 SHA-256, as S3 `x-amz-checksum-sha256`. */
-  sha256: string;
-  contentType: string;
-  contentEncoding?: string;
-}
-
-export const gameVersions = pgTable(
-  'game_versions',
-  {
-    gameId: text('game_id')
-      .notNull()
-      .references(() => games.id, { onDelete: 'cascade' }),
-    version: text('version').notNull(),
-    status: gameVersionStatus('status').notNull().default('pending'),
-    manifest: jsonb('manifest').$type<Record<string, unknown>>().notNull(),
-    /** SDK major the bundle was built with (from `game.json` `sdk`). */
-    sdkMajor: integer('sdk_major').notNull().default(1),
-    files: jsonb('files').$type<BundleFile[]>(),
-    uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
-    createdAt: timestamps.createdAt,
-  },
-  (t) => [primaryKey({ columns: [t.gameId, t.version] })],
-);
 
 export const userRole = pgEnum('user_role', ['user', 'admin']);
 
@@ -238,8 +208,6 @@ export const sdkVersionEvents = pgTable('sdk_version_events', {
 
 export const schema = {
   games,
-  gameVersions,
-  gameVersionStatus,
   sdkVersions,
   sdkStatus,
   serverKeys,

@@ -1,23 +1,33 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { gameVersions, games } from '../src/db/schema.js';
+import { games, sdkVersions } from '../src/db/schema.js';
 import { createTestApp, type TestApp } from './support/test-app.js';
 import { bearerFor } from './support/test-issuer.js';
 
-describe('admin games', () => {
+const origin = (id: string) => `https://${id}.play.test`;
+const manifest = (id: string, sdk = '^1.0.0') => ({
+  id,
+  name: 'From game.json',
+  sdk,
+  entry: 'play.html',
+  thumbnail: 'thumb.png',
+});
+
+describe('admin game registry', () => {
   let t: TestApp;
+  const manifests: Record<string, unknown> = {
+    [`${origin('online')}/game.json`]: manifest('online'),
+    [`${origin('wrong-id')}/game.json`]: manifest('someone-else'),
+    [`${origin('broken')}/game.json`]: { id: 'broken' },
+  };
 
   beforeAll(async () => {
-    t = await createTestApp({ seed: true });
-    await t.db
-      .insert(games)
-      .values({ id: 'rel', name: 'Rel', stableVersion: '1.0.0', previewVersion: '1.2.0' });
-    await t.db.insert(gameVersions).values([
-      { gameId: 'rel', version: '1.0.0', status: 'approved', manifest: {} },
-      { gameId: 'rel', version: '1.1.0', status: 'uploaded', manifest: {} },
-      { gameId: 'rel', version: '1.2.0', status: 'uploaded', manifest: {} },
-      { gameId: 'rel', version: '1.3.0', status: 'pending', manifest: {} },
-    ]);
+    t = await createTestApp({
+      seed: true,
+      env: { GAME_ORIGIN_TEMPLATE: 'https://{id}.play.test' },
+      manifests,
+    });
   });
 
   afterAll(async () => {
@@ -46,53 +56,87 @@ describe('admin games', () => {
     );
   });
 
-  it('approves a version: status approved, stable pointer moves', async () => {
-    const res = await call('POST', '/v1/admin/games/rel/versions/1.1.0/approve');
+  it('reads game.json at registration when the game is online', async () => {
+    const res = await call('POST', '/v1/admin/games', { id: 'online', name: 'Online' });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      listed: false,
+      sdkMajor: 1,
+      manifest: { entry: 'play.html' },
+      manifestError: null,
+    });
+  });
+
+  it('registers offline games unlisted and records why game.json is missing', async () => {
+    const res = await call('POST', '/v1/admin/games', { id: 'offline', name: 'Offline' });
+    expect(res.json()).toMatchObject({
+      listed: false,
+      manifest: null,
+      manifestError: expect.stringContaining('https://offline.play.test/game.json'),
+    });
+    const list = await call('PATCH', '/v1/admin/games/offline', { listed: true });
+    expect(list.statusCode).toBe(422);
+    expect(list.json<{ message: string }>().message).toMatch(/no game.json yet/);
+  });
+
+  it('refuses a game.json with another id or an invalid shape', async () => {
+    await call('POST', '/v1/admin/games', { id: 'wrong-id', name: 'Wrong' });
+    const wrong = await call('POST', '/v1/admin/games/wrong-id/refresh');
+    expect(wrong.statusCode).toBe(422);
+    expect(wrong.json<{ message: string }>().message).toMatch(/says id 'someone-else'/);
+    await call('POST', '/v1/admin/games', { id: 'broken', name: 'Broken' });
+    const broken = await call('POST', '/v1/admin/games/broken/refresh');
+    expect(broken.json<{ message: string }>().message).toMatch(/game.json is invalid/);
+  });
+
+  it('lists a game once game.json is valid', async () => {
+    const res = await call('PATCH', '/v1/admin/games/online', { listed: true });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ stableVersion: '1.1.0' });
-    expect((await call('POST', '/v1/admin/games/rel/versions/1.3.0/approve')).statusCode).toBe(409);
-  });
-
-  it('rolls back to an earlier approved version only', async () => {
-    expect(
-      (await call('POST', '/v1/admin/games/rel/rollback', { version: '1.0.0' })).json(),
-    ).toMatchObject({
-      stableVersion: '1.0.0',
+    const catalog = await t.app.inject({ method: 'GET', url: '/v1/games/online' });
+    expect(catalog.json()).toMatchObject({
+      id: 'online',
+      thumbnailUrl: 'https://online.play.test/thumb.png',
     });
-    expect(
-      (await call('POST', '/v1/admin/games/rel/rollback', { version: '1.2.0' })).statusCode,
-    ).toBe(409);
   });
 
-  it('rejects an uploaded version and clears the preview pointer', async () => {
-    const res = await call('POST', '/v1/admin/games/rel/versions/1.2.0/reject');
-    expect(res.json()).toMatchObject({ previewVersion: null, stableVersion: '1.0.0' });
-    const detail = (await call('GET', '/v1/admin/games/rel')).json<{
-      versions: { version: string; status: string }[];
-    }>();
-    expect(detail.versions.find((v) => v.version === '1.2.0')?.status).toBe('rejected');
+  it('refuses refreshing onto an old SDK major and keeps the last good game.json', async () => {
+    await t.db.insert(sdkVersions).values({ major: 2, status: 'old' });
+    manifests[`${origin('online')}/game.json`] = manifest('online', '^2.0.0');
+    const res = await call('POST', '/v1/admin/games/online/refresh');
+    expect(res.statusCode).toBe(422);
+    expect(res.json<{ message: string }>().message).toMatch(/SDK v2 is old.*Migration guide/);
+    const [row] = await t.db.select().from(games).where(eq(games.id, 'online'));
+    expect(row).toMatchObject({ sdkMajor: 1, listed: true });
+    expect(row?.manifestError).toMatch(/SDK v2 is old/);
   });
 
-  it('serves play info for any uploaded version to admins only', async () => {
-    expect((await call('GET', '/v1/admin/games/rel/versions/1.1.0/play')).json()).toMatchObject({
-      version: '1.1.0',
+  it('refuses listing on an old major but leaves listed games alone', async () => {
+    await t.db.update(sdkVersions).set({ status: 'old' }).where(eq(sdkVersions.major, 1));
+    expect((await call('PATCH', '/v1/admin/games/new-game', { listed: true })).statusCode).toBe(
+      422,
+    );
+    expect((await t.app.inject({ method: 'GET', url: '/v1/games/online' })).statusCode).toBe(200);
+    await t.db.update(sdkVersions).set({ status: 'current' }).where(eq(sdkVersions.major, 1));
+  });
+
+  it('serves play info for unlisted games to admins only', async () => {
+    expect((await call('GET', '/v1/admin/games/offline/play')).json()).toEqual({
+      id: 'offline',
+      name: 'Offline',
+      url: 'https://offline.play.test/',
     });
-    expect((await call('GET', '/v1/admin/games/rel/versions/1.3.0/play')).statusCode).toBe(404);
+    expect((await t.app.inject({ method: 'GET', url: '/v1/games/offline/play' })).statusCode).toBe(
+      404,
+    );
+  });
+
+  it('no longer has versions, approvals, or bundle limits', async () => {
     expect(
-      (await t.app.inject({ method: 'GET', url: '/v1/games/rel/play?version=1.1.0' })).statusCode,
+      (await call('POST', '/v1/admin/games/online/rollback', { version: '1' })).statusCode,
     ).toBe(404);
-  });
-
-  it('raises the bundle limit within bounds', async () => {
     expect(
-      (await call('PATCH', '/v1/admin/games/rel', { maxBundleBytes: 100 * 1024 * 1024 })).json(),
-    ).toMatchObject({
-      maxBundleBytes: 104857600,
-    });
-    expect(
-      (await call('PATCH', '/v1/admin/games/rel', { maxBundleBytes: 500 * 1024 * 1024 }))
-        .statusCode,
-    ).toBe(400);
+      (await call('PATCH', '/v1/admin/games/online', { maxBundleBytes: 1 })).json(),
+    ).not.toHaveProperty('maxBundleBytes');
   });
 });
 

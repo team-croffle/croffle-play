@@ -3,6 +3,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import type { JWTVerifyGetKey } from 'jose';
 
 import { AdminModule } from './admin/admin.module.js';
+import type { ManifestFetcher } from './admin/manifest-fetcher.js';
 import { ConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
@@ -33,6 +34,8 @@ export interface AppOptions {
   jwks?: JWTVerifyGetKey;
   /** Deprecation notices (tests); otherwise GitHub issues or logs, from env. */
   notifier?: Notifier;
+  /** Reads games' `game.json` (tests); otherwise fetches it from the game origin. */
+  fetchManifest?: ManifestFetcher;
 }
 
 @Module({})
@@ -49,7 +52,7 @@ export class AppModule {
         UsersModule.forRoot(options.jwks),
         GamesModule,
         ServerKeysModule,
-        AdminModule,
+        AdminModule.forRoot(options.fetchManifest),
         SdkModule,
         ScoresModule,
         SavesModule,

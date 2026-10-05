@@ -8,17 +8,15 @@ describe('/v1/games', () => {
 
   beforeAll(async () => {
     t = await createTestApp({ seed: true });
-    // Uploaded but never approved: must stay hidden.
-    await t.db
-      .insert(games)
-      .values({ id: 'unreleased', name: 'Unreleased', previewVersion: '0.1.0' });
+    // Registered but not listed: must stay hidden.
+    await t.db.insert(games).values({ id: 'unreleased', name: 'Unreleased' });
   });
 
   afterAll(async () => {
     await t.close();
   });
 
-  it('lists only games with a stable version, by name', async () => {
+  it('lists only listed games, by name', async () => {
     const res = await t.app.inject({ method: 'GET', url: '/v1/games' });
     expect(res.statusCode).toBe(200);
     const ids = res.json<{ items: { id: string }[] }>().items.map((g) => g.id);
@@ -32,7 +30,7 @@ describe('/v1/games', () => {
       id: 'block-drop',
       name: 'Block Drop',
       description: 'Falling blocks.',
-      version: '1.2.0',
+      thumbnailUrl: null,
       serverProtocol: null,
       sdk: { major: 1, status: 'current', oldAt: null, deprecatedAt: null },
     });

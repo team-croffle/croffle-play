@@ -85,6 +85,13 @@
       "when": 1791205673830,
       "tag": "0011_server_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791206185727,
+      "tag": "0012_game_registry",
+      "breakpoints": true
     }
   ]
 }
