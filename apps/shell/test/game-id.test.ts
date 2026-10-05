@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 // The shell's server routes reject these before calling the API (server/utils/game-id.ts).
 describe('shell game id guard', () => {
-  it.each(['www', 'api', 'srv', 'Tetris', 'a_b', '../x'])('refuses %s', (id) => {
+  it.each(['www', 'api', 'static', 'Tetris', 'a_b', '../x'])('refuses %s', (id) => {
     expect(isValidGameId(id)).toBe(false);
   });
 });

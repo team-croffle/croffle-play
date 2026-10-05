@@ -69,7 +69,7 @@ export async function validateBundle(
       ['entry', manifest.entry],
       ['thumbnail', manifest.thumbnail],
     ] as const) {
-      if (!paths.has(path)) {
+      if (path !== undefined && !paths.has(path)) {
         errors.push(`game.json ${field} '${path}' is not in the bundle`);
       }
     }

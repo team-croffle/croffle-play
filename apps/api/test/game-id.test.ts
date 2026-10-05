@@ -17,7 +17,7 @@ describe('game id route parameters', () => {
   it.each([
     ['GET', '/v1/games/API'],
     ['GET', '/v1/games/www/play'],
-    ['GET', '/v1/games/srv'],
+    ['GET', '/v1/games/static'],
     ['GET', '/v1/admin/games/api'],
     ['POST', '/v1/admin/games/static/server-keys'],
   ] as const)('%s %s → 404', async (method, url) => {
