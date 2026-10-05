@@ -1,14 +1,15 @@
 import {
   Controller,
   Get,
-  Header,
   Inject,
   NotFoundException,
   Param,
+  Res,
   StreamableFile,
 } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 
-import { STORAGE, type Storage } from '../storage/storage.js';
+import { IMMUTABLE_CACHE_CONTROL, STORAGE, type Storage } from '../storage/storage.js';
 import { ADAPTER_VERSION, adapterKey } from './register-adapter.js';
 
 /**
@@ -20,11 +21,10 @@ export class AdaptersController {
   constructor(@Inject(STORAGE) private readonly storage: Storage) {}
 
   @Get(':major/:version/index.js')
-  @Header('Content-Type', 'text/javascript; charset=utf-8')
-  @Header('Cache-Control', 'public, max-age=31536000, immutable')
   async bundle(
     @Param('major') major: string,
     @Param('version') version: string,
+    @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<StreamableFile> {
     const m = /^v([1-9][0-9]{0,2})$/.exec(major);
     if (!m || !ADAPTER_VERSION.test(version)) {
@@ -34,6 +34,8 @@ export class AdaptersController {
     if (!file) {
       throw new NotFoundException();
     }
-    return new StreamableFile(file.body);
+    // Only a found bundle is immutable; errors must not be cached.
+    reply.header('cache-control', IMMUTABLE_CACHE_CONTROL);
+    return new StreamableFile(file.body, { type: 'text/javascript; charset=utf-8' });
   }
 }
