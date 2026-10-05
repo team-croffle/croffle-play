@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateBundle } from '@croffledev/play-cli';
+import { validateBuild } from '@croffledev/play-cli';
 import { build } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -31,7 +31,15 @@ describe('createGame', () => {
     expect(g).toMatchObject({ id: 'block-drop', name: 'Block Drop' });
     const files = await readdir(g.dir);
     expect(files).toEqual(
-      expect.arrayContaining(['.gitignore', '.github', 'package.json', 'game.json']),
+      expect.arrayContaining([
+        '.gitignore',
+        '.github',
+        '.dockerignore',
+        'package.json',
+        'game.json',
+        'Dockerfile',
+        'Caddyfile',
+      ]),
     );
     expect(files).not.toEqual(expect.arrayContaining(['_gitignore', '_github', '_package.json']));
     const pkg = JSON.parse(await readFile(join(g.dir, 'package.json'), 'utf8'));
@@ -48,7 +56,8 @@ describe('createGame', () => {
     expect(await readFile(join(g.dir, 'index.html'), 'utf8')).toContain(
       '<title>Block Drop</title>',
     );
-    expect(await readdir(join(g.dir, '.github/workflows'))).toEqual(['ci.yml', 'publish.yml']);
+    // Teams host their games; there is no publish workflow.
+    expect(await readdir(join(g.dir, '.github/workflows'))).toEqual(['ci.yml']);
   });
 
   it('takes an explicit id and name, escaping the name in HTML', async () => {
@@ -106,7 +115,7 @@ describe('a generated game', () => {
       cwd: g.dir,
       env: { ...process.env, GAME_VERSION: 'v1.2.3' },
     });
-    const result = await validateBundle(join(g.dir, 'dist'));
+    const result = await validateBuild(join(g.dir, 'dist'));
     expect(result.errors).toEqual([]);
     expect(result.manifest).toMatchObject({ id: 'tetris', version: '1.2.3' });
   });

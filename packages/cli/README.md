@@ -1,15 +1,19 @@
 # @croffledev/play-cli
 
-Validates and publishes Croffle Play game bundles. Normally run by the game repository's publish
-workflow (created by `npm create @croffledev/play-game`), not by hand.
+Checks a Croffle Play game before and after you deploy it. Games are hosted by their teams; the
+portal shows them in an iframe and reads their `game.json`.
 
 ```bash
-npx @croffledev/play-cli validate dist --api https://api.play.croffledev.kr
-CROFFLE_PLAY_DEPLOY_KEY=cpk_… npx @croffledev/play-cli publish dist --api https://api.play.croffledev.kr
+npx @croffledev/play-cli validate dist --api https://api.croffle-play.link
+npx @croffledev/play-cli check https://<id>.play.croffle-play.link/ --portal https://www.croffle-play.link
 ```
 
-`validate` checks `game.json` against the bundle contract, that the entry and thumbnail exist, the
-size limit (30 MB unless raised by an admin), references to external resources, and — with
-`--api` — that the SDK major is still accepted. `publish` validates, uploads every file through
-presigned URLs (each bound to the file's size and SHA-256), and completes the version, which then
-waits for admin approval.
+`validate` checks the build: `game.json` against the schema, that its entry and thumbnail exist (size
+and format of the thumbnail are recommendations), and — with `--api` — that the SDK major still
+accepts games (`old` and `deprecated` majors are refused).
+
+`check` checks the deployed game the way the portal uses it: https, the entry answers 200, the game
+lets the portal frame it (`Content-Security-Policy: frame-ancestors <portal>`, no
+`X-Frame-Options: DENY`), and `<origin>/game.json` is valid with an id matching the host name.
+`--insecure` allows http for local development. `--api` and `--portal` default to
+`CROFFLE_PLAY_API` and `CROFFLE_PLAY_PORTAL`.

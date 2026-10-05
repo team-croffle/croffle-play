@@ -1,0 +1,24 @@
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		# Only the portal may frame the game.
+		Content-Security-Policy "frame-ancestors {$PORTAL_ORIGIN}"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	# Vite puts content hashes in asset names: cache them for good.
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@fresh path / /index.html /game.json
+	header @fresh Cache-Control "no-cache"
+
+	file_server
+}
