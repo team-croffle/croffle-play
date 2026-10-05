@@ -10,26 +10,27 @@ const day = 86_400_000;
 const at = (offsetDays: number) => new Date(Date.now() + offsetDays * day);
 
 const sdkRow = (
-  status: 'current' | 'lts' | 'eol',
+  status: 'current' | 'lts' | 'deprecated',
+  oldAt: Date | null,
   deprecatedAt: Date | null,
-  eolAt: Date | null,
 ) => ({
   status,
+  oldAt,
   deprecatedAt,
-  eolAt,
 });
 
 describe('effectiveStatus', () => {
   it('applies dates over the stored status', () => {
     expect(effectiveStatus(sdkRow('lts', null, null))).toBe('lts');
     expect(effectiveStatus(sdkRow('lts', at(1), at(30)))).toBe('lts');
-    expect(effectiveStatus(sdkRow('lts', at(-1), at(30)))).toBe('deprecated');
-    expect(effectiveStatus(sdkRow('lts', at(-30), at(-1)))).toBe('eol');
-    expect(effectiveStatus(sdkRow('current', null, at(-1)))).toBe('eol');
+    expect(effectiveStatus(sdkRow('lts', at(-1), at(30)))).toBe('old');
+    expect(effectiveStatus(sdkRow('lts', at(-30), at(-1)))).toBe('deprecated');
+    expect(effectiveStatus(sdkRow('current', null, at(-1)))).toBe('deprecated');
   });
 
-  it('never revives an end-of-life major', () => {
-    expect(effectiveStatus(sdkRow('eol', at(-2), null))).toBe('eol');
+  it('never revives a deprecated major', () => {
+    expect(effectiveStatus(sdkRow('deprecated', null, null))).toBe('deprecated');
+    expect(effectiveStatus(sdkRow('deprecated', at(-2), at(5)))).toBe('deprecated');
   });
 });
 
@@ -54,30 +55,35 @@ describe('SDK lifecycle sync', () => {
   it('serves the effective status before the job has run', async () => {
     await t.db
       .update(sdkVersions)
-      .set({ status: 'lts', deprecatedAt: at(-1), eolAt: at(90) })
+      .set({ status: 'lts', oldAt: at(-1), deprecatedAt: at(90) })
       .where(eq(sdkVersions.major, 1));
     expect((await t.app.inject({ method: 'GET', url: '/v1/sdk/1' })).json()).toMatchObject({
-      status: 'deprecated',
+      status: 'old',
     });
   });
 
   it('persists each transition once and tells listeners', async () => {
     const listener = vi.fn(async () => undefined);
     sync.onTransition(listener);
-    expect(await sync.sync()).toMatchObject([{ major: 1, from: 'lts', to: 'deprecated' }]);
+    expect(await sync.sync()).toMatchObject([{ major: 1, from: 'lts', to: 'old' }]);
     expect(await sync.sync()).toEqual([]);
     expect(listener).toHaveBeenCalledOnce();
     const events = await t.db.select().from(sdkVersionEvents);
-    expect(events).toMatchObject([{ major: 1, fromStatus: 'lts', toStatus: 'deprecated' }]);
+    expect(events).toMatchObject([{ major: 1, fromStatus: 'lts', toStatus: 'old' }]);
     const [row] = await t.db.select().from(sdkVersions).where(eq(sdkVersions.major, 1));
-    expect(row?.status).toBe('deprecated');
+    expect(row?.status).toBe('old');
   });
 
-  it('warns admins when too many majors are active', async () => {
+  it('warns admins when too many majors are playable', async () => {
+    // Major 1 is old (still playable) after the test above; retire it so 2–4 are the playable set.
+    await t.db
+      .update(sdkVersions)
+      .set({ deprecatedAt: at(-1) })
+      .where(eq(sdkVersions.major, 1));
     const res = await t.app.inject({ method: 'GET', url: '/v1/admin/sdk', headers: t.adminAuth });
     expect(res.json<{ items: unknown[]; warnings: string[] }>().warnings).toEqual([]);
     await t.db.insert(sdkVersions).values({ major: 5, status: 'current' });
     const after = await t.app.inject({ method: 'GET', url: '/v1/admin/sdk', headers: t.adminAuth });
-    expect(after.json<{ warnings: string[] }>().warnings[0]).toMatch(/4 SDK majors are active/);
+    expect(after.json<{ warnings: string[] }>().warnings[0]).toMatch(/4 SDK majors are playable/);
   });
 });

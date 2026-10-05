@@ -14,7 +14,7 @@
   const route = useRoute();
 
   const sdk = props.info.sdk;
-  const blocked = !sdk || sdk.status === 'eol' || !sdk.adapterUrl || !sdk.sri;
+  const blocked = !sdk || sdk.status === 'deprecated' || !sdk.adapterUrl || !sdk.sri;
   const gameOrigin = new URL(props.info.url).origin;
 
   let mounted: MountedAdapter | null = null;
@@ -99,9 +99,8 @@
 <template>
   <div ref="stage" class="player">
     <p v-if="blocked" class="player__message">
-      지원이 종료된 SDK로 만들어진 버전이라 실행할 수 없습니다{{
-        sdk?.eolAt ? ` (${formatDate(sdk.eolAt)} 종료)` : ''
-      }}.
+      이 게임은 업데이트되지 않아 실행할 수 없습니다. 제작자가 업데이트하면 다시 플레이할 수
+      있습니다.
     </p>
     <template v-else>
       <iframe

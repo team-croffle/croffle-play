@@ -1,7 +1,7 @@
 import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard.js';
-import { ACTIVE_STATUSES, MAX_ACTIVE_MAJORS } from './lifecycle.js';
+import { MAX_PLAYABLE_MAJORS, PLAYABLE_STATUSES } from './lifecycle.js';
 import { type SdkInfo, SdkService } from './sdk.service.js';
 
 @Controller('admin/sdk')
@@ -13,12 +13,12 @@ export class SdkAdminController {
   @Get()
   async list(): Promise<{ items: SdkInfo[]; warnings: string[] }> {
     const items = await this.sdk.list();
-    const active = items.filter((i) => ACTIVE_STATUSES.includes(i.status)).length;
+    const playable = items.filter((i) => PLAYABLE_STATUSES.includes(i.status)).length;
     return {
       items,
       warnings:
-        active > MAX_ACTIVE_MAJORS
-          ? [`${active} SDK majors are active; the policy allows ${MAX_ACTIVE_MAJORS}`]
+        playable > MAX_PLAYABLE_MAJORS
+          ? [`${playable} SDK majors are playable; the policy allows ${MAX_PLAYABLE_MAJORS}`]
           : [],
     };
   }

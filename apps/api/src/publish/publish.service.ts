@@ -161,18 +161,13 @@ export class PublishService {
     if (!info) {
       throw new UnprocessableEntityException(`SDK v${major} is not supported by the platform`);
     }
-    const when = info.eolAt ? ` (end of life ${info.eolAt.slice(0, 10)})` : '';
-    if (info.status === 'deprecated' || info.status === 'eol') {
+    if (info.status === 'old' || info.status === 'deprecated') {
       throw new UnprocessableEntityException(
-        `SDK v${major} is ${info.status}${when}; new versions must use a supported SDK major. ` +
+        `SDK v${major} is ${info.status}; new versions must use a supported SDK major. ` +
           `Migration guide: ${guide}`,
       );
     }
-    const warnings =
-      info.status === 'maintenance'
-        ? [`SDK v${major} is in maintenance${when}; plan an upgrade: ${guide}`]
-        : [];
-    return { major, warnings };
+    return { major, warnings: [] };
   }
 
   private files(manifest: GameManifest, declared: CreateVersionBody['files'], limit: number) {

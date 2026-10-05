@@ -3,12 +3,13 @@ import { Logger } from '@nestjs/common';
 export interface SdkNotice {
   game: { id: string; name: string; repo: string };
   major: number;
-  status: 'deprecated' | 'eol';
-  eolAt: Date | null;
+  status: 'old' | 'deprecated';
+  /** When the major is (or was) deprecated, if scheduled. */
+  deprecatedAt: Date | null;
   guideUrl: string;
 }
 
-/** Where deprecation notices go. GitHub issues by default; swappable (e.g. a GitHub App). */
+/** Where SDK lifecycle notices go. GitHub issues by default; swappable (e.g. a GitHub App). */
 export interface Notifier {
   notify(notice: SdkNotice): Promise<void>;
 }
@@ -16,19 +17,19 @@ export interface Notifier {
 export const NOTIFIER = Symbol('NOTIFIER');
 
 export function noticeText(n: SdkNotice): { title: string; body: string } {
-  const date = n.eolAt?.toISOString().slice(0, 10);
+  const date = n.deprecatedAt?.toISOString().slice(0, 10);
   const title =
-    n.status === 'eol'
-      ? `Croffle Play: SDK v${n.major} reached end of life — ${n.game.name} no longer runs`
-      : `Croffle Play: SDK v${n.major} is deprecated${date ? ` (end of life ${date})` : ''}`;
+    n.status === 'deprecated'
+      ? `Croffle Play: SDK v${n.major} is deprecated — ${n.game.name} no longer runs`
+      : `Croffle Play: SDK v${n.major} is old${date ? ` (deprecated from ${date})` : ''}`;
   const body = [
     `**${n.game.name}** (\`${n.game.id}\`) is built with \`@croffledev/play-sdk\` v${n.major}.`,
     '',
-    n.status === 'eol'
-      ? `SDK v${n.major} reached end of life: versions built with it cannot be played any more.`
-      : `SDK v${n.major} is deprecated: new versions built with it are refused${date ? `, and existing ones stop working on ${date}` : ''}.`,
+    n.status === 'deprecated'
+      ? `SDK v${n.major} is deprecated: games built with it no longer run. The game stays listed as "not updated".`
+      : `SDK v${n.major} is old: the platform refuses updates of games built with it${date ? `, and they stop running on ${date}` : ''}.`,
     '',
-    `Upgrade to a supported SDK major (\`npx @croffledev/play-sdk migrate ${n.major}-to-<next>\`) and publish a new version.`,
+    `Upgrade to a supported SDK major (\`npx @croffledev/play-sdk migrate ${n.major}-to-<next>\`) and redeploy the game.`,
     `Guide: ${n.guideUrl}`,
     '',
     '_Opened automatically by the Croffle Play platform._',

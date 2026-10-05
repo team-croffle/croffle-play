@@ -42,11 +42,11 @@ describe('deprecation notices', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('opens one notice per affected game when a major is deprecated', async () => {
-    const eolAt = new Date(Date.now() + 30 * 86_400_000);
+  it('opens one notice per affected game when a major becomes old', async () => {
+    const deprecatedAt = new Date(Date.now() + 30 * 86_400_000);
     await t.db
       .update(sdkVersions)
-      .set({ deprecatedAt: new Date(Date.now() - 1000), eolAt })
+      .set({ oldAt: new Date(Date.now() - 1000), deprecatedAt })
       .where(eq(sdkVersions.major, 1));
     const lifecycle = t.app.get(SdkLifecycleService);
     await lifecycle.sync();
@@ -55,19 +55,19 @@ describe('deprecation notices', () => {
       'team-croffle/block-drop',
       'team-croffle/word-chain',
     ]);
-    expect(sent[0]).toMatchObject({ major: 1, status: 'deprecated', eolAt });
+    expect(sent[0]).toMatchObject({ major: 1, status: 'old', deprecatedAt });
     expect(await t.db.select().from(sdkNotifications)).toHaveLength(2);
   });
 
-  it('notifies again at end of life, still once', async () => {
+  it('notifies again when deprecated, still once', async () => {
     sent.length = 0;
     await t.db
       .update(sdkVersions)
-      .set({ eolAt: new Date(Date.now() - 1000) })
+      .set({ deprecatedAt: new Date(Date.now() - 1000) })
       .where(eq(sdkVersions.major, 1));
     await t.app.get(SdkLifecycleService).sync();
     await t.app.get(SdkLifecycleService).sync();
-    expect(sent.map((n) => n.status)).toEqual(['eol', 'eol']);
+    expect(sent.map((n) => n.status)).toEqual(['deprecated', 'deprecated']);
   });
 
   it('skips games without a repository', async () => {
@@ -85,8 +85,8 @@ describe('GithubIssueNotifier', () => {
     await new GithubIssueNotifier('tok', 'https://gh.test', fetcher).notify({
       game: { id: 'tetris', name: 'Tetris', repo: 'team-croffle/tetris' },
       major: 1,
-      status: 'deprecated',
-      eolAt: new Date('2027-01-31T00:00:00Z'),
+      status: 'old',
+      deprecatedAt: new Date('2027-01-31T00:00:00Z'),
       guideUrl: 'https://guide.test',
     });
     const [url, init] =
@@ -94,7 +94,7 @@ describe('GithubIssueNotifier', () => {
     expect(url).toBe('https://gh.test/repos/team-croffle/tetris/issues');
     expect(init?.headers).toMatchObject({ authorization: 'Bearer tok' });
     const body = JSON.parse(String(init?.body)) as { title: string; body: string };
-    expect(body.title).toBe('Croffle Play: SDK v1 is deprecated (end of life 2027-01-31)');
+    expect(body.title).toBe('Croffle Play: SDK v1 is old (deprecated from 2027-01-31)');
     expect(body.body).toContain('https://guide.test');
   });
 
@@ -106,8 +106,8 @@ describe('GithubIssueNotifier', () => {
       new GithubIssueNotifier('tok', 'https://gh.test', fetcher).notify({
         game: { id: 'x', name: 'X', repo: 'a/b' },
         major: 1,
-        status: 'eol',
-        eolAt: null,
+        status: 'deprecated',
+        deprecatedAt: null,
         guideUrl: 'g',
       }),
     ).rejects.toThrow(/403/);

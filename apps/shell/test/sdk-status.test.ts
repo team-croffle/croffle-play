@@ -2,33 +2,28 @@ import { describe, expect, it } from 'vitest';
 
 import { sdkNotice } from '../app/utils/sdk-status';
 
-const sdk = (
-  status: 'current' | 'lts' | 'maintenance' | 'deprecated' | 'eol',
-  eolAt: string | null = null,
-) => ({
+const sdk = (status: 'current' | 'lts' | 'old' | 'deprecated') => ({
   major: 1,
   status,
+  oldAt: null,
   deprecatedAt: null,
-  eolAt,
 });
 
 describe('sdkNotice', () => {
-  it('says nothing for supported majors (maintenance is for developers only)', () => {
-    for (const s of ['current', 'lts', 'maintenance'] as const) {
+  it('says nothing to players while the major still runs (old is for developers only)', () => {
+    for (const s of ['current', 'lts', 'old'] as const) {
       expect(sdkNotice(sdk(s))).toBeNull();
     }
   });
 
-  it('warns players before end of life, with the date', () => {
-    expect(sdkNotice(sdk('deprecated', '2027-03-01T00:00:00Z'))).toMatchObject({
-      badge: '곧 지원 종료',
-      playable: true,
-      text: expect.stringContaining('2027'),
+  it('marks deprecated games as not updated and not playable', () => {
+    expect(sdkNotice(sdk('deprecated'))).toMatchObject({
+      badge: '업데이트되지 않음',
+      playable: false,
     });
   });
 
-  it('blocks play after end of life or for unknown majors', () => {
-    expect(sdkNotice(sdk('eol'))?.playable).toBe(false);
+  it('blocks play for unknown majors', () => {
     expect(sdkNotice(null)?.playable).toBe(false);
   });
 });
