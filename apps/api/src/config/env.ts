@@ -85,12 +85,7 @@ export const envSchema = v.object({
     v.minValue(60),
     v.maxValue(900),
   ),
-  /** Public address of an approved game server, `{id}` replaced. */
-  GAME_SERVER_URL_TEMPLATE: v.pipe(
-    v.optional(v.string(), 'http://{id}.srv.localhost:4100'),
-    v.includes('{id}'),
-  ),
-  /** Linked from publish refusals and warnings about old SDK majors. */
+  /** Linked from refused registrations and warnings about old SDK majors. */
   SDK_MIGRATION_GUIDE_URL: v.optional(
     v.pipe(v.string(), v.url()),
     'https://github.com/team-croffle/croffle-play/blob/master/docs/sdk-lifecycle.md',

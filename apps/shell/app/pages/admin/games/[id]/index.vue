@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { AdminGame, GameServerView, ServerKeyView } from '~~/shared/types/admin';
+  import type { AdminGame, ServerKeyView } from '~~/shared/types/admin';
   import type { PlayInfo } from '~~/shared/types/play';
 
   definePageMeta({ middleware: 'admin' });
@@ -15,10 +15,6 @@
   });
   const { data: keys, refresh: refreshKeys } = await useFetch<{ items: ServerKeyView[] }>(
     `/api/admin/games/${id}/server-keys`,
-  );
-  const { data: server, refresh: refreshServer } = await useFetch<GameServerView | null>(
-    `/api/admin/games/${id}/server`,
-    { default: () => null, onResponseError: () => undefined, ignoreResponseError: true },
   );
   const { data: members, refresh: refreshMembers } = await useFetch<{
     items: { user: { id: string; nickname: string }; role: string }[];
@@ -48,11 +44,6 @@
   async function saveInfo() {
     await call('PATCH', `games/${id}`, { name: info.name, description: info.description });
     await refreshGame();
-  }
-
-  async function decideServer(action: 'approve' | 'revoke') {
-    await call('POST', `games/${id}/server/${action}`);
-    await refreshServer();
   }
 
   async function addMember() {
@@ -159,40 +150,11 @@
       <button class="button" type="submit" :disabled="busy">저장</button>
     </form>
 
-    <template v-if="server && 'image' in server">
-      <h2>전용 서버 (Tier 2)</h2>
-      <p>
-        <code>{{ server.image }}</code> · 프로토콜 v{{ server.protocol }} ·
-        <strong>{{ server.status }}</strong>
-      </p>
-      <div class="row">
-        <button
-          v-if="server.status !== 'approved'"
-          type="button"
-          class="button"
-          :disabled="busy"
-          @click="decideServer('approve')"
-        >
-          서버 승인
-        </button>
-        <button
-          v-if="server.status === 'approved'"
-          type="button"
-          class="button button--ghost"
-          :disabled="busy"
-          @click="decideServer('revoke')"
-        >
-          승인 폐기
-        </button>
-        <a
-          v-if="server.status === 'approved'"
-          :href="`/api/admin/games/${id}/server/compose`"
-          class="button button--ghost"
-        >
-          compose 내려받기
-        </a>
-      </div>
-    </template>
+    <p v-if="game.manifest?.server" class="muted">
+      전용 서버 <code>{{ game.manifest.server.url }}</code> · 프로토콜 v{{
+        game.manifest.server.protocol
+      }}
+    </p>
 
     <h2>멤버</h2>
     <table class="table">

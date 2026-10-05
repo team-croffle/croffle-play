@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { games } from '../src/db/schema.js';
@@ -46,5 +47,35 @@ describe('/v1/games', () => {
   it('keeps probes outside the version prefix', async () => {
     expect((await t.app.inject({ method: 'GET', url: '/healthz' })).statusCode).toBe(200);
     expect((await t.app.inject({ method: 'GET', url: '/v1/healthz' })).statusCode).toBe(404);
+  });
+});
+
+describe('/v1/games/:id/server', () => {
+  let t: TestApp;
+
+  beforeAll(async () => {
+    t = await createTestApp({ seed: true });
+    const [g] = await t.db.select().from(games).where(eq(games.id, 'block-drop'));
+    await t.db
+      .update(games)
+      .set({
+        manifest: { ...g!.manifest!, server: { url: 'wss://rt.example/ws', protocol: '1.2.0' } },
+      })
+      .where(eq(games.id, 'block-drop'));
+  });
+
+  afterAll(async () => {
+    await t.close();
+  });
+
+  it('returns the server game.json declares, and 404 without one', async () => {
+    const res = await t.app.inject({ method: 'GET', url: '/v1/games/block-drop/server' });
+    expect(res.json()).toEqual({ url: 'wss://rt.example/ws', protocol: '1.2.0' });
+    expect((await t.app.inject({ method: 'GET', url: '/v1/games/sample/server' })).statusCode).toBe(
+      404,
+    );
+    expect(
+      (await t.app.inject({ method: 'GET', url: '/v1/games/block-drop' })).json(),
+    ).toMatchObject({ serverProtocol: '1.2.0' });
   });
 });

@@ -80,17 +80,19 @@ export const THUMBNAIL = {
   extensions: ['png', 'jpg', 'jpeg', 'webp'],
 } as const;
 
-/** Game server images must come from the team's registry, pinned to a tag or digest. */
-export const SERVER_IMAGE_PREFIX = 'ghcr.io/team-croffle/';
-
-export const serverImageSchema = v.pipe(
+/**
+ * Address of a game's own server (hosted by the team, anywhere): https or wss, or plain http/ws on
+ * localhost for development. It verifies players with the platform's game tokens (JWKS).
+ */
+export const serverUrlSchema = v.pipe(
   v.string(),
-  v.startsWith(SERVER_IMAGE_PREFIX, `Server images must come from ${SERVER_IMAGE_PREFIX}`),
-  v.regex(
-    /^ghcr\.io\/team-croffle\/[a-z0-9._-]+(?:\/[a-z0-9._-]+)*(?::[\w][\w.-]{0,127}|@sha256:[a-f0-9]{64})$/,
-    'Server images need an explicit tag or sha256 digest',
+  v.url(),
+  v.maxLength(255),
+  v.check(
+    (u) =>
+      /^(https|wss):\/\//.test(u) || /^(http|ws):\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(u),
+    'server.url must be https:// or wss:// (http/ws only on localhost)',
   ),
-  v.check((img) => !img.endsWith(':latest'), "Server images must not use the 'latest' tag"),
 );
 
 const manifestObject = v.object({
@@ -105,28 +107,18 @@ const manifestObject = v.object({
     v.string(),
     v.check((r) => sdkRangeMajor(r) !== null, 'sdk must target one major, e.g. "^1.2.0"'),
   ),
-  needsServer: v.optional(v.boolean(), false),
   orientation: v.optional(v.picklist(['landscape', 'portrait', 'any']), 'any'),
+  /** The game's own server, if it has one (`sdk.getServerInfo()` returns it). */
   server: v.optional(
     v.object({
+      url: serverUrlSchema,
       /** Version of the client↔server protocol this build speaks. */
       protocol: semverSchema,
-      /** Container image of the game server (Tier 2, approval required). */
-      image: v.optional(serverImageSchema),
     }),
   ),
 });
 
-export const gameManifestSchema = v.pipe(
-  manifestObject,
-  v.forward(
-    v.check(
-      (m) => !m.needsServer || Boolean(m.server?.image),
-      'needsServer requires server.protocol and server.image',
-    ),
-    ['server'],
-  ),
-);
+export const gameManifestSchema = manifestObject;
 
 export type GameManifest = v.InferOutput<typeof gameManifestSchema>;
 export type GameManifestInput = v.InferInput<typeof gameManifestSchema>;

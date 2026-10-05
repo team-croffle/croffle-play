@@ -46,6 +46,19 @@ export class GamesService {
     return this.toSummary(row);
   }
 
+  /** `game.json` `server` of a registered game; 404 when it declares none. */
+  async server(id: string): Promise<{ url: string; protocol: string }> {
+    const [row] = await this.db
+      .select({ manifest: games.manifest })
+      .from(games)
+      .where(eq(games.id, id));
+    const server = row?.manifest?.server;
+    if (!server) {
+      throw new NotFoundException(`'${id}' declares no game server`);
+    }
+    return { url: server.url, protocol: server.protocol };
+  }
+
   private listed() {
     return this.db
       .select({ game: games, sdk: sdkVersions })

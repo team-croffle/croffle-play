@@ -23,7 +23,6 @@ export async function seed(db: Db): Promise<void> {
       name: g.name,
       sdk: '^1.0.0',
       entry: 'index.html',
-      needsServer: false,
       orientation: 'any',
     };
     await db

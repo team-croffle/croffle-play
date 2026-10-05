@@ -21,6 +21,12 @@ export class GamesController {
     return this.games.get(id);
   }
 
+  /** The game's own server, as its game.json declares it (`sdk.getServerInfo()`). */
+  @Get(':id/server')
+  server(@Param('id', GameIdPipe) id: string): Promise<{ url: string; protocol: string }> {
+    return this.games.server(id);
+  }
+
   @Get(':id/play')
   playInfo(@Param('id', GameIdPipe) id: string): Promise<PlayInfo> {
     return this.play.info(id);
