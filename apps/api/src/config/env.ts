@@ -48,12 +48,11 @@ export const envSchema = v.object({
   ),
   /** Object storage (S3 API) for platform-owned files. Disabled until these are set. */
   S3_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
-  /** Endpoint in presigned upload URLs (reachable by CI runners). Defaults to S3_ENDPOINT. */
-  S3_PUBLIC_ENDPOINT: v.optional(v.pipe(v.string(), v.url())),
   S3_REGION: v.optional(v.string(), 'us-east-1'),
   S3_ACCESS_KEY_ID: v.optional(v.string()),
   S3_SECRET_ACCESS_KEY: v.optional(v.string()),
-  S3_BUCKET: v.optional(v.string(), 'games'),
+  /** One bucket for platform-owned files, by prefix: `adapters/`, `avatars/`. */
+  S3_BUCKET: v.optional(v.string(), 'croffle-play'),
   /** OIDC issuer of player access tokens (Logto: https://auth.…/oidc). Sign-in is off without it. */
   OIDC_ISSUER: v.optional(v.pipe(v.string(), v.url())),
   /** API resource indicator; the `aud` of access tokens. */

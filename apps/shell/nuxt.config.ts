@@ -27,20 +27,22 @@ export default defineNuxtConfig({
     // Public URL of this shell (NUXT_SITE_URL); OIDC redirect URIs are built from it.
     siteUrl: 'http://localhost:3000',
     oidc: {
-      // NUXT_OIDC_ISSUER (Logto: https://auth.play.croffledev.kr/oidc). Sign-in is off when empty.
+      // NUXT_OIDC_ISSUER (Logto: https://auth.croffle-play.link/oidc). Sign-in is off when empty.
       issuer: '',
       clientId: '',
       clientSecret: '',
       // API resource indicator; access tokens are issued for it (NUXT_OIDC_AUDIENCE).
       audience: '',
     },
-    // Shared rooms server games connect to (NUXT_ROOMS_URL), e.g. wss://rooms.play.croffledev.kr
+    // Shared rooms server games connect to (NUXT_ROOMS_URL), e.g. wss://rooms.croffle-play.link
     roomsUrl: 'ws://localhost:3002',
     csp: {
-      // Where game versions are framed from (NUXT_CSP_FRAME_SRC), e.g. https://*.croffle-play.link
-      frameSrc: 'http://localhost:4100 http://*.localhost:4100',
-      // Where host adapters are fetched from (NUXT_CSP_CONNECT_SRC), e.g. https://static.play.croffledev.kr
-      connectSrc: 'http://localhost:4100',
+      // Where games are framed from (NUXT_CSP_FRAME_SRC), e.g. https://*.play.croffle-play.link.
+      // Empty: the development game server (`pnpm dev:games`) only.
+      frameSrc: '',
+      // Extra origins pages may fetch (NUXT_CSP_CONNECT_SRC). Adapters come from this origin
+      // (/adapters/…), so production needs none; development adds `pnpm dev:games`.
+      connectSrc: '',
     },
   },
   vite: {

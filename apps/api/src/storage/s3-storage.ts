@@ -1,81 +1,46 @@
-import {
-  HeadObjectCommand,
-  NotFound,
-  PutObjectCommand,
-  S3Client,
-  type S3ClientConfig,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { ServiceUnavailableException } from '@nestjs/common';
 
 import type { Env } from '../config/env.js';
-import {
-  IMMUTABLE_CACHE_CONTROL,
-  type PresignedUpload,
-  type PutTarget,
-  type Storage,
-  type StoredObject,
-} from './storage.js';
+import type { Storage, StoredFile } from './storage.js';
 
-/** S3-compatible storage (MinIO now, R2/S3 later — configuration only). */
+/** Any S3-compatible store (MinIO/AIStor, R2, S3) — configuration only. */
 export class S3Storage implements Storage {
-  private readonly internal: S3Client;
-  private readonly signer: S3Client;
+  private readonly client: S3Client;
 
   constructor(
     private readonly bucket: string,
-    config: {
-      endpoint: string;
-      publicEndpoint: string;
-      region: string;
-      key: string;
-      secret: string;
-    },
+    config: { endpoint: string; region: string; key: string; secret: string },
   ) {
-    const base: S3ClientConfig = {
+    this.client = new S3Client({
       region: config.region,
+      endpoint: config.endpoint,
       forcePathStyle: true,
       credentials: { accessKeyId: config.key, secretAccessKey: config.secret },
-      // Only the checksum we choose (SHA-256) goes into signatures; no SDK default CRC32.
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
-    };
-    this.internal = new S3Client({ ...base, endpoint: config.endpoint });
-    this.signer = new S3Client({ ...base, endpoint: config.publicEndpoint });
+    });
   }
 
-  async presignPut(t: PutTarget, expiresIn: number): Promise<PresignedUpload> {
-    const headers: Record<string, string> = {
-      'content-type': t.contentType,
-      'cache-control': IMMUTABLE_CACHE_CONTROL,
-      'x-amz-checksum-sha256': t.sha256,
-      ...(t.contentEncoding ? { 'content-encoding': t.contentEncoding } : {}),
-    };
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: t.key,
-      ContentType: t.contentType,
-      ContentLength: t.contentLength,
-      CacheControl: IMMUTABLE_CACHE_CONTROL,
-      ChecksumSHA256: t.sha256,
-      ...(t.contentEncoding ? { ContentEncoding: t.contentEncoding } : {}),
-    });
-    const url = await getSignedUrl(this.signer, command, {
-      expiresIn,
-      // Bind size, type, and hash to the URL: the upload must be exactly the declared file.
-      signableHeaders: new Set([...Object.keys(headers), 'content-length']),
-    });
-    return { url, method: 'PUT', headers };
+  async put(key: string, file: StoredFile & { cacheControl?: string }): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: file.body,
+        ContentType: file.contentType,
+        ...(file.cacheControl ? { CacheControl: file.cacheControl } : {}),
+      }),
+    );
   }
 
-  async head(key: string): Promise<StoredObject | null> {
+  async get(key: string): Promise<StoredFile | null> {
     try {
-      const res = await this.internal.send(
-        new HeadObjectCommand({ Bucket: this.bucket, Key: key, ChecksumMode: 'ENABLED' }),
-      );
-      return { size: res.ContentLength ?? 0, sha256: res.ChecksumSHA256 ?? null };
+      const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      const body = await res.Body?.transformToByteArray();
+      return body ? { body, contentType: res.ContentType ?? 'application/octet-stream' } : null;
     } catch (err) {
-      if (err instanceof NotFound || (err as { name?: string }).name === 'NotFound') {
+      if (err instanceof NoSuchKey || (err as { name?: string }).name === 'NoSuchKey') {
         return null;
       }
       throw err;
@@ -83,13 +48,13 @@ export class S3Storage implements Storage {
   }
 }
 
-/** Used when S3_* is not configured: the catalog works, publishing answers 503. */
+/** Used when S3_* is not configured: everything else works, stored files answer 503. */
 export class UnconfiguredStorage implements Storage {
-  presignPut(): Promise<PresignedUpload> {
+  put(): Promise<void> {
     return Promise.reject(new ServiceUnavailableException('Storage is not configured'));
   }
 
-  head(): Promise<StoredObject | null> {
+  get(): Promise<StoredFile | null> {
     return Promise.reject(new ServiceUnavailableException('Storage is not configured'));
   }
 }
@@ -100,7 +65,6 @@ export function storageFromEnv(env: Env): Storage {
   }
   return new S3Storage(env.S3_BUCKET, {
     endpoint: env.S3_ENDPOINT,
-    publicEndpoint: env.S3_PUBLIC_ENDPOINT ?? env.S3_ENDPOINT,
     region: env.S3_REGION,
     key: env.S3_ACCESS_KEY_ID,
     secret: env.S3_SECRET_ACCESS_KEY,
