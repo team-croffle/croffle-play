@@ -28,6 +28,16 @@ describe('loadAdapter', () => {
     expect(mod.major).toBe(1);
   });
 
+  it('loads from the portal origin (relative adapter URLs)', async () => {
+    const fetcher = vi.fn(async () => new Response(bytes)) as unknown as typeof fetch;
+    const importModule = vi.fn(async () => ({
+      major: 1,
+      mount: () => ({ capabilities: [], dispose() {} }),
+    }));
+    await loadAdapter('/adapters/v1/0.10.0/index.js', sri, { fetch: fetcher, importModule });
+    expect(fetcher).toHaveBeenCalledWith('/adapters/v1/0.10.0/index.js', expect.any(Object));
+  });
+
   it('refuses tampered bundles before importing them', async () => {
     const importModule = vi.fn();
     const tampered = vi.fn(async () => new Response(`${code};alert(1)`)) as unknown as typeof fetch;

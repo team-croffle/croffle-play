@@ -26,7 +26,7 @@ describe('play info and SDK registry', () => {
     await registerAdapter(
       t.db,
       { major: 1, version: '1.0.0', file: 'index.js', integrity: 'sha384-abc' },
-      'https://cdn.test/adapters/v1/1.0.0/manifest.json',
+      'https://cdn.test/adapters/v1/1.0.0/index.js',
     );
     const res = await get('/v1/games/sample/play');
     expect(res.statusCode).toBe(200);
@@ -57,7 +57,7 @@ describe('play info and SDK registry', () => {
     await registerAdapter(
       t.db,
       { major: 1, version: '1.0.1', file: 'index.js', integrity: 'sha384-def' },
-      'https://cdn.test/adapters/v1/1.0.1/manifest.json',
+      'https://cdn.test/adapters/v1/1.0.1/index.js',
     );
     expect((await get('/v1/sdk/1')).json()).toMatchObject({ status: 'lts', sri: 'sha384-def' });
   });

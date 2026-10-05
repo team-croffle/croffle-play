@@ -1,15 +1,21 @@
-// Usage: pnpm --filter @croffledev/play-api sdk:register <manifest-url>
+// Usage:
+//   node dist/sdk/register-cli.js <dir>   upload apps/adapters/dist/v<N>/<version>/ to storage, register
+//   node dist/sdk/register-cli.js <url>   register a manifest.json served elsewhere (development)
 import { parseEnv } from '../config/env.js';
 import { connect } from '../db/connect.js';
-import { fetchAdapterManifest, registerAdapter } from './register-adapter.js';
+import { storageFromEnv } from '../storage/s3-storage.js';
+import { publishAdapterDir, registerAdapterUrl } from './register-adapter.js';
 
-const url = process.argv[2];
-if (!url) {
-  throw new Error('usage: sdk:register <adapter manifest.json URL>');
+const target = process.argv[2];
+if (!target) {
+  throw new Error('usage: sdk:register <adapter dist directory | manifest.json URL>');
 }
-const conn = await connect(parseEnv(process.env));
+const env = parseEnv(process.env);
+const conn = await connect(env);
 try {
-  const result = await registerAdapter(conn.db, await fetchAdapterManifest(url), url);
+  const result = /^https?:\/\//.test(target)
+    ? await registerAdapterUrl(conn.db, target)
+    : await publishAdapterDir(conn.db, storageFromEnv(env), target);
   console.log(`SDK v${result.major} → ${result.adapterUrl} (${result.sri})`);
 } finally {
   await conn.close();

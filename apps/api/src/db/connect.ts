@@ -3,7 +3,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 
 import type { Env } from '../config/env.js';
-import { fetchAdapterManifest, registerAdapter } from '../sdk/register-adapter.js';
+import { registerAdapterUrl } from '../sdk/register-adapter.js';
 import { type Db, migrationsFolder } from './db.js';
 import { schema } from './schema.js';
 import { seed } from './seed.js';
@@ -30,8 +30,7 @@ export async function connect(env: Env): Promise<Connection> {
     }
     await seed(conn.db);
     if (env.SEED_ADAPTER_MANIFEST_URL) {
-      const url = env.SEED_ADAPTER_MANIFEST_URL;
-      await registerAdapter(conn.db, await fetchAdapterManifest(url), url);
+      await registerAdapterUrl(conn.db, env.SEED_ADAPTER_MANIFEST_URL);
     }
   }
   return { db: conn.db, close: conn.close };
