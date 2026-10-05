@@ -24,7 +24,10 @@ describe('game servers', () => {
   let servers: GameServersService;
 
   beforeAll(async () => {
-    t = await createTestApp({ seed: true });
+    t = await createTestApp({
+      seed: true,
+      env: { GAME_SERVER_URL_TEMPLATE: 'https://{id}.srv.croffle-play.link' },
+    });
     servers = t.app.get(GameServersService);
   });
 

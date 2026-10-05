@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
+import { ManifestFetchError, type ManifestFetcher } from '../../src/admin/manifest-fetcher.js';
 import { createApp } from '../../src/bootstrap.js';
 import type { Db } from '../../src/db/db.js';
 import { seed } from '../../src/db/seed.js';
@@ -24,6 +25,8 @@ export async function createTestApp(
     env?: Record<string, string>;
     storage?: Storage;
     notifier?: Notifier;
+    /** `game.json` by URL; anything else is unreachable (the tests never touch the network). */
+    manifests?: Record<string, unknown>;
   } = {},
 ): Promise<TestApp> {
   const { db, close: closeDb } = await createTestDb();
@@ -36,6 +39,7 @@ export async function createTestApp(
     jwks: testJwks,
     ...(opts.storage ? { storage: opts.storage } : {}),
     ...(opts.notifier ? { notifier: opts.notifier } : {}),
+    fetchManifest: fakeManifests(opts.manifests ?? {}),
   });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
@@ -50,5 +54,14 @@ export async function createTestApp(
       await app.close();
       await closeDb();
     },
+  };
+}
+
+function fakeManifests(byUrl: Record<string, unknown>): ManifestFetcher {
+  return async (url) => {
+    if (!(url in byUrl)) {
+      throw new ManifestFetchError(`${url} is unreachable (test)`);
+    }
+    return byUrl[url];
   };
 }

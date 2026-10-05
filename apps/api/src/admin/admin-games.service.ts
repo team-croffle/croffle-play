@@ -1,47 +1,54 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import { DB, type Db } from '../db/db.js';
-import { gameVersions, games } from '../db/schema.js';
+import { games } from '../db/schema.js';
+import { RegistryService } from './registry.service.js';
 
-export type AdminGame = Omit<typeof games.$inferSelect, 'createdAt' | 'updatedAt'> & {
+export type AdminGame = Omit<
+  typeof games.$inferSelect,
+  'createdAt' | 'updatedAt' | 'manifestFetchedAt'
+> & {
   createdAt: string;
   updatedAt: string;
+  manifestFetchedAt: string | null;
 };
 
-export interface AdminVersion {
-  version: string;
-  status: (typeof gameVersions.$inferSelect)['status'];
-  sdkMajor: number;
-  uploadedAt: string | null;
-  createdAt: string;
+export interface GamePatch {
+  name?: string | undefined;
+  description?: string | undefined;
+  listed?: boolean | undefined;
+  repo?: string | null | undefined;
+  scorePolicy?: 'client' | 'server' | undefined;
+  scoreMin?: number | null | undefined;
+  scoreMax?: number | null | undefined;
 }
 
-/** Game registry and release pointers. Rollback = moving `stable_version` (design invariant 2). */
+/**
+ * Game registry. Games are hosted by their teams at `<id>.<games host>`; the platform keeps the
+ * catalog entry, whether it is listed, and the game's `game.json` (RegistryService).
+ */
 @Injectable()
 export class AdminGamesService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(RegistryService) private readonly registry: RegistryService,
+  ) {}
 
+  /** Registers a game, unlisted. Its `game.json` is read now if the game is already online. */
   async create(input: { id: string; name: string; description: string }): Promise<AdminGame> {
     const rows = await this.db.insert(games).values(input).onConflictDoNothing().returning();
     if (!rows[0]) {
       throw new ConflictException(`Game '${input.id}' already exists`);
     }
-    return toGame(rows[0]);
+    await this.registry.refresh(input.id).catch(() => undefined);
+    return this.get(input.id);
   }
 
-  async update(
-    id: string,
-    patch: {
-      name?: string | undefined;
-      description?: string | undefined;
-      repo?: string | null | undefined;
-      scorePolicy?: 'client' | 'server' | undefined;
-      scoreMin?: number | null | undefined;
-      scoreMax?: number | null | undefined;
-      maxBundleBytes?: number | null | undefined;
-    },
-  ): Promise<AdminGame> {
+  async update(id: string, patch: GamePatch): Promise<AdminGame> {
+    if (patch.listed) {
+      await this.registry.assertListable(id);
+    }
     const rows = await this.db.update(games).set(patch).where(eq(games.id, id)).returning();
     if (!rows[0]) {
       throw new NotFoundException(`Game '${id}' not found`);
@@ -49,91 +56,29 @@ export class AdminGamesService {
     return toGame(rows[0]);
   }
 
+  async refresh(id: string): Promise<AdminGame> {
+    await this.registry.refresh(id);
+    return this.get(id);
+  }
+
   async list(): Promise<AdminGame[]> {
     return (await this.db.select().from(games).orderBy(games.id)).map(toGame);
   }
 
-  async get(id: string): Promise<AdminGame & { versions: AdminVersion[] }> {
+  async get(id: string): Promise<AdminGame> {
     const [game] = await this.db.select().from(games).where(eq(games.id, id));
     if (!game) {
       throw new NotFoundException(`Game '${id}' not found`);
     }
-    const versions = await this.db
-      .select()
-      .from(gameVersions)
-      .where(eq(gameVersions.gameId, id))
-      .orderBy(desc(gameVersions.createdAt));
-    return {
-      ...toGame(game),
-      versions: versions.map((v) => ({
-        version: v.version,
-        status: v.status,
-        sdkMajor: v.sdkMajor,
-        uploadedAt: v.uploadedAt?.toISOString() ?? null,
-        createdAt: v.createdAt.toISOString(),
-      })),
-    };
-  }
-
-  /** Uploaded (or previously approved) version → approved and stable. */
-  async approve(id: string, version: string): Promise<AdminGame> {
-    await this.requireStatus(id, version, ['uploaded', 'approved']);
-    return this.db.transaction(async (tx) => {
-      await tx
-        .update(gameVersions)
-        .set({ status: 'approved' })
-        .where(and(eq(gameVersions.gameId, id), eq(gameVersions.version, version)));
-      const [game] = await tx
-        .update(games)
-        .set({ stableVersion: version })
-        .where(eq(games.id, id))
-        .returning();
-      return toGame(game as typeof games.$inferSelect);
-    });
-  }
-
-  /** Uploaded version → rejected; clears the preview pointer if it pointed there. */
-  async reject(id: string, version: string): Promise<AdminGame> {
-    await this.requireStatus(id, version, ['uploaded']);
-    return this.db.transaction(async (tx) => {
-      await tx
-        .update(gameVersions)
-        .set({ status: 'rejected' })
-        .where(and(eq(gameVersions.gameId, id), eq(gameVersions.version, version)));
-      await tx
-        .update(games)
-        .set({ previewVersion: null })
-        .where(and(eq(games.id, id), eq(games.previewVersion, version)));
-      const [game] = await tx.select().from(games).where(eq(games.id, id));
-      return toGame(game as typeof games.$inferSelect);
-    });
-  }
-
-  /** Points stable back at an earlier approved version. Nothing is deleted or re-uploaded. */
-  async rollback(id: string, version: string): Promise<AdminGame> {
-    await this.requireStatus(id, version, ['approved']);
-    const [game] = await this.db
-      .update(games)
-      .set({ stableVersion: version })
-      .where(eq(games.id, id))
-      .returning();
-    return toGame(game as typeof games.$inferSelect);
-  }
-
-  private async requireStatus(id: string, version: string, allowed: AdminVersion['status'][]) {
-    const [row] = await this.db
-      .select({ status: gameVersions.status })
-      .from(gameVersions)
-      .where(and(eq(gameVersions.gameId, id), eq(gameVersions.version, version)));
-    if (!row) {
-      throw new NotFoundException(`Version ${version} of '${id}' not found`);
-    }
-    if (!allowed.includes(row.status)) {
-      throw new ConflictException(`Version ${version} is ${row.status}`);
-    }
+    return toGame(game);
   }
 }
 
 function toGame(row: typeof games.$inferSelect): AdminGame {
-  return { ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() };
+  return {
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    manifestFetchedAt: row.manifestFetchedAt?.toISOString() ?? null,
+  };
 }

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { Db } from '../src/db/db.js';
-import { gameVersions, games } from '../src/db/schema.js';
+import { games, saves, users } from '../src/db/schema.js';
 import { seed, seedGames } from '../src/db/seed.js';
 import { createTestDb } from './support/test-db.js';
 
@@ -18,22 +18,18 @@ describe('schema + seed', () => {
     await close();
   });
 
-  it('seeds idempotently', async () => {
+  it('seeds idempotently, listed and on SDK v1', async () => {
     await seed(db);
     await seed(db);
-    expect(await db.select().from(games)).toHaveLength(seedGames.length);
-    expect(await db.select().from(gameVersions)).toHaveLength(seedGames.length);
+    const rows = await db.select().from(games);
+    expect(rows).toHaveLength(seedGames.length);
+    expect(rows.every((g) => g.listed && g.sdkMajor === 1 && g.manifest?.id === g.id)).toBe(true);
   });
 
-  it('refuses a second row for the same game version', async () => {
-    await expect(
-      db.insert(gameVersions).values({ gameId: 'sample', version: '1.0.0', manifest: {} }),
-    ).rejects.toThrow();
-  });
-
-  it('cascades versions when a game is deleted', async () => {
+  it('cascades player data when a game is deleted', async () => {
+    const [user] = await db.insert(users).values({ sub: 'x', nickname: 'x' }).returning();
+    await db.insert(saves).values({ gameId: 'word-chain', userId: user!.id, slot: 'a', data: '1' });
     await db.delete(games).where(eq(games.id, 'word-chain'));
-    const rows = await db.select().from(gameVersions).where(eq(gameVersions.gameId, 'word-chain'));
-    expect(rows).toHaveLength(0);
+    expect(await db.select().from(saves).where(eq(saves.gameId, 'word-chain'))).toHaveLength(0);
   });
 });

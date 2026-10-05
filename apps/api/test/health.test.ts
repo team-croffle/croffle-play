@@ -34,13 +34,18 @@ describe('parseEnv', () => {
     });
   });
 
-  it('checks the game URL template', () => {
-    expect(() => parseEnv({ ...base, GAME_URL_TEMPLATE: 'https://x.test/' })).toThrow(/GAME_URL/);
+  it('checks the game origin template', () => {
+    expect(() => parseEnv({ ...base, GAME_ORIGIN_TEMPLATE: 'https://x.test' })).toThrow(
+      /GAME_ORIGIN/,
+    );
+    expect(() => parseEnv({ ...base, GAME_ORIGIN_TEMPLATE: 'https://{id}.t/games' })).toThrow(
+      /must be an origin/,
+    );
     expect(() =>
-      parseEnv({ ...base, NODE_ENV: 'production', GAME_URL_TEMPLATE: 'http://{id}.t/{version}/' }),
-    ).toThrow(/GAME_URL_TEMPLATE: must be https/);
+      parseEnv({ ...base, NODE_ENV: 'production', GAME_ORIGIN_TEMPLATE: 'http://{id}.t' }),
+    ).toThrow(/GAME_ORIGIN_TEMPLATE: must be https/);
     expect(() =>
-      parseEnv({ ...base, NODE_ENV: 'production', GAME_URL_TEMPLATE: 'https://{id}.t/{version}/' }),
+      parseEnv({ ...base, NODE_ENV: 'production', GAME_ORIGIN_TEMPLATE: 'https://{id}.t' }),
     ).toThrow(/JWT_SIGNING_KEY/);
   });
 

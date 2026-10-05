@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { and, eq, inArray, isNotNull, or } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 
 import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
-import { gameVersions, games, sdkNotifications } from '../db/schema.js';
+import { games, sdkNotifications } from '../db/schema.js';
 import { SdkLifecycleService, type SdkTransition } from '../sdk/lifecycle.service.js';
 import { NOTIFIER, type Notifier } from './notifier.js';
 
@@ -70,25 +70,12 @@ export class SdkNoticesService implements OnModuleInit {
     return sent;
   }
 
-  /** Games with a repository whose stable or preview version uses this major. */
+  /** Games with a repository whose `game.json` targets this major. */
   private async gamesOn(major: number) {
-    const versions = this.db
-      .select({ gameId: gameVersions.gameId })
-      .from(gameVersions)
-      .innerJoin(games, eq(games.id, gameVersions.gameId))
-      .where(
-        and(
-          eq(gameVersions.sdkMajor, major),
-          or(
-            eq(gameVersions.version, games.stableVersion),
-            eq(gameVersions.version, games.previewVersion),
-          ),
-        ),
-      );
     const rows = await this.db
       .select({ id: games.id, name: games.name, repo: games.repo })
       .from(games)
-      .where(and(isNotNull(games.repo), inArray(games.id, versions)));
+      .where(and(isNotNull(games.repo), eq(games.sdkMajor, major)));
     return rows.map((r) => ({ id: r.id, name: r.name, repo: r.repo as string }));
   }
 }

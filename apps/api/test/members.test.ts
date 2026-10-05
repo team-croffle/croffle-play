@@ -61,11 +61,14 @@ describe('game members and the developer dashboard', () => {
       .update(sdkVersions)
       .set({ status: 'old', deprecatedAt: new Date('2099-06-01T00:00:00Z') })
       .where(eq(sdkVersions.major, 1));
-    await t.db.update(games).set({ previewVersion: '9.9.9' }).where(eq(games.id, 'block-drop'));
+    await t.db
+      .update(games)
+      .set({ manifestError: 'https://block-drop.localhost:4100/game.json answered 404' })
+      .where(eq(games.id, 'block-drop'));
     const [mine] = await myGames();
     expect(mine?.warnings).toEqual([
       'SDK v1 is old (deprecated from 2099-06-01): updates are refused until you upgrade with `npx @croffledev/play-sdk migrate`',
-      'Version 9.9.9 is waiting for approval',
+      'game.json could not be read: https://block-drop.localhost:4100/game.json answered 404',
     ]);
   });
 
