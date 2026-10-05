@@ -107,7 +107,9 @@ CI runs.
   of truth; nothing in the tree is bumped. The release workflow builds one
   image per app (`ghcr.io/team-croffle/croffle-play/<app>:<version>`).
 - **Packages (`packages/*`)**: independent semver via Changesets, published
-  to npm by the `Publish Packages` workflow. Never publish by hand.
+  to npm by the `Publish Packages` workflow through npm trusted publishing
+  (OIDC). No npm token exists in the repository or its secrets; never add one.
+  Never publish by hand (the one-time `0.0.0` name placeholders excepted).
 - **SDK majors** are the platform's public contract and have their own
   lifecycle (`current → lts → maintenance → deprecated → eol`) stored in the
   database, not in code. See _Design invariants_ 5–6.

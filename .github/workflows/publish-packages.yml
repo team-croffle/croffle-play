@@ -1,6 +1,10 @@
-# Publish Packages — Changesets for packages/* (protocol, sdk, cli).
+# Publish Packages — Changesets for packages/* (protocol, sdk, cli, create-game).
 # On master: opens/updates the "chore: version packages" PR, or publishes to
 # npm when that PR is merged. apps/* are private and never versioned here.
+#
+# npm auth is trusted publishing (OIDC) only. Each package on npmjs.com trusts
+# team-croffle/croffle-play + this workflow file name; no npm token exists in
+# this repository and none may be added.
 
 name: Publish Packages
 
@@ -12,12 +16,13 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'scripts/publish-packages.mjs'
       - '.github/workflows/publish-packages.yml'
   workflow_dispatch:
 
 concurrency:
   group: publish-packages-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -39,19 +44,23 @@ jobs:
         with:
           node-version: '24'
           cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@^11.5.1 && npm --version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Create Release Pull Request or Publish
+      - name: Create or update the version PR
+        id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm run version-packages
-          publish: pnpm run release
           title: 'chore: version packages'
           commit: 'chore: version packages'
-          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm (OIDC)
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: pnpm run release
