@@ -83,22 +83,30 @@ export class SdkClient {
     return this.request('getUser', undefined);
   }
 
+  /**
+   * Submits a score (capability `score`). Guests get `auth_required`. `accepted` is false when the
+   * game only counts scores from its own server.
+   */
   submitScore(score: number): Promise<ResponsePayload<'submitScore'>> {
     return this.request('submitScore', { score });
   }
 
+  /** Stores `data` (≤ 256 K chars) in a save slot (`[a-z0-9_-]{1,32}`, capability `save`). */
   save(slot: string, data: string): Promise<void> {
     return this.request('save', { slot, data });
   }
 
+  /** Reads a save slot; null when empty (capability `save`). */
   async load(slot: string): Promise<string | null> {
     return (await this.request('load', { slot })).data;
   }
 
+  /** Leaves the game; the portal returns to its detail page (capability `exit`). */
   exit(): Promise<void> {
     return this.request('exit', undefined);
   }
 
+  /** Asks the portal for fullscreen; resolves with the state applied (capability `fullscreen`). */
   async setFullscreen(on: boolean): Promise<boolean> {
     return (await this.request('fullscreen', { on })).on;
   }
@@ -117,8 +125,8 @@ export class SdkClient {
   }
 
   /**
-   * This game's own server (Tier 2, capability `server` — present only once an admin approved
-   * it): `{ url, protocol }`. Authenticate with `getToken()` as the first message.
+   * This game's own server, as declared in `game.json` (`server`): `{ url, protocol }`. Rejects
+   * with `unsupported` when none is declared. Authenticate with `getToken()` as the first message.
    */
   getServerInfo(): Promise<ResponsePayload<'getServerInfo'>> {
     return this.request('getServerInfo', {});
