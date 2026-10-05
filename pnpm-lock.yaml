@@ -303,12 +303,18 @@ importers:
       '@croffledev/play-protocol':
         specifier: workspace:^
         version: link:../../packages/protocol
+      ioredis:
+        specifier: ^5.11.1
+        version: 5.11.1(supports-color@10.2.2)
       nuxt:
         specifier: ^4.5.2
         version: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@electric-sql/pglite@0.5.8)(@oxc-project/types@0.152.0)(@types/node@24.19.1)(@vue/compiler-sfc@3.5.43)(db0@0.3.4(@electric-sql/pglite@0.5.8)(drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9)))(drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9))(esbuild@0.28.2)(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(oxlint@1.86.0)(rolldown@1.2.12)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.12)(rollup@4.64.0))(rollup@4.64.0)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue-tsc@3.3.12(typescript@6.0.3))
       openid-client:
         specifier: ^6.8.8
         version: 6.8.8
+      unstorage:
+        specifier: ^1.17.5
+        version: 1.17.5(db0@0.3.4(@electric-sql/pglite@0.5.8)(drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9)))(ioredis@5.11.1(supports-color@10.2.2))
       valibot:
         specifier: ^1.5.0
         version: 1.5.0(typescript@6.0.3)

@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
 import type { H3Event } from 'h3';
+import type { Storage } from 'unstorage';
 
 /** Signed-in player, as the API knows them. Games get only id/nickname/avatar. */
 export interface SessionUser {
@@ -47,15 +48,57 @@ export function sessionCookie(siteUrl: string) {
   };
 }
 
+/** What callers use: the h3 cookie session, or the same shape backed by the session store. */
+export interface ShellSessionHandle {
+  readonly data: ShellSession;
+  update(patch: Partial<ShellSession>): Promise<unknown>;
+  clear(): Promise<unknown>;
+}
+
 /**
- * Sealed, HttpOnly session cookie. Holds credentials server-side only; the browser and games never
- * see tokens (design invariant 4).
+ * The player's session. Sealed, HttpOnly cookie; with a session store (server/utils/session-store.ts)
+ * the cookie holds only the session id and the data stays on the server. Either way the browser and
+ * games never see tokens (design invariant 4).
  */
-export function useShellSession(event: H3Event) {
+export async function useShellSession(event: H3Event): Promise<ShellSessionHandle> {
   const config = useRuntimeConfig();
-  return useSession<ShellSession>(event, {
+  const maxAge = Number(config.sessionMaxAge) || 43_200;
+  const cookie = await useSession<ShellSession>(event, {
     password: password(),
-    maxAge: Number(config.sessionMaxAge) || 43_200,
+    maxAge,
     ...sessionCookie(config.siteUrl),
   });
+  const store = sessionStore();
+  if (!store) {
+    return cookie;
+  }
+  return storedSession(store, cookie, maxAge);
+}
+
+/** Session data in `store` under the cookie session's id (expires with the cookie). */
+export async function storedSession(
+  store: Storage,
+  cookie: { id?: string; update(patch: object): Promise<unknown>; clear(): Promise<unknown> },
+  maxAge: number,
+): Promise<ShellSessionHandle> {
+  const key = () => cookie.id ?? '';
+  let data: ShellSession = (cookie.id && (await store.getItem<ShellSession>(key()))) || {};
+  return {
+    get data() {
+      return data;
+    },
+    async update(patch) {
+      data = { ...data, ...patch };
+      // Seals and sets the cookie (with its id) if this is a new session.
+      await cookie.update({});
+      await store.setItem(key(), data, { ttl: maxAge });
+    },
+    async clear() {
+      if (cookie.id) {
+        await store.removeItem(key());
+      }
+      data = {};
+      await cookie.clear();
+    },
+  };
 }
