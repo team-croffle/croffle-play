@@ -85,7 +85,15 @@ describe('a generated game', () => {
       cliVersion: '0.0.0',
     });
     const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
-    execFileSync(process.execPath, [tsc, '--noEmit', '-p', g.dir], { stdio: 'pipe' });
+    try {
+      execFileSync(
+        process.execPath,
+        [tsc, '--noEmit', '-p', g.dir, '--customConditions', '@croffledev/source'],
+        { encoding: 'utf8' },
+      );
+    } catch (error) {
+      throw new Error(`tsc failed:\n${(error as { stdout?: string }).stdout ?? ''}`);
+    }
     await build({
       root: g.dir,
       configFile: join(g.dir, 'vite.config.ts'),
