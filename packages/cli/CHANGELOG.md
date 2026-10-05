@@ -1,5 +1,18 @@
 # @croffledev/play-cli
 
+## 0.2.0
+
+### Minor Changes
+
+- f3049ac: Games are hosted by their teams now, so `publish` is gone. `validate` checks a build's `game.json`, entry, and thumbnail (size and format are warnings) and refuses `old` or `deprecated` SDK majors with `--api`. New `check <url>` verifies a deployed game: https, framable by the portal (`frame-ancestors`), and a `game.json` whose id matches the host.
+
+### Patch Changes
+
+- Updated dependencies [bcdb033]
+- Updated dependencies [67a1154]
+- Updated dependencies [690673e]
+  - @croffledev/play-protocol@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

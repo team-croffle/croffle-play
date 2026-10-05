@@ -1,5 +1,19 @@
 # @croffledev/create-play-game
 
+## 0.2.0
+
+### Minor Changes
+
+- f3049ac: The template no longer has a publish workflow: teams host their games. It adds an optional `Dockerfile` + `Caddyfile` that serve the build and let only the portal frame it, and the README explains hosting and `play-cli check`.
+
+### Patch Changes
+
+- bcdb033: `game.json` declares a game's own server as `server: { url, protocol }` (https/wss; http/ws only on localhost). `needsServer`, `server.image`, `serverImageSchema`, and `SERVER_IMAGE_PREFIX` are gone: teams host their servers, and the platform only issues game tokens. The template's `game.json` drops `needsServer`.
+- Updated dependencies [bcdb033]
+- Updated dependencies [67a1154]
+- Updated dependencies [690673e]
+  - @croffledev/play-protocol@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

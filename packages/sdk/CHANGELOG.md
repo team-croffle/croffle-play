@@ -1,5 +1,14 @@
 # @croffledev/play-sdk
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [bcdb033]
+- Updated dependencies [67a1154]
+- Updated dependencies [690673e]
+  - @croffledev/play-protocol@0.2.0
+
 ## 1.0.0
 
 ### Major Changes
