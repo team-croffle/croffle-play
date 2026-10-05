@@ -58,8 +58,8 @@ export const requests = {
     response: v.object({ token: v.string(), expiresAt: v.string() }),
   },
   /**
-   * This game's own server, when approved (capability `server`): base URL and the protocol
-   * version it was approved with. Connect with a token from `getToken`.
+   * This game's own server, as declared in its `game.json` (capability `server`): base URL and
+   * protocol. Connect with a token from `getToken`.
    */
   getServerInfo: {
     request: v.object({}),

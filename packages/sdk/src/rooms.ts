@@ -22,9 +22,13 @@ export interface SocketLike {
 export type SocketFactory = (url: string) => SocketLike;
 
 export interface RoomEvents {
+  /** Data another peer sent; `from` is its connection id. */
   message: (data: unknown, from: string) => void;
+  /** A peer joined the room. */
   'peer-join': (peer: Peer) => void;
+  /** A peer left the room. */
   'peer-leave': (peerId: string) => void;
+  /** The room's host changed. */
   host: (peerId: string) => void;
   /** Connection lost; the SDK is reconnecting (`attempt` starts at 1). */
   reconnecting: (attempt: number) => void;
@@ -49,9 +53,13 @@ const OPEN = 1;
  * drops, reconnects with exponential backoff and re-joins the same room with a fresh token.
  */
 export class Room {
+  /** Room id; share it so friends can join. */
   id = '';
+  /** This connection. `self.id` changes after a reconnect. */
   self!: Peer;
+  /** Connection id of the room's host. */
   host = '';
+  /** The other peers in the room, by connection id. */
   readonly peers = new Map<string, Peer>();
   private ws: SocketLike | null = null;
   private readonly listeners = new Map<keyof RoomEvents, Set<(...args: never[]) => void>>();
@@ -73,6 +81,7 @@ export class Room {
     return r;
   }
 
+  /** True when this connection is the room's host (the peer that runs shared game logic). */
   get isHost(): boolean {
     return this.host === this.self.id;
   }
@@ -82,6 +91,7 @@ export class Room {
     this.write({ t: 'send', data, ...(to === undefined ? {} : { to }) });
   }
 
+  /** Subscribes to a room event. Returns an unsubscribe function. */
   on<E extends keyof RoomEvents>(event: E, listener: RoomEvents[E]): () => void {
     let set = this.listeners.get(event);
     if (!set) {
@@ -92,6 +102,7 @@ export class Room {
     return () => set.delete(listener as (...args: never[]) => void);
   }
 
+  /** Leaves the room for good; emits `closed('left')`. */
   leave(): void {
     if (this.left) {
       return;
