@@ -12,11 +12,13 @@
 #   - dry_run: build the images only — no push, no tag, no release.
 #
 # Images: ghcr.io/<owner>/<repo>/<app>:<version> for every apps/<app>/Dockerfile.
-# Order: validate → gate → build/push images → tag + draft release.
+# Assets: adapters-v<N>-<version>.tar.gz (+ .sha256) per SDK major — the host
+# adapter bundles an admin registers with the api image (docs/guide/admin.md).
+# Order: validate → gate → build/push images + adapter bundles → tag + draft release.
 # Release notes are filled in afterwards with `gh release edit --notes-file`.
 #
-# Not here: npm packages (`Publish Packages` workflow via Changesets) and host
-# adapters (uploaded to storage by the API — see roadmap).
+# Not here: npm packages (`Publish Packages` workflow via Changesets) and
+# uploading adapters to storage (an admin runs `register-cli` from the api image).
 
 name: Release
 
@@ -202,9 +204,51 @@ jobs:
           path: digests/*.txt
           retention-days: 1
 
+  adapters:
+    name: Adapter bundles
+    needs: [resolve, check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @croffledev/play-adapters...
+
+      - name: Build
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: pnpm --filter @croffledev/play-adapters build
+
+      # One archive per major, unpacking to v<N>/<version>/{index.js,manifest.json}.
+      - name: Pack
+        shell: bash
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cd apps/adapters/dist
+          for dir in v*/"$VERSION"; do
+            major="${dir%%/*}"
+            name="adapters-$major-$VERSION.tar.gz"
+            tar -czf "../../../assets/$name" "$dir"
+            (cd ../../../assets && sha256sum "$name" > "$name.sha256")
+          done
+          ls -l ../../../assets
+          [[ -n "$(ls ../../../assets)" ]] || { echo "::error::no adapter bundles for $VERSION"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adapters
+          path: assets/*
+          retention-days: ${{ inputs.dry_run && 1 || 7 }}
+
   release:
     name: Tag and draft release
-    needs: [resolve, image]
+    needs: [resolve, image, adapters]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     steps:
@@ -213,6 +257,11 @@ jobs:
           pattern: digest-*
           path: digests
           merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: adapters
+          path: assets
 
       - name: Create draft release
         env:
@@ -232,7 +281,11 @@ jobs:
           while read -r app digest; do
             NOTES+=$(printf -- '- `%s/%s:%s` — `%s`' "$REPO" "$app" "$VERSION" "$digest")$'\n'
           done < <(cat digests/*.txt)
+          NOTES+=$'\n'"Host adapter bundles (register with the api image, see docs/guide/admin.md):"$'\n'
+          for f in assets/*.tar.gz; do
+            NOTES+="- \`${f#assets/}\`"$'\n'
+          done
           ARGS=(--draft --title "$TITLE" --notes "$NOTES" --target "$GITHUB_SHA")
           [[ "$IS_PRE" == "true" ]] && ARGS+=(--prerelease)
-          gh release create "$TAG" "${ARGS[@]}" --repo "$GITHUB_REPOSITORY"
+          gh release create "$TAG" assets/* "${ARGS[@]}" --repo "$GITHUB_REPOSITORY"
           echo "Draft $TAG created at $GITHUB_SHA"
