@@ -31,18 +31,19 @@ Shell core  ──►  API (NestJS)  ──►  PostgreSQL · S3 storage
 
 ## Repository layout (planned)
 
-| Path                | Package                     | Ships as       |
-| ------------------- | --------------------------- | -------------- |
-| `apps/shell`        | `@croffledev/play-shell`    | Docker image   |
-| `apps/api`          | `@croffledev/play-api`      | Docker image   |
-| `apps/rooms`        | `@croffledev/play-rooms`    | Docker image   |
-| `apps/adapters`     | `@croffledev/play-adapters` | Static bundles |
-| `packages/protocol` | `@croffledev/play-protocol` | npm            |
-| `packages/sdk`      | `@croffledev/play-sdk`      | npm            |
-| `packages/cli`      | `@croffledev/play-cli`      | npm            |
+| Path                   | Package                        | Ships as           |
+| ---------------------- | ------------------------------ | ------------------ |
+| `apps/shell`           | `@croffledev/play-shell`       | Docker image       |
+| `apps/api`             | `@croffledev/play-api`         | Docker image       |
+| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image       |
+| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles     |
+| `packages/protocol`    | `@croffledev/play-protocol`    | npm                |
+| `packages/sdk`         | `@croffledev/play-sdk`         | npm                |
+| `packages/cli`         | `@croffledev/play-cli`         | npm                |
+| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`) |
 
-Games are **not** in this repository. They are created from the game template repository and
-published with `play-cli`.
+Games are **not** in this repository. Each game gets its own repository, created with
+`npm create @croffledev/play-game <dir>` and published with `play-cli`.
 
 ## Development
 

@@ -150,6 +150,7 @@
       // Command-line entry points and build scripts print by design.
       "files": [
         "packages/cli/**/*.ts",
+        "packages/*/src/cli.ts",
         "**/scripts/**",
         "**/*-cli.ts",
         "**/dev/serve-*.ts",
