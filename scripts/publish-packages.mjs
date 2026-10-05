@@ -3,7 +3,7 @@
 // `pnpm pack` rewrites `workspace:` ranges; `npm publish` (>= 11.5.1) does the OIDC exchange.
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -28,6 +28,14 @@ const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
   })
   .filter(({ manifest }) => !manifest.private);
 
+// The SDK package major is the SDK major games announce; the platform needs its host adapter.
+function assertSdkAdapter({ name, version }) {
+  const major = version.split('.')[0];
+  if (name === '@croffledev/play-sdk' && !existsSync(join(root, 'apps', 'adapters', `v${major}`))) {
+    throw new Error(`${name}@${version}: no apps/adapters/v${major} for SDK v${major}`);
+  }
+}
+
 const names = new Set(packages.map(({ manifest }) => manifest.name));
 const internalDeps = ({ manifest }) =>
   Object.keys(manifest.dependencies ?? {}).filter((dep) => names.has(dep)).length;
@@ -42,6 +50,7 @@ for (const pkg of packages) {
     console.log(`skip ${name}@${version} (already on npm)`);
     continue;
   }
+  assertSdkAdapter(pkg.manifest);
   const packed = run('pnpm', ['pack', '--json', '--pack-destination', outDir], pkg.dir);
   const tarball = JSON.parse(packed).filename;
   const tag = version.includes('-') ? 'next' : 'latest';
