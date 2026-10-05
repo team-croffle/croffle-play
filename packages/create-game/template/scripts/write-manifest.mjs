@@ -1,5 +1,5 @@
-// Writes dist/game.json: game.json + the version being released.
-// Version: GAME_VERSION (the publish workflow passes the git tag, `v1.2.0`) or package.json.
+// Writes dist/game.json (served at <game origin>/game.json for the portal): game.json + version.
+// Version (for information only): GAME_VERSION (e.g. a git tag, `v1.2.0`) or package.json.
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));

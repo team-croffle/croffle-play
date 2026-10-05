@@ -1,28 +1,35 @@
 # Croffle Play 게임
 
 `npm create @croffledev/play-game`으로 만든 [Croffle Play](https://github.com/team-croffle/croffle-play)
-게임. 다음 순서로:
+게임. 플레이어는 포털에서 이 게임을 연다. 포털이 iframe으로 게임을 띄우고, `@croffledev/play-sdk`를 통해
+플랫폼 계정·점수·저장·룸을 제공한다.
 
-1. `game.json`의 id·이름을 확인하고 플랫폼 관리자에게 id 등록을 요청한다. 이 폴더를 게임 전용 GitHub
-   저장소로 push한다.
+1. `game.json`의 id·이름을 확인하고 이 폴더를 게임 전용 GitHub 저장소로 push한다.
 2. `pnpm install && pnpm dev` — SDK mock 호스트(가짜 플레이어, 로컬 저장)로 단독 실행.
-3. `src/`에서 자유롭게 만든다. 플랫폼과는 `@croffledev/play-sdk`로만 통신한다.
+3. `src/`에서 자유롭게 만든다. 플랫폼과는 SDK로만 통신하고, 기능은 `sdk.has('score')`로 확인한다(버전
+   비교 금지).
 
-## 번들 규칙
+## 호스팅
 
-- 모든 경로는 상대 경로(Vite `base: './'`), 다른 호스트에서 리소스 로딩 금지, 쿠키 금지.
-- `dist/`에 `game.json`, 엔트리(`index.html`), 썸네일(`public/thumb.png`, 256×144 이상)이 있어야 한다.
-  기본 크기 상한 30MB.
-- 기능은 `sdk.has('score')`로 확인한다. 버전 비교 금지.
+게임은 직접 호스팅한다. 주소는 `https://<id>.play.croffle-play.link/`이다(이 이름을 내 호스트로 연결해
+달라고 플랫폼 관리자에게 요청). 정적 호스팅이면 무엇이든 된다. 여기 있는 `Dockerfile` + `Caddyfile`은 그중
+한 방법이다.
 
-`pnpm build && pnpm validate`로 로컬에서 전부 확인할 수 있다.
+호스트가 지켜야 할 것:
 
-## 배포
+- `dist/`를 origin 루트에서 서빙하고 `game.json`도 포함한다(포털이 읽는다).
+- 포털이 게임을 iframe에 띄울 수 있게 한다: `Content-Security-Policy: frame-ancestors https://www.croffle-play.link`
+  (`Caddyfile`이 이렇게 한다). `X-Frame-Options: DENY`는 보내지 않는다.
+- https를 쓴다.
 
-1. 플랫폼 관리자에게 게임의 **배포 키**를 받아 저장소 시크릿 `CROFFLE_PLAY_DEPLOY_KEY`로 등록하고,
-   저장소 변수 `CROFFLE_PLAY_API`(예: `https://api.play.croffledev.kr`)를 설정한다.
-2. 태그를 push한다: `git tag v1.0.0 && git push origin v1.0.0`.
-3. **Publish** 워크플로가 빌드·검증·업로드한다. 관리자 미리보기를 거쳐 승인되면 공개된다. 버전은
-   불변이라 수정은 새 태그로 한다.
+배포 전후 확인:
+
+```bash
+pnpm build && pnpm validate                       # game.json, 엔트리, 썸네일(public/thumb.png)
+pnpm exec play-cli check https://<id>.play.croffle-play.link/ --portal https://www.croffle-play.link
+```
+
+그다음 플랫폼 관리자에게 게임 등록을 요청한다. 새 SDK 메이저로 올렸을 때만 관리자가 `game.json`을 다시
+읽으면 되고, 콘텐츠 업데이트는 플랫폼에서 할 일이 없다.
 
 SDK 업데이트는 Renovate가 올린다. 새 SDK 메이저에는 마이그레이션 가이드와 codemod가 함께 나온다.

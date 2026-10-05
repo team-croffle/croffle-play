@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { imageInfo } from '../src/image-size.js';
-import { validateBundle } from '../src/validate.js';
-import { makeBundle, pngHeader } from './fixture.js';
+import { pngHeader } from './fixture.js';
 
 function jpeg(width: number, height: number): Uint8Array {
   // SOI, an APP0 segment to skip, then SOF0 with height/width.
@@ -54,20 +53,5 @@ describe('imageInfo', () => {
   it('rejects anything else', () => {
     expect(imageInfo(new TextEncoder().encode('GIF89a......'))).toBeNull();
     expect(imageInfo(new Uint8Array([0xff, 0xd8, 0x00]))).toBeNull();
-  });
-});
-
-describe('thumbnail rules', () => {
-  it('refuses small, oversized, and non-image thumbnails', async () => {
-    const small = await validateBundle(await makeBundle({ 'thumb.png': pngHeader(100, 100) }));
-    expect(small.errors).toEqual(['thumbnail thumb.png is 100×100; at least 256×144 is required']);
-    const big = await validateBundle(
-      await makeBundle({
-        'thumb.png': Buffer.concat([pngHeader(320, 180), Buffer.alloc(600 * 1024)]),
-      }),
-    );
-    expect(big.errors[0]).toMatch(/limit is 512 KB/);
-    const text = await validateBundle(await makeBundle({ 'thumb.png': 'not an image' }));
-    expect(text.errors).toEqual(['thumbnail thumb.png is not a PNG, JPEG, or WebP image']);
   });
 });

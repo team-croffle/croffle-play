@@ -1,151 +1,89 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import {
-  type GameManifest,
-  parseManifest,
-  sdkRangeMajor,
-  THUMBNAIL,
-} from '@croffledev/play-protocol';
+import { type GameManifest, parseManifest, THUMBNAIL } from '@croffledev/play-protocol';
 
-import { type BundleFile, formatBytes, listBundle } from './bundle.js';
-import { findExternalUrls, kindOf } from './external-urls.js';
 import { imageInfo } from './image-size.js';
-
-export const DEFAULT_MAX_BYTES = 30 * 1024 * 1024;
+import { checkSdkStatus, type Findings } from './sdk-status.js';
 
 export interface ValidateOptions {
   /** Platform API base URL; when set, the SDK major is checked against its lifecycle. */
   api?: string;
-  maxBytes?: number;
   fetch?: typeof fetch;
 }
 
-export interface ValidationResult {
+export interface ValidationResult extends Findings {
   ok: boolean;
-  errors: string[];
-  warnings: string[];
   manifest: GameManifest | null;
-  files: BundleFile[];
-  totalBytes: number;
 }
 
-/** Checks a built bundle (`dist/`) against the bundle contract. */
-export async function validateBundle(
+/**
+ * Checks a built game site (`dist/`) before it is deployed: `game.json` (what the portal reads at
+ * `<game origin>/game.json`), its entry and thumbnail files, and — with `api` — the SDK major.
+ */
+export async function validateBuild(
   dir: string,
   opts: ValidateOptions = {},
 ): Promise<ValidationResult> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const files = await listBundle(dir).catch(() => {
-    errors.push(`Cannot read bundle directory '${dir}'`);
-    return [] as BundleFile[];
-  });
-  const paths = new Set(files.map((f) => f.path));
-  const totalBytes = files.reduce((n, f) => n + f.size, 0);
-
+  const out: Findings = { errors: [], warnings: [] };
   let manifest: GameManifest | null = null;
-  if (files.length > 0 && !paths.has('game.json')) {
-    errors.push('game.json is missing at the bundle root');
-  } else if (files.length > 0) {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(await readFile(join(dir, 'game.json'), 'utf8'));
-    } catch {
-      errors.push('game.json is not valid JSON');
-    }
-    if (raw !== undefined) {
-      const parsed = parseManifest(raw);
-      if (parsed.ok) {
-        manifest = parsed.manifest;
-      } else {
-        errors.push(...parsed.issues.map((i) => `game.json ${i.path || '(root)'}: ${i.message}`));
-      }
-    }
-  }
-
-  if (manifest) {
-    for (const [field, path] of [
-      ['entry', manifest.entry],
-      ['thumbnail', manifest.thumbnail],
-    ] as const) {
-      if (path !== undefined && !paths.has(path)) {
-        errors.push(`game.json ${field} '${path}' is not in the bundle`);
-      }
-    }
-    const thumb = files.find((f) => f.path === manifest?.thumbnail);
-    if (thumb) {
-      errors.push(...(await checkThumbnail(thumb)));
-    }
-    if (opts.api) {
-      await checkSdk(opts.api, manifest.sdk, opts.fetch ?? fetch, errors, warnings);
-    }
-  }
-
-  const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
-  if (totalBytes > maxBytes) {
-    errors.push(
-      `Bundle is ${formatBytes(totalBytes)}; the limit is ${formatBytes(maxBytes)} (ask an admin to raise it)`,
+  let raw: unknown;
+  try {
+    raw = JSON.parse(await readFile(join(dir, 'game.json'), 'utf8'));
+  } catch (err) {
+    out.errors.push(
+      (err as { code?: string }).code === 'ENOENT'
+        ? `game.json is missing in '${dir}'`
+        : 'game.json is not valid JSON',
     );
   }
-
-  for (const f of files) {
-    const kind = kindOf(f.path);
-    if (!kind || f.size > 5 * 1024 * 1024) {
-      continue;
-    }
-    for (const hit of findExternalUrls(kind, await readFile(f.absPath, 'utf8'))) {
-      errors.push(`${f.path}: external resource '${hit}' (bundles must be self-contained)`);
+  if (raw !== undefined) {
+    const parsed = parseManifest(raw);
+    if (parsed.ok) {
+      manifest = parsed.manifest;
+    } else {
+      out.errors.push(...parsed.issues.map((i) => `game.json ${i.path || '(root)'}: ${i.message}`));
     }
   }
-
-  return { ok: errors.length === 0, errors, warnings, manifest, files, totalBytes };
+  if (manifest) {
+    if (!(await exists(join(dir, manifest.entry)))) {
+      out.errors.push(`game.json entry '${manifest.entry}' is not in '${dir}'`);
+    }
+    if (manifest.thumbnail) {
+      await checkThumbnail(join(dir, manifest.thumbnail), manifest.thumbnail, out);
+    } else {
+      out.warnings.push('game.json has no thumbnail; the catalog shows a placeholder');
+    }
+    if (opts.api) {
+      await checkSdkStatus(opts.api, manifest.sdk, opts.fetch ?? fetch, out);
+    }
+  }
+  return { ok: out.errors.length === 0, ...out, manifest };
 }
 
-async function checkThumbnail(f: BundleFile): Promise<string[]> {
-  if (f.size > THUMBNAIL.maxBytes) {
-    return [
-      `thumbnail ${f.path} is ${formatBytes(f.size)}; the limit is ${formatBytes(THUMBNAIL.maxBytes)}`,
-    ];
+async function exists(path: string): Promise<boolean> {
+  return access(path).then(
+    () => true,
+    () => false,
+  );
+}
+
+/** The thumbnail must exist; its size and format are recommendations. */
+async function checkThumbnail(path: string, name: string, out: Findings): Promise<void> {
+  const bytes = await readFile(path).catch(() => null);
+  if (!bytes) {
+    out.errors.push(`game.json thumbnail '${name}' is not in the build`);
+    return;
   }
-  const info = imageInfo(await readFile(f.absPath));
+  const info = imageInfo(bytes);
   if (!info) {
-    return [`thumbnail ${f.path} is not a PNG, JPEG, or WebP image`];
+    out.warnings.push(`thumbnail ${name} is not a PNG, JPEG, or WebP image`);
+  } else if (info.width < THUMBNAIL.minWidth || info.height < THUMBNAIL.minHeight) {
+    out.warnings.push(
+      `thumbnail ${name} is ${info.width}×${info.height}; ${THUMBNAIL.minWidth}×${THUMBNAIL.minHeight} or larger looks best`,
+    );
   }
-  if (info.width < THUMBNAIL.minWidth || info.height < THUMBNAIL.minHeight) {
-    return [
-      `thumbnail ${f.path} is ${info.width}×${info.height}; at least ${THUMBNAIL.minWidth}×${THUMBNAIL.minHeight} is required`,
-    ];
+  if (bytes.length > THUMBNAIL.maxBytes) {
+    out.warnings.push(`thumbnail ${name} is over ${THUMBNAIL.maxBytes / 1024} KB`);
   }
-  return [];
-}
-
-async function checkSdk(
-  api: string,
-  range: string,
-  fetcher: typeof fetch,
-  errors: string[],
-  warnings: string[],
-) {
-  const major = sdkRangeMajor(range);
-  const res = await fetcher(new URL(`v1/sdk/${major}`, withSlash(api))).catch(() => null);
-  if (!res) {
-    warnings.push(`Could not reach ${api} to check SDK v${major}`);
-    return;
-  }
-  if (res.status === 404) {
-    errors.push(`SDK v${major} is not supported by the platform`);
-    return;
-  }
-  const info = (await res.json()) as { status: string; eolAt: string | null };
-  if (info.status === 'deprecated' || info.status === 'eol') {
-    errors.push(`SDK v${major} is ${info.status}; new versions must use a supported SDK major`);
-  } else if (info.status === 'maintenance') {
-    const when = info.eolAt ? ` (end of life ${info.eolAt.slice(0, 10)})` : '';
-    warnings.push(`SDK v${major} is in maintenance${when}; plan an upgrade`);
-  }
-}
-
-export function withSlash(url: string): string {
-  return url.endsWith('/') ? url : `${url}/`;
 }

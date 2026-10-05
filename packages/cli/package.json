@@ -1,7 +1,7 @@
 {
   "name": "@croffledev/play-cli",
   "version": "0.1.0",
-  "description": "Validate and publish Croffle Play game bundles",
+  "description": "Check Croffle Play games before and after deploying them",
   "license": "MIT",
   "repository": {
     "type": "git",
