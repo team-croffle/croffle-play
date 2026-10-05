@@ -43,8 +43,11 @@ and are never checked in here.
   refresh; `listed` decides catalog visibility. There are no uploads or versions.
 - Host adapters are uploaded to storage (`sdk:register <dist dir>`), served by the API at
   `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked).
-- Tier 2 game servers (approval + generated compose) still exist in the API; v0.11 replaces them
-  with servers declared in `game.json`.
+- Game servers are hosted by their teams and declared in `game.json` (`server: { url, protocol }`);
+  the platform issues game tokens (JWKS) and server keys (`csk_`) for verified scores, nothing more.
+- Players: dashboard `/me` (nickname, avatar upload — stored as `avatars/<user>/<hash>.<ext>`, served
+  by the API and relayed at `/avatars/…`). Sessions stay in the sealed cookie, or in a
+  Redis-protocol store (Valkey) with `NUXT_SESSION_REDIS_URL`.
 - `pnpm dev:games` serves fixture games (`apps/shell/dev/games`) at `<id>.localhost:4100/` and adapter
   bundles at `localhost:4100/adapters/`, separate origins like production.
 - API tests run the real migrations on in-memory PGlite; `DATABASE_URL=pglite://memory` also runs
@@ -151,10 +154,11 @@ Changing any of these requires a decision entry in `.ai/history/`.
    by the API from storage), and exposes only `identity`, `api()`, `ui`, `lifecycle`. A new SDK
    feature is an API endpoint plus an adapter release — not a portal release. `old` SDK majors
    cannot be newly listed or refreshed; `deprecated` majors cannot be played.
-7. **Game servers are untrusted tenants.** They join `games-net` only — never the database or
-   Redis networks — talk to the platform through the public API, verify tokens via JWKS, and run
-   with CPU/memory limits, `read_only`, `cap_drop: ALL`. Default multiplayer is the shared rooms
-   server; per-game authoritative servers are approval-only.
+7. **Game servers are untrusted and outside the platform.** A game declares its own server in
+   `game.json`; its team hosts it. It reaches the platform only through the public API, identifies
+   players by game tokens verified against the JWKS, and submits verified scores with a per-game
+   server key. The platform never runs, networks with, or grants database access to game servers.
+   Default multiplayer is the shared rooms server.
 8. **Storage through the S3 API only**, for platform-owned files (host adapters, avatars) in one
    bucket. No storage credentials leave the platform; browsers never reach storage directly.
 9. **Monorepo for the platform, one repository per game.** Game engines, build tools, hosting, and
@@ -165,7 +169,7 @@ Changing any of these requires a decision entry in `.ai/history/`.
 ### Domain notes
 
 - `game.json`: `id`, `name`, `sdk` (semver range on one major), optional `version`, `entry`
-  (default `index.html`), `thumbnail`, `orientation`, `needsServer`, `server`.
+  (default `index.html`), `thumbnail`, `orientation`, `server` (`url`, `protocol`).
 - Reserved game ids: `www`, `api`, `admin`, `cdn`, `play`, `rooms`, `auth`, `static`
   (`RESERVED_GAME_IDS` in `packages/protocol`).
 - Registration flow: admin registers an id → the team deploys at `<id>.play.<domain>` →
