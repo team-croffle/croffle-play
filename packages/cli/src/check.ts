@@ -3,7 +3,7 @@ import { type GameManifest, parseManifest } from '@croffledev/play-protocol';
 import { checkSdkStatus, type Findings } from './sdk-status.js';
 
 export interface CheckOptions {
-  /** Portal origin that must be allowed to frame the game, e.g. https://www.croffle-play.link. */
+  /** Portal origin that must be allowed to frame the game, e.g. https://game.croffle-play.link. */
   portal?: string;
   /** Platform API base URL; when set, the SDK major is checked against its lifecycle. */
   api?: string;

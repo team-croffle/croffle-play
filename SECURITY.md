@@ -17,7 +17,7 @@ disclosing it.
 ## Scope
 
 In scope: this repository and its published packages (`@croffledev/play-*`), and the platform at
-`www.croffle-play.link` with its API and rooms server (for example, one game being able to read
+`game.croffle-play.link` with its API and rooms server (for example, one game being able to read
 another game's data or a player's session through the platform).
 
 Out of scope: bugs inside individual games (report them to the game's own repository), reports

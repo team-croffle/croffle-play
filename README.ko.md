@@ -10,10 +10,19 @@
 > `game.json` 기반 게임 등록, 계정(로그인, 점수, 리더보드, 저장), 멀티플레이 룸이 동작한다.
 > [로드맵](./docs/ROADMAP.md) 참고. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
+## 문서
+
+문서는 [`docs/`](./docs)에서 만들어 **[https://team-croffle.github.io/croffle-play/](https://team-croffle.github.io/croffle-play/)**에 게시한다:
+
+- [게임 개발자 가이드](./docs/guide/developer.md) — 템플릿에서 공개된 게임까지
+- [SDK 레퍼런스](./docs/reference/sdk.md) — 메서드, capability, 오류 코드 전부
+- [관리자 가이드](./docs/guide/admin.md) — 게임 등록, 서버 키, SDK 메이저, 어댑터
+- [앱 환경 변수](./docs/reference/env.md) — api·rooms·shell 이미지가 받는 env
+
 ## 구조
 
 ```
-포털 (Nuxt)    ──  카탈로그 · 로그인 · 실행 페이지          www.croffle-play.link
+포털 (Nuxt)    ──  카탈로그 · 로그인 · 실행 페이지          game.croffle-play.link
    │ iframe       https://<game>.play.croffle-play.link/  (게임 팀이 호스팅)
 게임 사이트    ──  game.json 제공, 포털의 iframe 허용
    │ postMessage (SDK 프로토콜, 빌드 시점에 고정)
@@ -42,6 +51,7 @@
 | `packages/sdk`         | `@croffledev/play-sdk`         | npm                |
 | `packages/cli`         | `@croffledev/play-cli`         | npm                |
 | `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`) |
+| `docs`                 | `@croffledev/play-docs`        | GitHub Pages       |
 
 게임은 이 저장소에 **없다.** 게임마다 독립 저장소를 두며, `npm create @croffledev/play-game <폴더>`로 만든다.
 
@@ -80,7 +90,8 @@ await sdk.ready();
 if (sdk.has('score')) await sdk.submitScore(1200);
 ```
 
-플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다. 게임 호스팅과 등록:
+플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다.
+[게임 개발자 가이드](./docs/guide/developer.md)와 [SDK 레퍼런스](./docs/reference/sdk.md)부터 본다. 게임 호스팅과 등록:
 [docs/game-hosting.md](./docs/game-hosting.md). 멀티플레이 룸: [docs/multiplayer.md](./docs/multiplayer.md).
 전용 서버가 필요한 게임: [docs/game-servers.md](./docs/game-servers.md). SDK 버전과 업그레이드:
 [docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). 보안 모델: [docs/security.md](./docs/security.md).

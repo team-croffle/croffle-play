@@ -20,7 +20,7 @@
 호스트가 지켜야 할 것:
 
 - `dist/`를 origin 루트에서 서빙한다. `game.json`이 `<origin>/game.json`에 있어야 한다.
-- 포털만 iframe을 허용한다: `Content-Security-Policy: frame-ancestors https://www.croffle-play.link`.
+- 포털만 iframe을 허용한다: `Content-Security-Policy: frame-ancestors https://game.croffle-play.link`.
   `X-Frame-Options: DENY`나 `SAMEORIGIN`은 보내지 않는다.
 - https를 쓴다.
 - 쿠키에 `Domain=croffle-play.link`를 붙이지 않는다(다른 게임과 포털로 퍼진다).
@@ -29,7 +29,7 @@
 
 ```bash
 pnpm build && pnpm exec play-cli validate dist --api https://api.croffle-play.link
-pnpm exec play-cli check https://<id>.play.croffle-play.link/ --portal https://www.croffle-play.link
+pnpm exec play-cli check https://<id>.play.croffle-play.link/ --portal https://game.croffle-play.link
 ```
 
 `validate`는 `game.json` 스키마, 엔트리·썸네일 존재, SDK 메이저 상태(old·deprecated면 실패)를 본다. `check`는

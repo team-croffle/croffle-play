@@ -12,10 +12,19 @@ themselves; the portal shows each game in an iframe.
 > and multiplayer rooms work; see the [roadmap](./docs/ROADMAP.md). Design record:
 > [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
+## Documentation
+
+The docs (Korean) are published at **[https://team-croffle.github.io/croffle-play/](https://team-croffle.github.io/croffle-play/)** from [`docs/`](./docs):
+
+- [Game developer guide](./docs/guide/developer.md) — from the template to a listed game
+- [SDK reference](./docs/reference/sdk.md) — every method, capability, and error code
+- [Admin guide](./docs/guide/admin.md) — registering games, server keys, SDK majors, adapters
+- [App environment variables](./docs/reference/env.md) — what the api, rooms, and shell images read
+
 ## How it fits together
 
 ```
-Portal (Nuxt)  ──  catalog · sign-in · play page          www.croffle-play.link
+Portal (Nuxt)  ──  catalog · sign-in · play page          game.croffle-play.link
    │ iframe       https://<game>.play.croffle-play.link/  (hosted by the game's team)
 Game site      ──  serves game.json, lets the portal frame it
    │ postMessage (SDK protocol, pinned at build time)
@@ -44,6 +53,7 @@ Portal core  ──►  API (NestJS)  ──►  PostgreSQL · S3 API (platform 
 | `packages/sdk`         | `@croffledev/play-sdk`         | npm                |
 | `packages/cli`         | `@croffledev/play-cli`         | npm                |
 | `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`) |
+| `docs`                 | `@croffledev/play-docs`        | GitHub Pages       |
 
 Games are **not** in this repository. Each game gets its own repository, created with
 `npm create @croffledev/play-game <dir>`.
@@ -84,7 +94,9 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 ```
 
 Outside the platform, pass `transport: createMockHost()` from `@croffledev/play-sdk/mock` to run the
-game on its own. Hosting and registering a game: [docs/game-hosting.md](./docs/game-hosting.md).
+game on its own. Start with the [game developer guide](./docs/guide/developer.md) and the
+[SDK reference](./docs/reference/sdk.md). Hosting and registering a game:
+[docs/game-hosting.md](./docs/game-hosting.md).
 Multiplayer rooms: [docs/multiplayer.md](./docs/multiplayer.md). Games with their own server:
 [docs/game-servers.md](./docs/game-servers.md). SDK versions and upgrades:
 [docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). Security model:

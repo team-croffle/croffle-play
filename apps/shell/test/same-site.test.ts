@@ -5,7 +5,7 @@ import { isAllowedRequest } from '../server/utils/request-guard';
 import { sessionCookie } from '../server/utils/session';
 
 // The portal (www.) and games (<id>.play.) share a registered domain, so they are same-site.
-const portal = 'www.croffle-play.link';
+const portal = 'game.croffle-play.link';
 const game = 'https://tetris.play.croffle-play.link';
 
 describe('state-changing requests', () => {

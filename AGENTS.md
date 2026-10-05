@@ -42,7 +42,8 @@ and are never checked in here.
   (`https://{id}.play.croffle-play.link`). The API reads `<origin>/game.json` on registration and
   refresh; `listed` decides catalog visibility. There are no uploads or versions.
 - Host adapters are uploaded to storage (`sdk:register <dist dir>`), served by the API at
-  `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked).
+  `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked). Each
+  platform release attaches the bundles (`adapters-v<N>-<version>.tar.gz`) for admins to register.
 - Game servers are hosted by their teams and declared in `game.json` (`server: { url, protocol }`);
   the platform issues game tokens (JWKS) and server keys (`csk_`) for verified scores, nothing more.
 - Players: dashboard `/me` (nickname, avatar upload — stored as `avatars/<user>/<hash>.<ext>`, served
@@ -55,8 +56,11 @@ and are never checked in here.
 - Remote: `team-croffle/croffle-play` (public). `master` is protected by a ruleset: PRs only,
   rebase merge, required checks `CI result`, `TruffleHog`, `Gitleaks`.
 - `docs/ARCHITECTURE.md` is the design record (Korean); `docs/ROADMAP.md` the public roadmap.
-  Security model: `docs/security.md`. `README.md` describes the _target_ product.
-- Domains (code reads them from env only): portal `www.croffle-play.link`, games
+  Security model: `docs/security.md`. Guides in `docs/guide/` (developer, admin), references in
+  `docs/reference/` (SDK, app env). `docs/` is also a private workspace package
+  (`@croffledev/play-docs`, VitePress) published to GitHub Pages by `docs.yml`; links that leave
+  `docs/` are rewritten to GitHub. `README.md` describes the _target_ product.
+- Domains (code reads them from env only): portal `game.croffle-play.link`, games
   `<id>.play.croffle-play.link`.
 
 ### Planned layout
@@ -71,6 +75,7 @@ and are never checked in here.
 | `packages/sdk`         | `@croffledev/play-sdk`         | npm                            |
 | `packages/cli`         | `@croffledev/play-cli`         | npm                            |
 | `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)             |
+| `docs`                 | `@croffledev/play-docs`        | GitHub Pages (VitePress)       |
 
 `apps/*` are `"private": true`. Workspace packages export a `"@croffledev/source"` condition
 pointing at `src/`; `tsconfig.base.json` (`customConditions`) and each vitest config resolve it, so

@@ -15,7 +15,7 @@
 | 게임 사이트로 이동 (iframe 없음) | 공통 UI가 사라지고 게임마다 로그인·토큰 처리가 필요           |
 | **포털 + iframe + 팀원 호스팅**  | 채택. 공통 UI 유지, 게임은 토큰을 보지 않음, 엔진·호스팅 자유 |
 
-도메인: 포털 `www.croffle-play.link`, 게임 `<id>.play.croffle-play.link`(게임마다 origin이 다르다). 코드는
+도메인: 포털 `game.croffle-play.link`, 게임 `<id>.play.croffle-play.link`(게임마다 origin이 다르다). 코드는
 도메인을 env로만 안다.
 
 ## 2. 계층
@@ -206,4 +206,4 @@ SDK·CLI와 같은 릴리스로 버전이 맞춰지고, 이 저장소 CI가 템�
 | 검증      | valibot                                                    | env·프로토콜·매니페스트 공용, SDK 번들 크기가 작다   |
 | IdP       | Logto (OIDC, 셀프호스팅)                                   | 가볍고 Postgres 사용, 표준 OIDC라 교체 비용 낮음     |
 | 룸 서버   | 자체 `ws` 서버 (중계만)                                    | 메시지 형식을 protocol 패키지가 직접 통제            |
-| 도메인    | 포털 `www.croffle-play.link`, 게임 `<id>.play.…` (env)     | 계정 통합의 중심이 되는 플랫폼 도메인                |
+| 도메인    | 포털 `game.croffle-play.link`, 게임 `<id>.play.…` (env)    | 계정 통합의 중심이 되는 플랫폼 도메인                |
