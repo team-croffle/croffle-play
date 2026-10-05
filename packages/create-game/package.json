@@ -1,6 +1,6 @@
 {
   "name": "@croffledev/create-play-game",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Create a Croffle Play game: npm create @croffledev/play-game",
   "license": "MIT",
   "repository": {
