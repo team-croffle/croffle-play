@@ -1,16 +1,26 @@
 # Infrastructure
 
-Single-server deployment with Docker Compose behind Cloudflare. Everything talks S3 for storage, so
-MinIO can be swapped for R2/S3/another S3-compatible store by configuration only.
+Single-server deployment with Docker Compose behind Cloudflare. PostgreSQL and the S3 store (MinIO
+AIStor) already run on the server; `compose.yml` reaches them through env variables. Everything
+talks S3 for storage, so the store can be swapped for R2/S3/another S3-compatible store by
+configuration only.
 
 ```
                    Cloudflare (DNS, TLS, cache, Tunnel)
- play.croffledev.kr ──────────► shell :3000 ──► api :3001 ──► postgres
- api.play.croffledev.kr ──────────────────────► api :3001 ──► minio (S3)
+ play.croffledev.kr ──────────► shell :3000 ──► api :3001 ──► PostgreSQL (DATABASE_URL)
+ api.play.croffledev.kr ──────────────────────► api :3001 ──► S3 store (S3_ENDPOINT)
  rooms.play.croffledev.kr ───► rooms :3002 (WebSocket; tokens checked against the API's JWKS)
- static.play.croffledev.kr ──► games-edge :8080 ──► minio /adapters/…
- <id>.croffle-play.link ─────► games-edge :8080 ──► minio /games/<id>/…
+ static.play.croffledev.kr ──► games-edge :8080 ──► S3 store /adapters/…
+ <id>.croffle-play.link ─────► games-edge :8080 ──► S3 store /games/<id>/…
 ```
+
+| Where                 | Command                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| Server                | `docker compose -f infra/compose.yml --env-file infra/.env up -d`                                 |
+| Local (bundled DB/S3) | `docker compose -f infra/compose.yml -f infra/compose.local.yml --env-file infra/.env up --build` |
+
+`compose.local.yml` adds `postgres`, `minio` (frozen `bitnamilegacy/minio` build; development only),
+and `minio-init`; the env defaults in `compose.yml` point at them.
 
 Two registered domains on purpose: games are untrusted code, and a game on a subdomain of the
 platform domain could set cookies for it or make same-site requests with the player's session.
@@ -19,10 +29,10 @@ platform domain could set cookies for it or make same-site requests with the pla
 
 | Service      | Port (host)    | Networks                | Notes                                        |
 | ------------ | -------------- | ----------------------- | -------------------------------------------- |
-| `postgres`   | —              | data-net                | API only                                     |
-| `minio`      | 127.0.0.1:9000 | storage-net             | S3 API; console on 127.0.0.1:9001            |
-| `minio-init` | —              | storage-net             | one-shot: buckets, API user, public-read     |
-| `games-edge` | 127.0.0.1:8080 | storage-net             | nginx; read-only container                   |
+| `postgres`   | —              | data-net                | local only (`compose.local.yml`)             |
+| `minio`      | 127.0.0.1:9000 | storage-net             | local only; S3 API, console on :9001         |
+| `minio-init` | —              | storage-net             | local only; buckets, API/backup users        |
+| `games-edge` | 127.0.0.1:8080 | storage-net             | nginx; read-only container; `/healthz`       |
 | `api`        | 127.0.0.1:3001 | platform, data, storage | migrations run on start                      |
 | `rooms`      | 127.0.0.1:3002 | platform-net            | WebSocket relay; verifies game tokens (JWKS) |
 | `shell`      | 127.0.0.1:3000 | platform-net            | never talks to the database or storage       |
@@ -31,8 +41,14 @@ platform domain could set cookies for it or make same-site requests with the pla
 
 | Variable                   | Used by           | Meaning                                                                               |
 | -------------------------- | ----------------- | ------------------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`        | postgres, api     | Database password                                                                     |
-| `MINIO_ROOT_PASSWORD`      | minio, minio-init | Storage root password (stays on the storage host)                                     |
+| `DATABASE_URL`             | api               | Platform database; default is the bundled `postgres` (local)                          |
+| `LOGTO_DB_URL`             | logto             | Logto database (`logto` on the same server)                                           |
+| `PG_HOST/PG_PORT`          | ops               | PostgreSQL host for `pg_dump` (with `POSTGRES_USER/PASSWORD/DB`)                      |
+| `POSTGRES_PASSWORD`        | postgres, ops     | Bundled database password (local); backup user's password on the server               |
+| `S3_ENDPOINT`              | api               | S3 API inside the network, e.g. the AIStor URL                                        |
+| `STORAGE_UPSTREAM`         | games-edge        | `host:port` of the same S3 API (plain HTTP)                                           |
+| `BACKUP_S3_ENDPOINT`       | ops               | S3 API for the nightly bucket copy (rclone)                                           |
+| `MINIO_ROOT_PASSWORD`      | minio, minio-init | Bundled store root password (local; never leaves the storage host)                    |
 | `S3_ACCESS_KEY_ID/SECRET`  | minio-init, api   | Least-privilege API storage user (`minio/api-policy.json`)                            |
 | `S3_PUBLIC_ENDPOINT`       | api               | Host in presigned upload URLs; must be reachable by CI runners                        |
 | `GAME_URL_TEMPLATE`        | api               | `https://{id}.croffle-play.link/{version}/`                                           |
@@ -102,8 +118,9 @@ terminate TLS at Traefik.
 
 ## Backups and monitoring
 
-The `ops` service (infra/ops) dumps PostgreSQL (platform and Logto) and mirrors the `games` and
-`adapters` buckets nightly with a read-only storage user, keeping 14 days of dumps, and alerts
+The `ops` service (infra/ops) dumps PostgreSQL (platform and Logto; `pg_dump` 17, so the server must
+not be newer) and copies the `games` and `adapters` buckets nightly with rclone and a read-only
+storage user, keeping 14 days of dumps, and alerts
 `ALERT_WEBHOOK_URL` (Discord) when a health URL goes down or recovers. Procedures, including
 restore: [docs/operations.md](../docs/operations.md).
 
@@ -129,6 +146,15 @@ Registering only changes the adapter URL and SRI hash of that SDK major; lifecyc
 
 ## Storage engine note
 
-MinIO no longer publishes community binaries or images; `minio/minio:latest` may stop receiving
-updates. The platform uses only the S3 API (`S3_*` variables), so Garage, SeaweedFS, or Cloudflare
-R2 can replace it without code changes.
+MinIO no longer publishes community images (`minio/minio`, `minio/mc` are gone from Docker Hub).
+Production uses MinIO AIStor; set up its buckets and users once with the same script, from the
+repository root on a host with `mc`:
+
+```bash
+MINIO_ENDPOINT=https://<aistor> POLICY_DIR=infra/minio MINIO_ROOT_USER=… MINIO_ROOT_PASSWORD=… \
+  S3_ACCESS_KEY_ID=play-api S3_SECRET_ACCESS_KEY=… \
+  BACKUP_S3_ACCESS_KEY=play-backup BACKUP_S3_SECRET_KEY=… sh infra/minio/init.sh
+```
+
+Backups copy buckets with rclone, which works with any S3 API. The platform uses only the S3 API
+(`S3_*` variables), so R2, S3, Garage, or SeaweedFS can replace AIStor without code changes.

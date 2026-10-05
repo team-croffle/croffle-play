@@ -63,12 +63,13 @@ pnpm dev:api                             # http://localhost:3001 (/healthz, /v1/
 pnpm dev:shell                           # http://localhost:3000
 ```
 
-Full stack in containers (PostgreSQL, MinIO, game-domain edge, API, shell); deployment details in
-[infra/README.md](./infra/README.md):
+Full stack in containers (game-domain edge, API, rooms, shell, Logto), with a bundled PostgreSQL and
+S3 store from `compose.local.yml`; production points at an existing PostgreSQL and S3 store instead
+(details in [infra/README.md](./infra/README.md)):
 
 ```bash
 cp infra/.env.example infra/.env         # replace the CHANGE_ME values
-docker compose -f infra/compose.yml --env-file infra/.env up --build
+docker compose -f infra/compose.yml -f infra/compose.local.yml --env-file infra/.env up --build
 ```
 
 Play a game locally (the `sample` fixture, served on its own origin like a real game):

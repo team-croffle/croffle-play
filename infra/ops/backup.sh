@@ -27,9 +27,15 @@ for db in ${BACKUP_DATABASES:-$POSTGRES_DB logto}; do
 done
 
 if [ -n "${BACKUP_S3_ENDPOINT:-}" ]; then
-  mc alias set backup-src "$BACKUP_S3_ENDPOINT" "$BACKUP_S3_ACCESS_KEY" "$BACKUP_S3_SECRET_KEY" >/dev/null
+  # rclone remote `src` from the environment; works with any S3 API (MinIO, AIStor, R2).
+  export RCLONE_CONFIG_SRC_TYPE=s3
+  export RCLONE_CONFIG_SRC_PROVIDER=Minio
+  export RCLONE_CONFIG_SRC_ENDPOINT="$BACKUP_S3_ENDPOINT"
+  export RCLONE_CONFIG_SRC_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY"
+  export RCLONE_CONFIG_SRC_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_KEY"
   for bucket in ${BACKUP_BUCKETS:-games adapters}; do
-    mc mirror --quiet --preserve "backup-src/$bucket" "$DEST/storage/$bucket" >/dev/null
+    # copy, not sync: objects removed from storage stay in the backup.
+    rclone copy --quiet "src:$bucket" "$DEST/storage/$bucket"
     log "mirrored bucket $bucket"
   done
 fi

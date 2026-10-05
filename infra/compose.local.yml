@@ -1,0 +1,88 @@
+# Bundled PostgreSQL and S3 store for local development and CI-like runs. Production uses the
+# existing PostgreSQL and MinIO AIStor instead (see compose.yml). From the repository root:
+#   docker compose -f infra/compose.yml -f infra/compose.local.yml --env-file infra/.env up --build
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-play}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-play}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [data-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # minio/minio is no longer published; the frozen Bitnami build is enough for development.
+  minio:
+    image: bitnamilegacy/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      MINIO_CONSOLE_PORT_NUMBER: 9001
+    volumes:
+      - minio-data:/bitnami/minio/data
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    networks: [storage-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://127.0.0.1:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Buckets and least-privilege users (minio/init.sh), then exits.
+  minio-init:
+    image: bitnamilegacy/minio-client:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '/init.sh']
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-play-api}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+      BACKUP_S3_ACCESS_KEY: ${BACKUP_S3_ACCESS_KEY:-play-backup}
+      BACKUP_S3_SECRET_KEY: ${BACKUP_S3_SECRET_KEY:?set BACKUP_S3_SECRET_KEY}
+    volumes:
+      - ./minio/init.sh:/init.sh:ro
+      - ./minio/api-policy.json:/policy/api-policy.json:ro
+      - ./minio/backup-policy.json:/policy/backup-policy.json:ro
+    networks: [storage-net]
+
+  logto:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  games-edge:
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  api:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  ops:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pg-data:
+  minio-data:
