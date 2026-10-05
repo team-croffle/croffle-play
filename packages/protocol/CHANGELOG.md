@@ -1,5 +1,13 @@
 # @croffledev/play-protocol
 
+## 0.2.0
+
+### Minor Changes
+
+- bcdb033: `game.json` declares a game's own server as `server: { url, protocol }` (https/wss; http/ws only on localhost). `needsServer`, `server.image`, `serverImageSchema`, and `SERVER_IMAGE_PREFIX` are gone: teams host their servers, and the platform only issues game tokens. The template's `game.json` drops `needsServer`.
+- 67a1154: `game.json` is now what a self-hosted game serves at `<game origin>/game.json` for the portal to read: `version` and `thumbnail` are optional. Adds `gameOrigin`, `gameUrl`, and `manifestUrl`, which build a game's addresses from one `{id}` template. `srv` and `preview` are no longer reserved game ids.
+- 690673e: Adds `imageInfo` (format and size from a PNG, JPEG, or WebP header), moved from play-cli so the platform can share it.
+
 ## 0.1.0
 
 ### Minor Changes
