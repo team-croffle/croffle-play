@@ -45,6 +45,8 @@ describe('createGame', () => {
     const pkg = JSON.parse(await readFile(join(g.dir, 'package.json'), 'utf8'));
     expect(pkg).toMatchObject({
       name: 'block-drop',
+      // pnpm/action-setup and Corepack need it (the generated CI and Dockerfile use pnpm).
+      packageManager: expect.stringMatching(/^pnpm@\d+\.\d+\.\d+$/),
       dependencies: { '@croffledev/play-sdk': '^1.4.2' },
       devDependencies: { '@croffledev/play-cli': '^0.3.0' },
     });
