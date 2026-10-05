@@ -1,0 +1,69 @@
+# Traefik in front (Docker provider): TLS and routing on the server; Cloudflare is DNS only.
+#   docker compose -f infra/compose.yml -f infra/compose.traefik.yml --env-file infra/.env up -d
+# Traefik must already run, attached to TRAEFIK_NETWORK (and to games-net for Tier 2 game servers),
+# with a certificate resolver that can issue the wildcard *.<GAME_DOMAIN> through DNS-01.
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
+
+services:
+  shell:
+    networks: [platform-net, traefik]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.cp-shell.rule: Host(`${PLATFORM_HOST:-play.croffledev.kr}`)
+      traefik.http.routers.cp-shell.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-shell.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.services.cp-shell.loadbalancer.server.port: '3000'
+
+  api:
+    networks: [platform-net, data-net, storage-net, traefik]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.cp-api.rule: Host(`${API_HOST:-api.play.croffledev.kr}`)
+      traefik.http.routers.cp-api.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-api.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.services.cp-api.loadbalancer.server.port: '3001'
+
+  rooms:
+    networks: [platform-net, traefik]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.cp-rooms.rule: Host(`${ROOMS_HOST:-rooms.play.croffledev.kr}`)
+      traefik.http.routers.cp-rooms.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-rooms.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.services.cp-rooms.loadbalancer.server.port: '3002'
+
+  logto:
+    networks: [platform-net, data-net, traefik]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.cp-auth.rule: Host(`${AUTH_HOST:-auth.play.croffledev.kr}`)
+      traefik.http.routers.cp-auth.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-auth.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.services.cp-auth.loadbalancer.server.port: '3001'
+
+  # Adapter host and every game origin. nginx picks the game from the Host header, which Traefik
+  # forwards unchanged.
+  games-edge:
+    networks: [storage-net, traefik]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.services.cp-edge.loadbalancer.server.port: '8080'
+      traefik.http.routers.cp-static.rule: Host(`${STATIC_HOST:-static.play.croffledev.kr}`)
+      traefik.http.routers.cp-static.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-static.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.routers.cp-static.service: cp-edge
+      traefik.http.routers.cp-games.rule: HostRegexp(`^[a-z0-9-]+\.${GAME_DOMAIN_REGEX:-croffle-play\.link}$$`)
+      traefik.http.routers.cp-games.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-games.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-le}
+      traefik.http.routers.cp-games.tls.domains[0].main: ${GAME_DOMAIN:-croffle-play.link}
+      traefik.http.routers.cp-games.tls.domains[0].sans: '*.${GAME_DOMAIN:-croffle-play.link}'
+      traefik.http.routers.cp-games.service: cp-edge

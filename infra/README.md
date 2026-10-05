@@ -95,7 +95,25 @@ Locally, `pnpm dev:oidc` runs a stand-in provider on `http://localhost:4300` (an
   and the game's own `<id>.srv.` host, and `frame-ancestors` is the platform origin.
 - Successful responses are `immutable` for a year; errors are `no-store`.
 
-## Cloudflare
+## Traefik in front (Cloudflare DNS only)
+
+When Cloudflare only serves DNS ("DNS only", no proxy), an existing Traefik terminates TLS and routes
+by host. `compose.traefik.yml` adds the labels and attaches shell, api, rooms, logto, and games-edge to
+`TRAEFIK_NETWORK`:
+
+```bash
+docker compose -f infra/compose.yml -f infra/compose.traefik.yml --env-file infra/.env up -d
+```
+
+- DNS: `A` records (DNS only) for `play`, `api.play`, `rooms.play`, `static.play`, `auth.play`,
+  `*.croffle-play.link`, and `*.srv.croffle-play.link` to the server.
+- Certificates: the game domain needs a wildcard, so the resolver must use DNS-01 (Cloudflare API
+  token with Zone DNS edit on both zones). `TRAEFIK_ENTRYPOINT` / `TRAEFIK_CERTRESOLVER` name them.
+- Traefik also joins `games-net` so approved game servers (`<id>.srv.…`) are reachable.
+- Without the Cloudflare cache every bundle request reaches the server; bundles are `immutable`, so
+  browsers fetch each file once.
+
+## Cloudflare (proxy and Tunnel)
 
 1. DNS: CNAMEs for `play`, `api.play`, `static.play` (croffledev.kr) and `*` (croffle-play.link) to the
    tunnel (`cloudflared/config.example.yml`). Universal SSL covers `*.croffle-play.link`; deeper
