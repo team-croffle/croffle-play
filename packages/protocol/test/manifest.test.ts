@@ -66,7 +66,7 @@ describe('parseManifest', () => {
   it('fills defaults', () => {
     expect(parseManifest(valid)).toEqual({
       ok: true,
-      manifest: { ...valid, entry: 'index.html', needsServer: false, orientation: 'any' },
+      manifest: { ...valid, entry: 'index.html', orientation: 'any' },
     });
   });
 
@@ -78,7 +78,6 @@ describe('parseManifest', () => {
         name: 'Tetris',
         sdk: '^1.0.0',
         entry: 'index.html',
-        needsServer: false,
         orientation: 'any',
       },
     });
@@ -95,32 +94,27 @@ describe('parseManifest', () => {
     ]);
   });
 
-  it('requires a pinned team image when the game needs a server', () => {
-    const image = 'ghcr.io/team-croffle/tetris-server:1.2.0';
-    expect(
-      parseManifest({ ...valid, needsServer: true, server: { protocol: '2.1.0', image } }).ok,
-    ).toBe(true);
-    expect(
-      parseManifest({
-        ...valid,
-        needsServer: true,
-        server: { protocol: '2.1.0', image: `ghcr.io/team-croffle/x@sha256:${'a'.repeat(64)}` },
-      }).ok,
-    ).toBe(true);
-    for (const server of [
-      undefined,
-      { protocol: '2.1.0' },
-      { protocol: '2.1.0', image: 'docker.io/evil/server:1.0.0' },
-      { protocol: '2.1.0', image: 'ghcr.io/team-croffle/tetris-server' },
-      { protocol: '2.1.0', image: 'ghcr.io/team-croffle/tetris-server:latest' },
+  it('takes the game server address and protocol', () => {
+    for (const url of [
+      'https://tetris.example',
+      'wss://rt.example:8443/ws',
+      'http://localhost:9000',
     ]) {
-      const r = parseManifest({ ...valid, needsServer: true, ...(server ? { server } : {}) });
+      expect(parseManifest({ ...valid, server: { url, protocol: '2.1.0' } }).ok).toBe(true);
+    }
+    for (const server of [
+      { protocol: '2.1.0' },
+      { url: 'http://tetris.example', protocol: '2.1.0' },
+      { url: 'ftp://x.example', protocol: '2.1.0' },
+      { url: 'https://tetris.example', protocol: 'two' },
+    ]) {
+      const r = parseManifest({ ...valid, server });
       expect(r.ok).toBe(false);
       expect(!r.ok && r.issues[0]?.path).toMatch(/^server/);
     }
   });
 
-  it('lets games without a server declare a client protocol only', () => {
-    expect(parseManifest({ ...valid, server: { protocol: '1.0.0' } }).ok).toBe(true);
+  it('ignores fields older game.json files still carry', () => {
+    expect(parseManifest({ ...valid, needsServer: false }).ok).toBe(true);
   });
 });

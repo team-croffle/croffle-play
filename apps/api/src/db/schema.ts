@@ -107,25 +107,6 @@ export const saves = pgTable(
   (t) => [primaryKey({ columns: [t.gameId, t.userId, t.slot] })],
 );
 
-export const gameServerStatus = pgEnum('game_server_status', ['requested', 'approved', 'revoked']);
-
-/**
- * Tier 2: a game's own server container (design invariant 7). Approval is per image; publishing a
- * different image or protocol asks for approval again.
- */
-export const gameServers = pgTable('game_servers', {
-  gameId: text('game_id')
-    .primaryKey()
-    .references(() => games.id, { onDelete: 'cascade' }),
-  image: text('image').notNull(),
-  protocol: text('protocol').notNull(),
-  status: gameServerStatus('status').notNull().default('requested'),
-  requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
-  approvedAt: timestamp('approved_at', { withTimezone: true }),
-  approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
-  updatedAt: timestamps.updatedAt,
-});
-
 export const memberRole = pgEnum('member_role', ['owner', 'developer']);
 
 /** Team members of a game: they see it on their developer dashboard. Granted by admins. */
@@ -217,8 +198,6 @@ export const schema = {
   userRole,
   scores,
   saves,
-  gameServers,
-  gameServerStatus,
   sdkVersionEvents,
   sdkNotifications,
   gameMembers,

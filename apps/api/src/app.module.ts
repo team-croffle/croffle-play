@@ -8,7 +8,6 @@ import { ConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
 import { DbModule } from './db/db.module.js';
-import { GameServersModule } from './game-servers/game-servers.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
 import { MembersModule } from './members/members.module.js';
@@ -57,7 +56,6 @@ export class AppModule {
         ScoresModule,
         SavesModule,
         TokensModule,
-        GameServersModule,
         MembersModule,
         NotifyModule.forRoot(options.notifier),
       ],

@@ -5,7 +5,7 @@ import { and, asc, eq, ilike, or } from 'drizzle-orm';
 import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
-import { gameMembers, gameServers, games, sdkVersions, users } from '../db/schema.js';
+import { gameMembers, games, sdkVersions, users } from '../db/schema.js';
 import { effectiveStatus, type SdkStatus } from '../sdk/lifecycle.js';
 
 export type MemberRole = (typeof gameMembers.$inferSelect)['role'];
@@ -74,10 +74,9 @@ export class MembersService {
 
   async myGames(userId: string): Promise<MyGame[]> {
     const rows = await this.db
-      .select({ game: games, role: gameMembers.role, server: gameServers.status, sdk: sdkVersions })
+      .select({ game: games, role: gameMembers.role, sdk: sdkVersions })
       .from(gameMembers)
       .innerJoin(games, eq(games.id, gameMembers.gameId))
-      .leftJoin(gameServers, eq(gameServers.gameId, games.id))
       .leftJoin(sdkVersions, eq(sdkVersions.major, games.sdkMajor))
       .where(eq(gameMembers.userId, userId))
       .orderBy(asc(games.name));
@@ -97,17 +96,13 @@ export class MembersService {
         url: gameUrl(this.env.GAME_ORIGIN_TEMPLATE, r.game.id, r.game.manifest?.entry ?? ''),
         manifestFetchedAt: r.game.manifestFetchedAt?.toISOString() ?? null,
         sdk,
-        warnings: warningsFor(r.game, sdk, r.server),
+        warnings: warningsFor(r.game, sdk),
       };
     });
   }
 }
 
-function warningsFor(
-  game: typeof games.$inferSelect,
-  sdk: MyGame['sdk'],
-  server: string | null,
-): string[] {
+function warningsFor(game: typeof games.$inferSelect, sdk: MyGame['sdk']): string[] {
   const w: string[] = [];
   if (sdk?.status === 'deprecated') {
     w.push(
@@ -123,9 +118,6 @@ function warningsFor(
     w.push(`game.json could not be read: ${game.manifestError}`);
   } else if (!game.manifest) {
     w.push('game.json has not been read yet: ask an admin to refresh the game once it is online');
-  }
-  if (server === 'requested') {
-    w.push('The game server is waiting for approval');
   }
   return w;
 }

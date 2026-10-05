@@ -6,7 +6,7 @@ export interface GameManifestView {
   entry: string;
   thumbnail?: string;
   sdk: string;
-  server?: { protocol: string };
+  server?: { url: string; protocol: string };
 }
 
 export interface AdminGame {
@@ -36,14 +36,4 @@ export interface ServerKeyView {
   lastUsedAt: string | null;
   expiresAt: string | null;
   revokedAt: string | null;
-}
-
-export interface GameServerView {
-  gameId: string;
-  gameName: string;
-  image: string;
-  protocol: string;
-  status: 'requested' | 'approved' | 'revoked';
-  requestedAt: string;
-  approvedAt: string | null;
 }

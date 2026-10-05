@@ -4,6 +4,5 @@
   "entry": "index.html",
   "thumbnail": "thumb.png",
   "sdk": "^1.0.0",
-  "needsServer": false,
   "orientation": "landscape"
 }
