@@ -5,7 +5,8 @@ export interface GameSummary {
   id: string;
   name: string;
   description: string;
-  version: string;
+  /** `<game origin>/<thumbnail>` from the game's game.json. */
+  thumbnailUrl: string | null;
   serverProtocol: string | null;
   sdk: {
     major: number;

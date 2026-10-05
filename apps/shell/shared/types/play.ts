@@ -11,14 +11,14 @@ export interface SdkInfo {
   deprecatedAt: string | null;
 }
 
-/** `GET /v1/games/:id/play`. */
+/**
+ * `GET /v1/games/:id/play`: the entry document on the game's own origin. The SDK major (and so
+ * the host adapter) comes from the game's `__hello`.
+ */
 export interface PlayInfo {
   id: string;
   name: string;
-  version: string;
   url: string;
-  sdkMajor: number;
-  sdk: SdkInfo | null;
 }
 
 /** `GET /v1/games/:id/leaderboard`. */

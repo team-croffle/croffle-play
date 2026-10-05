@@ -24,8 +24,9 @@
         <tr>
           <th>id</th>
           <th>이름</th>
-          <th>stable</th>
-          <th>preview</th>
+          <th>공개</th>
+          <th>SDK</th>
+          <th>game.json</th>
         </tr>
       </thead>
       <tbody>
@@ -34,8 +35,9 @@
             <NuxtLink :to="`/admin/games/${g.id}`">{{ g.id }}</NuxtLink>
           </td>
           <td>{{ g.name }}</td>
-          <td>{{ g.stableVersion ?? '—' }}</td>
-          <td>{{ g.previewVersion ?? '—' }}</td>
+          <td>{{ g.listed ? '공개' : '—' }}</td>
+          <td>{{ g.sdkMajor ? `v${g.sdkMajor}` : '—' }}</td>
+          <td>{{ g.manifestError ? '읽기 실패' : g.manifest ? '정상' : '없음' }}</td>
         </tr>
       </tbody>
     </table>

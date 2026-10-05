@@ -14,7 +14,8 @@ export const ADAPTER_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
 /** `manifest.json` written next to each adapter bundle by `apps/adapters`. */
 export const adapterManifestSchema = v.object({
   major: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  version: v.pipe(v.string(), v.regex(ADAPTER_VERSION)),
+  /** Release name; `dev` for local builds (`pnpm dev:games`). */
+  version: v.pipe(v.string(), v.minLength(1)),
   file: v.string(),
   integrity: v.pipe(v.string(), v.startsWith('sha384-')),
 });
@@ -60,6 +61,9 @@ export async function publishAdapterDir(db: Db, storage: Storage, dir: string) {
   );
   if (manifest.file !== 'index.js') {
     throw new Error(`manifest.file must be index.js, not ${manifest.file}`);
+  }
+  if (!ADAPTER_VERSION.test(manifest.version)) {
+    throw new Error(`release adapters need a version like 1.2.0, not '${manifest.version}'`);
   }
   const body = await readFile(join(dir, manifest.file));
   const integrity = `sha384-${createHash('sha384').update(body).digest('base64')}`;

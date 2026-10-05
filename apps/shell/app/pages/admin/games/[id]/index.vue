@@ -1,19 +1,18 @@
 <script setup lang="ts">
-  import type {
-    AdminGame,
-    AdminVersion,
-    GameServerView,
-    ServerKeyView,
-  } from '~~/shared/types/admin';
+  import type { AdminGame, GameServerView, ServerKeyView } from '~~/shared/types/admin';
+  import type { PlayInfo } from '~~/shared/types/play';
 
   definePageMeta({ middleware: 'admin' });
 
   const route = useRoute();
   const id = String(route.params.id);
   const { call, error, busy } = useAdmin();
-  const { data: game, refresh: refreshGame } = await useFetch<
-    AdminGame & { versions: AdminVersion[] }
-  >(`/api/admin/games/${id}`);
+  const { data: game, refresh: refreshGame } = await useFetch<AdminGame>(`/api/admin/games/${id}`);
+  const { data: play } = await useFetch<PlayInfo>(`/api/admin/games/${id}/play`);
+  const info = reactive({
+    name: game.value?.name ?? '',
+    description: game.value?.description ?? '',
+  });
   const { data: keys, refresh: refreshKeys } = await useFetch<{ items: ServerKeyView[] }>(
     `/api/admin/games/${id}/server-keys`,
   );
@@ -36,10 +35,19 @@
 
   useHead({ title: () => `${game.value?.name ?? id} · 관리` });
 
-  async function act(path: string, body?: object) {
-    if (await call('POST', path, body)) {
-      await refreshGame();
-    }
+  async function refreshManifest() {
+    await call('POST', `games/${id}/refresh`);
+    await refreshGame();
+  }
+
+  async function setListed(listed: boolean) {
+    await call('PATCH', `games/${id}`, { listed });
+    await refreshGame();
+  }
+
+  async function saveInfo() {
+    await call('PATCH', `games/${id}`, { name: info.name, description: info.description });
+    await refreshGame();
   }
 
   async function decideServer(action: 'approve' | 'revoke') {
@@ -99,60 +107,57 @@
     <h1 class="page-title">
       {{ game.name }} <span class="muted">({{ game.id }})</span>
     </h1>
-    <p class="muted">
-      stable {{ game.stableVersion ?? '—' }} · preview {{ game.previewVersion ?? '—' }}
-    </p>
     <p v-if="error" class="error">{{ error }}</p>
 
-    <h2>버전</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>버전</th>
-          <th>상태</th>
-          <th>SDK</th>
-          <th>업로드</th>
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="v in game.versions" :key="v.version">
-          <td>
-            <NuxtLink
-              v-if="v.status !== 'pending'"
-              :to="`/admin/games/${game.id}/versions/${v.version}`"
-            >
-              {{ v.version }}
-            </NuxtLink>
-            <span v-else>{{ v.version }}</span>
-            <span v-if="v.version === game.stableVersion" class="badge">stable</span>
-          </td>
-          <td>{{ v.status }}</td>
-          <td>v{{ v.sdkMajor }}</td>
-          <td>{{ v.uploadedAt?.slice(0, 16).replace('T', ' ') ?? '—' }}</td>
-          <td class="actions">
-            <button
-              v-if="v.status === 'uploaded'"
-              type="button"
-              class="button"
-              :disabled="busy"
-              @click="act(`games/${game.id}/versions/${v.version}/approve`)"
-            >
-              승인
-            </button>
-            <button
-              v-if="v.status === 'approved' && v.version !== game.stableVersion"
-              type="button"
-              class="button button--ghost"
-              :disabled="busy"
-              @click="act(`games/${game.id}/rollback`, { version: v.version })"
-            >
-              이 버전으로 롤백
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <h2>게임 사이트</h2>
+    <p>
+      <a v-if="play" :href="play.url" target="_blank" rel="noopener">{{ play.url }}</a>
+      ·
+      <strong>{{ game.listed ? '공개' : '비공개' }}</strong>
+    </p>
+    <p class="muted">
+      game.json
+      <template v-if="game.manifest">
+        · SDK v{{ game.sdkMajor }} · 진입 {{ game.manifest.entry }}
+        <template v-if="game.manifest.version"> · 게임 버전 {{ game.manifest.version }}</template>
+        · {{ game.manifestFetchedAt?.slice(0, 16).replace('T', ' ') }} 읽음
+      </template>
+      <template v-else> · 아직 읽지 못함</template>
+    </p>
+    <p v-if="game.manifestError" class="notice">마지막 읽기 실패: {{ game.manifestError }}</p>
+    <div class="row">
+      <button type="button" class="button button--ghost" :disabled="busy" @click="refreshManifest">
+        game.json 다시 읽기
+      </button>
+      <NuxtLink :to="`/game/${game.id}/play?preview=1`" class="button button--ghost">
+        미리보기
+      </NuxtLink>
+      <button
+        v-if="!game.listed"
+        type="button"
+        class="button"
+        :disabled="busy || !game.manifest"
+        @click="setListed(true)"
+      >
+        공개
+      </button>
+      <button
+        v-else
+        type="button"
+        class="button button--ghost"
+        :disabled="busy"
+        @click="setListed(false)"
+      >
+        비공개로
+      </button>
+    </div>
+
+    <h2>기본 정보</h2>
+    <form class="stack narrow" @submit.prevent="saveInfo">
+      <input v-model="info.name" class="input" placeholder="이름" required />
+      <textarea v-model="info.description" class="input" placeholder="설명" rows="3" />
+      <button class="button" type="submit" :disabled="busy">저장</button>
+    </form>
 
     <template v-if="server && 'image' in server">
       <h2>전용 서버 (Tier 2)</h2>

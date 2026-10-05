@@ -7,7 +7,15 @@
 
 <template>
   <NuxtLink :to="`/game/${game.id}`" class="game-card">
-    <div class="game-card__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
+    <img
+      v-if="game.thumbnailUrl"
+      class="game-card__thumb"
+      :src="game.thumbnailUrl"
+      alt=""
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    />
+    <div v-else class="game-card__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
     <div class="game-card__body">
       <h2 class="game-card__title">
         {{ game.name }}

@@ -1,0 +1,8 @@
+{
+  "id": "duo",
+  "name": "Duo",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "sdk": "^1.0.0",
+  "orientation": "landscape"
+}

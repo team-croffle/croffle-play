@@ -1,24 +1,30 @@
+/** What the admin page needs from a registered game's `game.json`. */
+export interface GameManifestView {
+  id: string;
+  name: string;
+  version?: string;
+  entry: string;
+  thumbnail?: string;
+  sdk: string;
+  server?: { protocol: string };
+}
+
 export interface AdminGame {
   id: string;
   name: string;
   description: string;
-  stableVersion: string | null;
-  previewVersion: string | null;
+  /** Shown in the catalog. */
+  listed: boolean;
+  manifest: GameManifestView | null;
+  sdkMajor: number | null;
+  manifestFetchedAt: string | null;
+  manifestError: string | null;
   repo: string | null;
   scorePolicy: 'client' | 'server';
   scoreMin: number | null;
   scoreMax: number | null;
-  maxBundleBytes: number | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AdminVersion {
-  version: string;
-  status: 'pending' | 'uploaded' | 'approved' | 'rejected';
-  sdkMajor: number;
-  uploadedAt: string | null;
-  createdAt: string;
 }
 
 /** Key of the game's own server (`csk_…`), for verified scores. */

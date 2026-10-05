@@ -18,13 +18,19 @@
 <template>
   <div v-if="game">
     <article class="game-detail">
-      <div class="game-detail__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
+      <img
+        v-if="game.thumbnailUrl"
+        class="game-detail__thumb"
+        :src="game.thumbnailUrl"
+        alt=""
+        referrerpolicy="no-referrer"
+      />
+      <div v-else class="game-detail__thumb" aria-hidden="true">{{ game.name.charAt(0) }}</div>
       <div>
         <h1 class="page-title">{{ game.name }}</h1>
         <p>{{ game.description }}</p>
-        <p class="muted">
-          v{{ game.version }}
-          <span v-if="game.serverProtocol"> · 전용 서버 프로토콜 v{{ game.serverProtocol }}</span>
+        <p v-if="game.serverProtocol" class="muted">
+          전용 서버 프로토콜 v{{ game.serverProtocol }}
         </p>
         <p v-if="notice" class="notice">{{ notice.text }}</p>
         <NuxtLink v-if="!notice || notice.playable" :to="`/game/${game.id}/play`" class="button">
