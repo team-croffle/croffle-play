@@ -84,7 +84,7 @@ export async function publishBundle(
 
   const completed = await call<{ version: string; previewUrl: string }>(
     fetcher,
-    new URL(`${base.pathname}/${encodeURIComponent(version)}/complete`, base),
+    new URL(`${base.pathname}/${encodeURIComponent(version ?? '')}/complete`, base),
     { method: 'POST', headers: auth },
   );
   log(`complete: preview at ${completed.previewUrl} (waiting for approval)`);

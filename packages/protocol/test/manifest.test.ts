@@ -15,12 +15,21 @@ describe('game ids', () => {
     expect(isValidGameId(id)).toBe(true);
   });
 
-  it.each(['', 'Tetris', '-x', 'x-', 'a_b', 'a.b', 'a'.repeat(33), 'api', 'www', 'srv', 'admin'])(
-    'rejects %s',
-    (id) => {
-      expect(isValidGameId(id)).toBe(false);
-    },
-  );
+  it.each([
+    '',
+    'Tetris',
+    '-x',
+    'x-',
+    'a_b',
+    'a.b',
+    'a'.repeat(33),
+    'api',
+    'www',
+    'admin',
+    'static',
+  ])('rejects %s', (id) => {
+    expect(isValidGameId(id)).toBe(false);
+  });
 });
 
 describe('paths', () => {
@@ -58,6 +67,20 @@ describe('parseManifest', () => {
     expect(parseManifest(valid)).toEqual({
       ok: true,
       manifest: { ...valid, entry: 'index.html', needsServer: false, orientation: 'any' },
+    });
+  });
+
+  it('needs only id, name, and sdk (version and thumbnail are optional)', () => {
+    expect(parseManifest({ id: 'tetris', name: 'Tetris', sdk: '^1.0.0' })).toEqual({
+      ok: true,
+      manifest: {
+        id: 'tetris',
+        name: 'Tetris',
+        sdk: '^1.0.0',
+        entry: 'index.html',
+        needsServer: false,
+        orientation: 'any',
+      },
     });
   });
 

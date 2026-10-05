@@ -1,4 +1,5 @@
 export * from './capabilities.js';
+export * from './game-origin.js';
 export * from './handshake.js';
 export * from './manifest.js';
 export * from './rooms.js';
