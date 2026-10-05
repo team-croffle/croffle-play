@@ -17,8 +17,8 @@ import { CurrentUser, UserGuard } from '../auth/user.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
 import { Limit, SubjectThrottlerGuard } from '../common/rate-limit.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
-import { ServerKeyGuard } from '../deploy-keys/deploy-key.guard.js';
 import { GamesService } from '../games/games.service.js';
+import { ServerKeyGuard } from '../server-keys/server-key.guard.js';
 import { type User, UsersService } from '../users/users.service.js';
 import { type LeaderboardEntry, type ScorePolicy, ScoresService } from './scores.service.js';
 

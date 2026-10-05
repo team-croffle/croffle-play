@@ -21,9 +21,9 @@ export interface AdminVersion {
   createdAt: string;
 }
 
-export interface DeployKeyView {
+/** Key of the game's own server (`csk_…`), for verified scores. */
+export interface ServerKeyView {
   id: string;
-  kind: 'deploy' | 'server';
   prefix: string;
   label: string;
   createdAt: string;

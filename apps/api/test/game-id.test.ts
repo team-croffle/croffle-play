@@ -19,7 +19,7 @@ describe('game id route parameters', () => {
     ['GET', '/v1/games/www/play'],
     ['GET', '/v1/games/srv'],
     ['GET', '/v1/admin/games/api'],
-    ['POST', '/v1/admin/games/static/deploy-keys'],
+    ['POST', '/v1/admin/games/static/server-keys'],
   ] as const)('%s %s → 404', async (method, url) => {
     const res = await t.app.inject({ method, url, headers: t.adminAuth, payload: {} });
     expect(res.statusCode).toBe(404);
@@ -35,10 +35,10 @@ describe('game id route parameters', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it('authenticates publish before looking at the id', async () => {
+  it('authenticates server keys before looking at the id', async () => {
     const res = await t.app.inject({
       method: 'POST',
-      url: '/v1/games/admin/versions',
+      url: '/v1/games/admin/scores/verified',
       payload: {},
     });
     expect(res.statusCode).toBe(401);

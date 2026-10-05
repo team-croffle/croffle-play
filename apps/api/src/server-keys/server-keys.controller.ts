@@ -15,28 +15,25 @@ import * as v from 'valibot';
 import { AdminGuard } from '../auth/admin.guard.js';
 import { GameIdPipe } from '../common/game-id.pipe.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
-import { type DeployKeyView, DeployKeysService } from './deploy-keys.service.js';
+import { type ServerKeyView, ServerKeysService } from './server-keys.service.js';
 
-const issueSchema = v.object({
-  label: v.optional(v.pipe(v.string(), v.maxLength(80)), ''),
-  kind: v.optional(v.picklist(['deploy', 'server']), 'deploy'),
-});
+const issueSchema = v.object({ label: v.optional(v.pipe(v.string(), v.maxLength(80)), '') });
 
-@Controller('admin/games/:id/deploy-keys')
+@Controller('admin/games/:id/server-keys')
 @UseGuards(AdminGuard)
-export class DeployKeysController {
-  constructor(@Inject(DeployKeysService) private readonly keys: DeployKeysService) {}
+export class ServerKeysController {
+  constructor(@Inject(ServerKeysService) private readonly keys: ServerKeysService) {}
 
   @Post()
   issue(
     @Param('id', GameIdPipe) id: string,
     @Body(new ValibotPipe(v.optional(issueSchema, {}))) body: v.InferOutput<typeof issueSchema>,
-  ): Promise<{ key: string } & DeployKeyView> {
-    return this.keys.issue(id, body.label, body.kind);
+  ): Promise<{ key: string } & ServerKeyView> {
+    return this.keys.issue(id, body.label);
   }
 
   @Get()
-  async list(@Param('id', GameIdPipe) id: string): Promise<{ items: DeployKeyView[] }> {
+  async list(@Param('id', GameIdPipe) id: string): Promise<{ items: ServerKeyView[] }> {
     return { items: await this.keys.list(id) };
   }
 
@@ -45,7 +42,7 @@ export class DeployKeysController {
   rotate(
     @Param('id', GameIdPipe) id: string,
     @Param('keyId', ParseUUIDPipe) keyId: string,
-  ): Promise<{ key: string } & DeployKeyView> {
+  ): Promise<{ key: string } & ServerKeyView> {
     return this.keys.rotate(id, keyId);
   }
 

@@ -172,16 +172,15 @@ export const gameMembers = pgTable(
   (t) => [primaryKey({ columns: [t.gameId, t.userId] })],
 );
 
-/** `deploy`: publish versions (cpk_…). `server`: the game server submits verified scores (csk_…). */
-export const keyKind = pgEnum('key_kind', ['deploy', 'server']);
-
-/** Per-game credential. Only the SHA-256 of the key is stored. */
-export const deployKeys = pgTable('deploy_keys', {
+/**
+ * Per-game credential of the game's own server (`csk_…`): it submits verified scores. Only the
+ * SHA-256 of the key is stored.
+ */
+export const serverKeys = pgTable('server_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
   gameId: text('game_id')
     .notNull()
     .references(() => games.id, { onDelete: 'cascade' }),
-  kind: keyKind('kind').notNull().default('deploy'),
   keyHash: text('key_hash').notNull().unique(),
   /** Leading characters of the key, to tell keys apart in listings. */
   prefix: text('prefix').notNull(),
@@ -243,7 +242,7 @@ export const schema = {
   gameVersionStatus,
   sdkVersions,
   sdkStatus,
-  deployKeys,
+  serverKeys,
   users,
   userRole,
   scores,
@@ -255,5 +254,4 @@ export const schema = {
   gameMembers,
   memberRole,
   scorePolicy,
-  keyKind,
 };
