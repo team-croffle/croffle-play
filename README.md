@@ -101,8 +101,8 @@ Outside the platform, pass `transport: createMockHost()` from `@croffledev/play-
 game on its own. Publishing (deploy keys, `play-cli`, review and approval):
 [docs/publishing.md](./docs/publishing.md). Multiplayer rooms: [docs/multiplayer.md](./docs/multiplayer.md). Games with their own server:
 [docs/game-servers.md](./docs/game-servers.md). SDK versions and upgrades:
-[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). Operating the platform:
-[docs/operations.md](./docs/operations.md), [docs/security.md](./docs/security.md).
+[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). Security model:
+[docs/security.md](./docs/security.md).
 
 ## Contributing
 

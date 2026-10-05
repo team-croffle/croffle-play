@@ -44,7 +44,7 @@ Docker 없이 로컬에서 플랫폼 실행하기(임베디드 PostgreSQL, 로�
 
    type: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `build`, `ci`, `style`,
    `revert`, `release`. scope: `shell`, `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`,
-   `create-game`, `infra`, `ci`, `docs` (저장소 전체 변경이면 생략).
+   `create-game`, `ci`, `docs` (저장소 전체 변경이면 생략).
 
 4. **훅을 끄지 않는다.** 포맷·린트·타입 검사·비밀 파일 검사를 한다. `--no-verify` 금지, 원인을 고친다.
 5. 바꾼 것을 **테스트**한다. API 테스트는 인메모리 PostgreSQL(PGlite)에 실제 마이그레이션을 적용해
@@ -59,8 +59,8 @@ Docker 없이 로컬에서 플랫폼 실행하기(임베디드 PostgreSQL, 로�
 - 필수 체크: **CI result**, **TruffleHog**, **Gitleaks**. 빨간 체크는 머지하지 않는다.
 - 코드 오너(`.github/CODEOWNERS`)에게 리뷰가 자동 요청된다. 머지 전에 모든 리뷰 스레드를 해결한다.
 - **Rebase and merge**만 쓴다. `master` 이력은 일직선. 브랜치는 `master`를 merge하지 말고 rebase한다.
-- 릴리스는 관리자가 `master`에서 만든다(git 태그 `vX.Y.Z-rc.N` → `vX.Y.Z`).
-  [docs/operations.md](./docs/operations.md) 참고.
+- 릴리스는 관리자가 `master`에서 만든다(git 태그 `vX.Y.Z-rc.N` → `vX.Y.Z`). 플랫폼 배포와 운영은 이
+  저장소 밖의 일이다.
 
 ## 특히 조심할 규칙
 

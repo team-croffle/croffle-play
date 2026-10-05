@@ -1,3 +1,0 @@
-# m h dom mon dow  command
-* * * * *  /ops/healthcheck.sh >> /proc/1/fd/1 2>&1
-30 4 * * * /ops/backup.sh >> /proc/1/fd/1 2>&1

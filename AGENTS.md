@@ -203,8 +203,8 @@ Changing any of these requires a decision entry in `.ai/history/`.
   onto `master`, never commit on `master`.
 - Commits: `type(scope): title` (≤72 chars, enforced by the hook), one-line
   summary, bulleted details, `Co-Authored-By` footer only. Scopes: `shell`,
-  `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`, `create-game`, `infra`,
-  `ci`, `docs` (omit when repo-wide). Human-facing version of these rules:
+  `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`, `create-game`, `ci`,
+  `docs` (omit when repo-wide). Human-facing version of these rules:
   `CONTRIBUTING.md` (+ `.ko.md`); keep them in sync.
 - `packages/*` change → add a Changeset in the same commit series.
 

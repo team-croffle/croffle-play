@@ -42,8 +42,7 @@
 - `script-src blob:`: SRI 검증한 어댑터를 Blob URL로 import하기 위해 필요. Blob은 셸 origin의 스크립트만
   만들 수 있으므로 XSS가 선행 조건이다.
 - 요청 제한·룸 상태는 메모리(단일 인스턴스). 인스턴스를 늘리면 공유 저장소가 필요하다.
-- 게임 도메인 서브도메인끼리는 같은 site다(쿠키는 막지만 SameSite 판정은 공유) → 외부 개발자에게 열기
-  전에 [Public Suffix List](./public-suffix.md) 등록을 검토한다(현재 결정: 외부 개방 전에 등록).
+- 게임 도메인 서브도메인끼리는 같은 site다(쿠키는 막지만 SameSite 판정은 공유).
 
 ## 보고
 

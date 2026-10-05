@@ -98,7 +98,7 @@ if (sdk.has('score')) await sdk.submitScore(1200);
 플랫폼 밖에서는 `@croffledev/play-sdk/mock`의 `transport: createMockHost()`로 단독 실행한다. 배포(배포 키,
 `play-cli`, 검토·승인): [docs/publishing.md](./docs/publishing.md). 멀티플레이 룸:
 [docs/multiplayer.md](./docs/multiplayer.md). 전용 서버가 필요한 게임: [docs/game-servers.md](./docs/game-servers.md). SDK 버전과 업그레이드:
-[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). 운영: [docs/operations.md](./docs/operations.md),
+[docs/sdk-lifecycle.md](./docs/sdk-lifecycle.md). 보안 모델:
 [docs/security.md](./docs/security.md).
 
 ## 기여
