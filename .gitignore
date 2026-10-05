@@ -49,9 +49,3 @@ desktop.ini
 
 # Local AI workspace (never committed)
 .ai/
-
-# Generated Tier 2 game server fragments (see infra/game-servers/README.md)
-infra/game-servers/*.yml
-
-# Local backup output (infra/ops)
-infra/backups/

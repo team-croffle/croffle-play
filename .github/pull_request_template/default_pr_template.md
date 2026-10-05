@@ -24,7 +24,7 @@
 - [ ] `packages/protocol` (publishable)
 - [ ] `packages/sdk` (publishable)
 - [ ] `packages/cli` (publishable)
-- [ ] `infra/` / root / CI
+- [ ] root / CI
 
 ## Release
 

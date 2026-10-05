@@ -46,7 +46,7 @@ fixture games) is described in the [README](./README.md#development).
 
    Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `build`, `ci`, `style`,
    `revert`, `release`. Scopes: `shell`, `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`,
-   `create-game`, `infra`, `ci`, `docs` (omit for repository-wide changes).
+   `create-game`, `ci`, `docs` (omit for repository-wide changes).
 
 4. **Keep the hooks on.** They format, lint, typecheck, and scan for secret files. Never use
    `--no-verify`; fix the cause instead.
@@ -65,8 +65,8 @@ fixture games) is described in the [README](./README.md#development).
   review thread before merging.
 - **Rebase and merge** only; history on `master` stays linear. Keep your branch rebased on
   `master` rather than merging it in.
-- Releases are cut from `master` by maintainers (git tags `vX.Y.Z-rc.N` → `vX.Y.Z`); see
-  [docs/operations.md](./docs/operations.md).
+- Releases are cut from `master` by maintainers (git tags `vX.Y.Z-rc.N` → `vX.Y.Z`). Deploying
+  and operating the platform is outside this repository.
 
 ## Rules that need extra care
 

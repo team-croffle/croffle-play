@@ -32,7 +32,6 @@ cli:
 infra:
   - changed-files:
       - any-glob-to-any-file:
-          - infra/**
           - '**/Dockerfile'
           - '**/.dockerignore'
 

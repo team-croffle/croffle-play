@@ -13,7 +13,7 @@
 - [ ] `packages/protocol`
 - [ ] `packages/sdk`
 - [ ] `packages/cli`
-- [ ] `infra/` / root / CI
+- [ ] root / CI
 
 ## Related issues
 
