@@ -68,7 +68,13 @@ export function createHostCore(o: HostCoreOptions): HostCore {
 async function defaultGetUser(): Promise<PublicUser | null> {
   const { user } = await $fetch<{ user: PublicUser | null }>('/api/me');
   // Only the public profile reaches games (design invariant 4).
-  return user ? { id: user.id, nickname: user.nickname, avatar: user.avatar } : null;
+  return user
+    ? {
+        id: user.id,
+        nickname: user.nickname,
+        avatar: absoluteAvatar(user.avatar, window.location.origin),
+      }
+    : null;
 }
 
 function httpError(status: number, message: string): HostApiError {
