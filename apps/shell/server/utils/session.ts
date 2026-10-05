@@ -36,17 +36,26 @@ function password(): string {
 }
 
 /**
+ * Name and options of the session cookie. Over https it is `__Host-`: bound to the portal host, no
+ * Domain attribute, so game hosts on the same site (`<id>.play.<domain>`) never receive it.
+ */
+export function sessionCookie(siteUrl: string) {
+  const secure = siteUrl.startsWith('https://');
+  return {
+    name: secure ? '__Host-cp_session' : 'cp_session',
+    cookie: { httpOnly: true, secure, sameSite: 'lax' as const, path: '/' },
+  };
+}
+
+/**
  * Sealed, HttpOnly session cookie. Holds credentials server-side only; the browser and games never
  * see tokens (design invariant 4).
  */
 export function useShellSession(event: H3Event) {
   const config = useRuntimeConfig();
-  const secure = config.siteUrl.startsWith('https://');
   return useSession<ShellSession>(event, {
     password: password(),
-    // `__Host-` pins the cookie to this host over HTTPS (no Domain attribute possible).
-    name: secure ? '__Host-cp_session' : 'cp_session',
     maxAge: Number(config.sessionMaxAge) || 43_200,
-    cookie: { httpOnly: true, secure, sameSite: 'lax', path: '/' },
+    ...sessionCookie(config.siteUrl),
   });
 }
