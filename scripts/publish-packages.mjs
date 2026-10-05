@@ -44,6 +44,7 @@ packages.sort((a, b) => internalDeps(a) - internalDeps(b));
 
 const outDir = mkdtempSync(join(tmpdir(), 'croffle-publish-'));
 const staged = [];
+const failed = [];
 
 for (const pkg of packages) {
   const { name, version } = pkg.manifest;
@@ -65,7 +66,9 @@ for (const pkg of packages) {
       console.log(`skip ${name}@${version} (already staged)`);
       continue;
     }
-    throw new Error(`npm stage publish failed for ${name}@${version}`);
+    // Keep going: one package's trusted-publisher setup must not block the others.
+    failed.push(`${name}@${version}`);
+    continue;
   }
   console.log(`staged ${name}@${version} (${tag})`);
   staged.push({ spec: `${name}@${version}`, output: output.trim() });
@@ -81,4 +84,8 @@ if (summary && staged.length > 0) {
     ...staged.flatMap(({ spec, output }) => [`### ${spec}`, '', '```', output, '```', '']),
   ];
   appendFileSync(summary, `${lines.join('\n')}\n`);
+}
+
+if (failed.length > 0) {
+  throw new Error(`npm stage publish failed for ${failed.join(', ')}`);
 }
