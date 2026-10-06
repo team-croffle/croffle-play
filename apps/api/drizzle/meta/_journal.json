@@ -120,6 +120,13 @@
       "when": 1791297788849,
       "tag": "0016_deploy_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791299723136,
+      "tag": "0017_sdk_adapter_versions",
+      "breakpoints": true
     }
   ]
 }

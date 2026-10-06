@@ -153,3 +153,32 @@ describe('migration 0012: game registry instead of uploaded versions', () => {
     expect(tables.rows[0]?.n).toBe(0);
   });
 });
+
+describe('migration 0017: the active adapter becomes the first recorded version', () => {
+  const db = new PGlite();
+
+  beforeAll(async () => {
+    await applyUntil(db, '0017');
+    await db.exec(`
+      INSERT INTO sdk_versions (major, status, adapter_url, sri) VALUES
+        (1, 'current', '/adapters/v1/0.12.0/index.js', 'sha384-aaa'),
+        (2, 'current', 'http://localhost:4100/adapters/v2/dev/index.js', 'sha384-bbb'),
+        (3, 'current', NULL, NULL);
+    `);
+    await runFile(db, '0017_sdk_adapter_versions.sql');
+  });
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it('backfills release bundles as cli versions and anything else as dev', async () => {
+    const { rows } = await db.query<{ major: number; version: string; source: string }>(
+      'SELECT major, version, source FROM sdk_adapter_versions ORDER BY major',
+    );
+    expect(rows).toEqual([
+      { major: 1, version: '0.12.0', source: 'cli' },
+      { major: 2, version: 'dev', source: 'dev' },
+    ]);
+  });
+});
