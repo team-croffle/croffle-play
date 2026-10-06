@@ -1,12 +1,23 @@
 # @croffledev/play-cli
 
-Checks a Croffle Play game before and after you deploy it. Games are hosted by their teams; the
-portal shows them in an iframe and reads their `game.json`.
+Checks a Croffle Play game before and after you deploy it, and uploads it for platform hosting. The
+portal shows games in an iframe and reads their `game.json`; a game is served by its team or, from an
+uploaded build, by the platform.
 
 ```bash
 npx @croffledev/play-cli validate dist --api https://api.croffle-play.link
 npx @croffledev/play-cli check https://<id>.play.croffle-play.link/ --portal https://game.croffle-play.link
+npx @croffledev/play-cli pack dist                       # → <id>.zip
+CROFFLE_DEPLOY_KEY=cdk_… npx @croffledev/play-cli deploy dist --api https://api.croffle-play.link
 ```
+
+`pack` validates the build and zips it the way the platform expects (`game.json` at the root), refusing
+what the platform would refuse first: symbolic links and more files or bytes than the limits allow.
+
+`deploy` uploads a build (a directory, packed first, or a `.zip`) with the game's _deploy key_, issued
+on the portal by an admin or a member of the game. The key is read from `CROFFLE_DEPLOY_KEY` only,
+never from an argument. The platform makes the upload the game's active deploy; the admin page and
+`/dev` show the history and roll back.
 
 `validate` checks the build: `game.json` against the schema, that its entry and thumbnail exist (size
 and format of the thumbnail are recommendations), and — with `--api` — that the SDK major still

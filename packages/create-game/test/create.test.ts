@@ -59,7 +59,7 @@ describe('createGame', () => {
       '<title>Block Drop</title>',
     );
     // Teams host their games; there is no publish workflow.
-    expect(await readdir(join(g.dir, '.github/workflows'))).toEqual(['ci.yml']);
+    expect(await readdir(join(g.dir, '.github/workflows'))).toEqual(['ci.yml', 'deploy.yml']);
   });
 
   it('takes an explicit id and name, escaping the name in HTML', async () => {

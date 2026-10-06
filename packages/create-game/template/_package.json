@@ -9,7 +9,8 @@
     "build": "vite build && node scripts/write-manifest.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "validate": "play-cli validate dist"
+    "validate": "play-cli validate dist",
+    "deploy:play": "play-cli deploy dist"
   },
   "dependencies": {
     "@croffledev/play-sdk": "{{SDK_RANGE}}"
