@@ -1,6 +1,6 @@
 # 앱 환경 변수 레퍼런스
 
-플랫폼 이미지 세 개(`api`, `rooms`, `shell`)가 받는 환경 변수 전부와, 앱 사이에 서로 맞아야 하는 값을 정리한다.
+플랫폼 이미지 네 개(`api`, `rooms`, `shell`, `games`)가 받는 환경 변수 전부와, 앱 사이에 서로 맞아야 하는 값을 정리한다.
 compose·프록시·DNS 같은 배포 설정은 이 저장소 밖의 일이라 다루지 않는다. 이미지는
 `ghcr.io/team-croffle/croffle-play/<app>:<version>`이다.
 
@@ -39,10 +39,20 @@ compose·프록시·DNS 같은 배포 설정은 이 저장소 밖의 일이라 �
 | `GAME_ORIGIN_TEMPLATE`     | 운영 | `http://{id}.localhost:4100` | `https://{id}.play.croffle-play.link` | 모든 게임의 origin. `{id}` 필수, 경로 없음. production은 `https://` 필수 |
 | `GAME_MANIFEST_TIMEOUT_MS` |      | `5000`                       |                                       | 등록·새로고침 때 `<origin>/game.json`을 기다리는 시간(100 이상)          |
 
+### 업로드 호스팅
+
+| 이름                     | 기본값      | 설명                                                                |
+| ------------------------ | ----------- | ------------------------------------------------------------------- |
+| `UPLOAD_MAX_ZIP_BYTES`   | `104857600` | 올리는 zip 파일 자체의 상한(100 MB)                                 |
+| `UPLOAD_MAX_TOTAL_BYTES` | `314572800` | 해제한 파일 전체의 상한(300 MB)                                     |
+| `UPLOAD_MAX_FILES`       | `2000`      | 파일 수 상한                                                        |
+| `UPLOAD_MAX_FILE_BYTES`  | `52428800`  | 파일 하나의 상한(50 MB)                                             |
+| `DEPLOY_KEEP`            | `5`         | 게임마다 보관하는 업로드 수(되돌리기용). 서비스 중인 것은 항상 남음 |
+
 ### 스토리지 (S3 API)
 
-어댑터 번들(`adapters/`)과 아바타(`avatars/`)를 한 버킷에 둔다. 다섯 값이 없으면 스토리지 기능(어댑터 업로드,
-아바타 업로드)이 꺼진다.
+어댑터 번들(`adapters/`), 아바타(`avatars/`), 업로드된 게임 빌드(`games/<id>/…`)를 한 버킷에 둔다. 다섯 값이
+없으면 스토리지 기능(어댑터·아바타·게임 빌드 업로드)이 꺼진다. `games` 이미지도 같은 버킷을 읽는다.
 
 | 이름                   | 필수 | 기본값         | 예                         | 설명                    |
 | ---------------------- | ---- | -------------- | -------------------------- | ----------------------- |
@@ -105,6 +115,20 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 | openssl pkcs8 -
 | `TOKEN_ISSUER`            | 운영 | `http://localhost:3001`                       | `https://api.croffle-play.link`         | 게임 토큰의 `iss` — api의 `PUBLIC_API_ORIGIN`과 같은 값       |
 | `ALLOWED_ORIGIN_TEMPLATE` | 운영 | `http://{id}.localhost:4100`                  | `https://{id}.play.croffle-play.link`   | 허용할 게임 origin. `{id}` 필수, production은 `https://` 필수 |
 
+## games (게임 호스트)
+
+업로드된 게임 빌드를 `<id>.play.<domain>`에서 서빙한다. DB·API 없이 스토리지만 읽는다. `S3_*`는 api와 같은 값
+(위 표).
+
+| 이름                   | 필수 | 기본값                       | 예                                    | 설명                                                                                    |
+| ---------------------- | ---- | ---------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- |
+| `PORT`                 |      | `3003`                       |                                       |                                                                                         |
+| `GAME_ORIGIN_TEMPLATE` | 운영 | `http://{id}.localhost:3003` | `https://{id}.play.croffle-play.link` | 요청의 `Host`가 이 꼴이어야 게임으로 본다 — api와 같은 값. production은 `https://` 필수 |
+| `PORTAL_ORIGIN`        | 운영 | `http://localhost:3000`      | `https://game.croffle-play.link`      | iframe을 허용할 포털(`frame-ancestors`) — shell의 `NUXT_SITE_URL`의 origin              |
+| `POINTER_TTL_SECONDS`  |      | `10`                         |                                       | 게임의 활성 배포 포인터를 기억하는 시간. 업로드·되돌리기 반영 지연의 상한               |
+| `CACHE_MAX_BYTES`      |      | `67108864`                   |                                       | 파일 메모리 캐시 총량(64 MB)                                                            |
+| `FILE_MAX_AGE_SECONDS` |      | `300`                        |                                       | 진입 문서·`game.json` 외 파일의 `max-age`                                               |
+
 ## shell (포털)
 
 Nuxt 앱이라 `runtimeConfig` 키를 `NUXT_` 접두사 env로 받는다. 브라우저는 API를 직접 부르지 않고 포털 서버가
@@ -129,21 +153,24 @@ Logto 앱 설정: 리디렉트 URI `<NUXT_SITE_URL>/auth/callback`, 로그아웃
 
 ## 앱 사이에 맞아야 하는 값
 
-| 무엇              | 값을 쓰는 곳                                                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
-| OIDC 발급자       | api `OIDC_ISSUER` = shell `NUXT_OIDC_ISSUER`                                                                     |
-| API 리소스(`aud`) | api `OIDC_AUDIENCE` = shell `NUXT_OIDC_AUDIENCE` = Logto에 등록한 API 리소스                                     |
-| 게임 토큰 발급자  | api `PUBLIC_API_ORIGIN` = rooms `TOKEN_ISSUER`, rooms `JWKS_URL` = `<api>/.well-known/jwks.json`                 |
-| 게임 origin       | api `GAME_ORIGIN_TEMPLATE` = rooms `ALLOWED_ORIGIN_TEMPLATE`, shell `NUXT_CSP_FRAME_SRC`가 그 origin을 모두 포함 |
-| 포털 → API        | shell `NUXT_API_BASE` → api `HOST`·`PORT`                                                                        |
-| 포털 → 룸         | shell `NUXT_ROOMS_URL` → rooms 공개 주소                                                                         |
-| 게임 → 포털       | 게임 호스트의 `frame-ancestors`에 `NUXT_SITE_URL`의 origin ([game-hosting.md](../game-hosting.md))               |
+| 무엇               | 값을 쓰는 곳                                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| OIDC 발급자        | api `OIDC_ISSUER` = shell `NUXT_OIDC_ISSUER`                                                                                                    |
+| API 리소스(`aud`)  | api `OIDC_AUDIENCE` = shell `NUXT_OIDC_AUDIENCE` = Logto에 등록한 API 리소스                                                                    |
+| 게임 토큰 발급자   | api `PUBLIC_API_ORIGIN` = rooms `TOKEN_ISSUER`, rooms `JWKS_URL` = `<api>/.well-known/jwks.json`                                                |
+| 게임 origin        | api `GAME_ORIGIN_TEMPLATE` = rooms `ALLOWED_ORIGIN_TEMPLATE` = games `GAME_ORIGIN_TEMPLATE`, shell `NUXT_CSP_FRAME_SRC`가 그 origin을 모두 포함 |
+| 스토리지           | api `S3_*` = games `S3_*` (같은 버킷)                                                                                                           |
+| 게임 호스트 → 포털 | games `PORTAL_ORIGIN` = shell `NUXT_SITE_URL`의 origin                                                                                          |
+| 포털 → API         | shell `NUXT_API_BASE` → api `HOST`·`PORT`                                                                                                       |
+| 포털 → 룸          | shell `NUXT_ROOMS_URL` → rooms 공개 주소                                                                                                        |
+| 게임 → 포털        | 게임 호스트의 `frame-ancestors`에 `NUXT_SITE_URL`의 origin ([game-hosting.md](../game-hosting.md))                                              |
 
 ## 상태 확인
 
 - api `GET /healthz`: DB에 `select 1`. 실패하면 503
 - rooms `GET /healthz`
+- games `GET /healthz` (게임이 아닌 Host로, 예: `play.<domain>`)
 - shell: 별도 경로 없음. 이미지의 `HEALTHCHECK`는 `/`가 500 미만인지 본다
-- 세 이미지 모두 `HEALTHCHECK`가 들어 있다
+- 네 이미지 모두 `HEALTHCHECK`가 들어 있다
 
 어댑터 등록(`sdk:register`)과 운영 절차는 [관리자 가이드](../guide/admin.md)에 있다.

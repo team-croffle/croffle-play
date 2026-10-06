@@ -2,8 +2,8 @@
 
 A web game platform by [Team Croffle](https://github.com/team-croffle). One account plays every
 game: the portal provides sign-in, the catalog, scores and saves, multiplayer rooms, and the SDK
-games talk to. Team members build games in their own repositories — any engine — and host them
-themselves; the portal shows each game in an iframe.
+games talk to. Team members build games in their own repositories — any engine — and either host
+them themselves or upload a build for the platform to serve; the portal shows each game in an iframe.
 
 [한국어](./README.ko.md)
 
@@ -25,8 +25,8 @@ The docs (Korean) are published at **[https://team-croffle.github.io/croffle-pla
 
 ```
 Portal (Nuxt)  ──  catalog · sign-in · play page          game.croffle-play.link
-   │ iframe       https://<game>.play.croffle-play.link/  (hosted by the game's team)
-Game site      ──  serves game.json, lets the portal frame it
+   │ iframe       https://<game>.play.croffle-play.link/  (team's host, or the platform's game host)
+Game site      ──  serves game.json, lets the portal frame it (uploaded builds: served from storage)
    │ postMessage (SDK protocol, pinned at build time)
 Host adapter   ──  one per SDK major, picked from the game's handshake, loaded at runtime
    │
@@ -34,8 +34,9 @@ Portal core  ──►  API (NestJS)  ──►  PostgreSQL · S3 API (platform 
 ```
 
 - The portal never embeds game code, so it does not grow with the number of games.
-- The platform stores no game files and tracks no game versions: a game is an id, a listing flag,
-  and the `game.json` its own host serves.
+- A game is an id, a listing flag, a hosting mode and its `game.json`. Team-hosted games store
+  nothing on the platform; platform-hosted games are a zip the team uploads (portal, or
+  `play-cli deploy` with a deploy key), kept for a few versions to roll back.
 - Games are pinned to the SDK version they were built with. New SDK versions ship as adapters, not
   portal releases. Old majors move through `lts → old → deprecated` on a published schedule.
 - Sign-in happens in the portal only; games receive identity through the SDK.

@@ -43,7 +43,7 @@ Docker 없이 로컬에서 플랫폼 실행하기(임베디드 PostgreSQL, 로�
    ```
 
    type: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `build`, `ci`, `style`,
-   `revert`, `release`. scope: `shell`, `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`,
+   `revert`, `release`. scope: `shell`, `api`, `rooms`, `games`, `adapters`, `protocol`, `sdk`, `cli`,
    `create-game`, `ci`, `docs` (저장소 전체 변경이면 생략).
 
 4. **훅을 끄지 않는다.** 포맷·린트·타입 검사·비밀 파일 검사를 한다. `--no-verify` 금지, 원인을 고친다.

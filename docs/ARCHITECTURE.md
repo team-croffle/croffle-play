@@ -130,10 +130,12 @@ gamepad"`. `allow-same-origin`은 게임 자신의 origin이다(게임 origin �
 
 ## 5. 게임 등록과 호스팅
 
-플랫폼은 게임 파일을 받지도 서빙하지도 않는다. 게임 버전도 추적하지 않는다.
+게임은 자기 origin에서 서빙된다. 누가 서빙하는지는 게임마다 고른다 — **팀 호스팅**(기본, 플랫폼은 파일을 받지도
+서빙하지도 않음) 또는 **플랫폼 호스팅**(팀이 zip을 올리고 플랫폼의 게임 호스트 `apps/games`가 같은 origin에서
+서빙). 어느 쪽이든 플랫폼이 추적하는 게임 버전은 플랫폼 호스팅의 최근 업로드 몇 개(되돌리기용)뿐이다.
 
 ```
-https://<id>.play.croffle-play.link/            ← 팀원이 호스팅 (어디든)
+https://<id>.play.croffle-play.link/            ← 팀원이 호스팅 (어디든) 또는 apps/games
 ├─ index.html     # 진입 (game.json entry)
 ├─ game.json      # 포털이 읽는 메타데이터
 ├─ thumb.png      # 카탈로그 썸네일 (선택)
@@ -146,12 +148,31 @@ https://<id>.play.croffle-play.link/            ← 팀원이 호스팅 (어디�
   을 빼면 IndexedDB를 쓰는 엔진(Unity 등)이 깨진다.
 - 예약 id: `www`, `api`, `admin`, `cdn`, `play`, `rooms`, `auth`, `static`.
 
+### 플랫폼 호스팅 (업로드)
+
+```
+포털(/admin, /dev) 또는 play-cli deploy(배포 키 cdk_)
+   │ application/zip
+   ▼
+API: zip 검사(yauzl, 상한·경로·링크·game.json id·SDK 메이저) → 스토리지 games/<id>/<deploy>/<path>
+     game_deploys 행 → games.active_deploy_id + games/<id>/current.json {deployId, entry}
+   ▼
+apps/games: Host → id → current.json(10초 캐시) → 파일 (frame-ancestors·nosniff·ETag)
+```
+
+- 게임 호스트는 DB·API 없이 스토리지만 읽는다. 게임 수와 무관한 이미지 하나. 포인터가 없는 id는 404(팀 호스팅
+  게임의 Host가 와도 그렇다 — DNS 와일드카드는 게임 호스트로, 팀 호스팅 게임은 개별 레코드로 보낸다).
+- `game.json`은 zip 안의 것이다(origin에서 다시 읽지 않음). 최근 `DEPLOY_KEEP`(기본 5)개를 보관하고 되돌리기는
+  포인터 전환, 그보다 오래된 업로드는 스토리지에서 지운다.
+- 배포 키(`cdk_`)는 서버 키(`csk_`)와 같은 꼴(해시 저장, 1회 표시, 교체·폐기)이고 그 게임의 업로드에만 쓰인다.
+
 ### 등록 흐름
 
 ```
 관리자: 게임 등록 (id, 이름)                       ← listed=false
-팀원: <id>.play.croffle-play.link에 배포 → play-cli check <url>
-관리자: game.json 다시 읽기                        ← id 일치, SDK 메이저 current·lts, 실패 사유 기록
+팀원: <id>.play.croffle-play.link에 배포 → play-cli check <url>   (팀 호스팅)
+      또는 zip 업로드 (포털 / play-cli deploy)                    (플랫폼 호스팅)
+관리자: game.json 다시 읽기 (팀 호스팅만)          ← id 일치, SDK 메이저 current·lts, 실패 사유 기록
 관리자: 공개                                       ← listed=true, 카탈로그에 노출
 ```
 
@@ -184,7 +205,7 @@ https://<id>.play.croffle-play.link/            ← 팀원이 호스팅 (어디�
 
 ```
 croffle-play/   (이 저장소, 플랫폼 담당 관리)
-├─ apps/shell (포털)  apps/api  apps/rooms  apps/adapters
+├─ apps/shell (포털)  apps/api  apps/rooms  apps/games (업로드 게임 호스트)  apps/adapters
 └─ packages/protocol  packages/sdk  packages/cli  packages/create-game (게임 템플릿)
 
 <game>/               게임마다 독립 저장소 (`npm create @croffledev/play-game`으로 생성)

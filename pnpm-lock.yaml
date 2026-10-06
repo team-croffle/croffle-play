@@ -398,6 +398,9 @@ importers:
       '@croffledev/play-protocol':
         specifier: workspace:^
         version: link:../protocol
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
     devDependencies:
       '@types/node':
         specifier: ^24.19.1
