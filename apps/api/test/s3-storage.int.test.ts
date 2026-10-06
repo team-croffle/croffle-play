@@ -31,5 +31,14 @@ describe.skipIf(!endpoint)('S3Storage on a real S3 API', () => {
     expect(got?.contentType).toBe('text/javascript');
     expect(new TextDecoder().decode(got?.body)).toBe('console.log("hello")');
     expect(await storage.get('adapters/v1/9.9.9/index.js')).toBeNull();
+
+    await storage.put('games/g/d1/index.html', { body, contentType: 'text/html' });
+    await storage.put('games/g/d1/game.json', { body, contentType: 'application/json' });
+    expect((await storage.list('games/g/')).map((o) => o.key).toSorted()).toEqual([
+      'games/g/d1/game.json',
+      'games/g/d1/index.html',
+    ]);
+    await storage.delete(['games/g/d1/index.html', 'games/g/missing']);
+    expect((await storage.list('games/g/')).map((o) => o.key)).toEqual(['games/g/d1/game.json']);
   });
 });

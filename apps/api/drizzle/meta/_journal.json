@@ -106,6 +106,13 @@
       "when": 1791209476510,
       "tag": "0014_drop_game_servers",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791296394833,
+      "tag": "0015_platform_hosting",
+      "breakpoints": true
     }
   ]
 }

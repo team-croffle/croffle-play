@@ -28,6 +28,12 @@ const timestamps = {
  */
 export const scorePolicy = pgEnum('score_policy', ['client', 'server']);
 
+/**
+ * Who serves the game at `<id>.play.<domain>`: the team (`team`, the default) or the platform
+ * from an uploaded zip (`platform`, see `gameDeploys`). Same origin rule either way.
+ */
+export const gameHosting = pgEnum('game_hosting', ['team', 'platform']);
+
 export const games = pgTable('games', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -50,8 +56,36 @@ export const games = pgTable('games', {
   scoreMax: doublePrecision('score_max'),
   /** GitHub repository (`owner/name`) for platform notices. Set by admins only. */
   repo: text('repo'),
+  hosting: gameHosting('hosting').notNull().default('team'),
+  /** Platform hosting: the deploy served right now (`gameDeploys.id`); null when none. */
+  activeDeployId: uuid('active_deploy_id'),
   ...timestamps,
 });
+
+/**
+ * One uploaded build of a platform-hosted game. Files live at `games/<game>/<id>/<path>` in
+ * storage; the game host reads `games/<game>/current.json` to find the active one.
+ */
+export const gameDeploys = pgTable(
+  'game_deploys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gameId: text('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    /** Null when uploaded with a deploy key (CI) rather than by a signed-in member. */
+    uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
+    /** The deploy key used, when any (deploy keys arrive in a later migration). */
+    deployKeyId: uuid('deploy_key_id'),
+    /** Total bytes and file count after extraction. */
+    size: integer('size').notNull(),
+    fileCount: integer('file_count').notNull(),
+    /** The `game.json` found in the zip. */
+    manifest: jsonb('manifest').$type<GameManifest>().notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index('game_deploys_game_created_idx').on(t.gameId, t.createdAt)],
+);
 
 export const userRole = pgEnum('user_role', ['user', 'admin']);
 
@@ -191,6 +225,8 @@ export const sdkVersionEvents = pgTable('sdk_version_events', {
 
 export const schema = {
   games,
+  gameHosting,
+  gameDeploys,
   sdkVersions,
   sdkStatus,
   serverKeys,
