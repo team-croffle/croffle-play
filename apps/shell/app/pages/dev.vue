@@ -42,6 +42,18 @@
         </summary>
         <DeployPanel :base="`/api/me/games/${g.id}`" :hosting="g.hosting" @changed="refresh()" />
       </details>
+      <details class="dev-game__deploys">
+        <summary>배포 키 <span class="muted">· CI · play-cli deploy</span></summary>
+        <p class="muted">
+          <code>CROFFLE_DEPLOY_KEY</code>로 넘기면 <code>play-cli deploy</code>가 로그인 없이 이
+          게임에 빌드를 올립니다. 키는 발급할 때 한 번만 보입니다.
+        </p>
+        <GameKeysPanel
+          :base="`/api/me/games/${g.id}/deploy-keys`"
+          issue-label="배포 키 발급"
+          placeholder="라벨 (예: github-actions)"
+        />
+      </details>
     </article>
   </section>
 </template>

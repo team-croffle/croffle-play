@@ -34,7 +34,7 @@ export class SubjectThrottlerGuard extends ThrottlerGuard {
 
   protected override async getTracker(req: Record<string, unknown>): Promise<string> {
     const user = req.user as { id?: string } | undefined;
-    const key = req.serverKey as { id?: string } | undefined;
+    const key = (req.serverKey ?? req.deployKey) as { id?: string } | undefined;
     if (user?.id) {
       return `user:${user.id}`;
     }

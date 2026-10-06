@@ -215,7 +215,22 @@
       @changed="refreshGame"
     />
 
+    <h2>배포 키</h2>
+    <p class="muted">
+      게임 저장소의 CI나 <code>play-cli deploy</code>가 빌드를 올릴 때 쓰는 키입니다. 이 게임에만
+      올릴 수 있습니다.
+    </p>
+    <GameKeysPanel
+      :base="`/api/admin/games/${game.id}/deploy-keys`"
+      issue-label="배포 키 발급"
+      placeholder="라벨 (예: github-actions)"
+    />
+
     <h2>게임 서버 키</h2>
-    <ServerKeysPanel :game-id="game.id" />
+    <GameKeysPanel
+      :base="`/api/admin/games/${game.id}/server-keys`"
+      issue-label="서버 키 발급"
+      placeholder="라벨 (예: game-server)"
+    />
   </section>
 </template>
