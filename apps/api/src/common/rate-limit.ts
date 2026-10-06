@@ -55,4 +55,5 @@ export const Limit = {
   saveWrite: () => Throttle({ default: { limit: 60, ttl: minute } }),
   saveRead: () => Throttle({ default: { limit: 120, ttl: minute } }),
   profile: () => Throttle({ default: { limit: 10, ttl: minute } }),
+  upload: () => Throttle({ default: { limit: 10, ttl: minute } }),
 } as const;

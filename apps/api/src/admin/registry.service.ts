@@ -16,7 +16,7 @@ import { ENV } from '../config/config.module.js';
 import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
 import { games } from '../db/schema.js';
-import { REGISTRABLE_STATUSES } from '../sdk/lifecycle.js';
+import { assertRegistrable } from '../sdk/registrable.js';
 import { SdkService } from '../sdk/sdk.service.js';
 import { MANIFEST_FETCHER, ManifestFetchError, type ManifestFetcher } from './manifest-fetcher.js';
 
@@ -92,17 +92,8 @@ export class RegistryService {
     return parsed.manifest;
   }
 
-  private async requireRegistrable(major: number): Promise<void> {
-    const info = await this.sdk.find(major);
-    if (!info) {
-      throw new UnprocessableEntityException(`SDK v${major} is not supported by the platform`);
-    }
-    if (!REGISTRABLE_STATUSES.includes(info.status)) {
-      throw new UnprocessableEntityException(
-        `SDK v${major} is ${info.status}; games must use a supported SDK major. ` +
-          `Migration guide: ${this.env.SDK_MIGRATION_GUIDE_URL}`,
-      );
-    }
+  private requireRegistrable(major: number): Promise<void> {
+    return assertRegistrable(this.sdk, this.env, major);
   }
 
   private async requireGame(id: string) {
