@@ -1,5 +1,11 @@
 # @croffledev/play-protocol
 
+## 0.3.0
+
+### Minor Changes
+
+- c2424e5: Add `UPLOAD_LIMITS`: the default size and file-count limits of a game build uploaded for platform hosting.
+
 ## 0.2.1
 
 ### Patch Changes
