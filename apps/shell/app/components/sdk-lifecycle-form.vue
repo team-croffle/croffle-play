@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import type { SdkDetail, SdkStatus } from '~~/shared/types/sdk-admin';
+  import type { SdkStatus } from '~~/shared/types/play';
+  import type { SdkDetail } from '~~/shared/types/sdk-admin';
 
   /** Status (forward only) and the old/deprecated dates of a major; deprecating asks for the major back. */
   const props = defineProps<{ detail: SdkDetail }>();
