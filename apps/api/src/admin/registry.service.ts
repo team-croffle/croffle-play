@@ -5,6 +5,7 @@ import {
   sdkRangeMajor,
 } from '@croffledev/play-protocol';
 import {
+  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -39,7 +40,12 @@ export class RegistryService {
    * the previously stored manifest stays in place.
    */
   async refresh(id: string): Promise<GameManifest> {
-    await this.requireGame(id);
+    const game = await this.requireGame(id);
+    if (game.hosting === 'platform') {
+      throw new ConflictException(
+        `'${id}' is hosted by the platform: its game.json comes from the uploaded build`,
+      );
+    }
     try {
       const manifest = await this.load(id);
       const major = sdkRangeMajor(manifest.sdk) as number;

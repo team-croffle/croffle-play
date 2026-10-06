@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 
 import { DB, type Db } from '../db/db.js';
 import { games } from '../db/schema.js';
+import { DeployService } from '../deploys/deploy.service.js';
 import { RegistryService } from './registry.service.js';
 
 export type AdminGame = Omit<
@@ -22,17 +23,21 @@ export interface GamePatch {
   scorePolicy?: 'client' | 'server' | undefined;
   scoreMin?: number | null | undefined;
   scoreMax?: number | null | undefined;
+  /** `team`: the team serves the game; `platform`: the newest uploaded build is served. */
+  hosting?: 'team' | 'platform' | undefined;
 }
 
 /**
- * Game registry. Games are hosted by their teams at `<id>.<games host>`; the platform keeps the
- * catalog entry, whether it is listed, and the game's `game.json` (RegistryService).
+ * Game registry. Games live at `<id>.<games host>`, served by their team or by the platform from an
+ * uploaded build; the platform keeps the catalog entry, whether it is listed, and the game's
+ * `game.json` (RegistryService, or the build's own for platform hosting).
  */
 @Injectable()
 export class AdminGamesService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(RegistryService) private readonly registry: RegistryService,
+    @Inject(DeployService) private readonly deploys: DeployService,
   ) {}
 
   /** Registers a game, unlisted. Its `game.json` is read now if the game is already online. */
@@ -46,10 +51,17 @@ export class AdminGamesService {
   }
 
   async update(id: string, patch: GamePatch): Promise<AdminGame> {
+    const { hosting, ...fields } = patch;
+    if (hosting) {
+      await this.deploys.setHosting(id, hosting);
+    }
     if (patch.listed) {
       await this.registry.assertListable(id);
     }
-    const rows = await this.db.update(games).set(patch).where(eq(games.id, id)).returning();
+    if (Object.keys(fields).length === 0) {
+      return this.get(id);
+    }
+    const rows = await this.db.update(games).set(fields).where(eq(games.id, id)).returning();
     if (!rows[0]) {
       throw new NotFoundException(`Game '${id}' not found`);
     }

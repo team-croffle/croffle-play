@@ -31,6 +31,8 @@ const updateSchema = v.object({
   scoreMax: v.optional(v.nullable(v.pipe(v.number(), v.finite()))),
   /** GitHub repository for platform notices (`owner/name`). */
   repo: v.optional(v.nullable(v.pipe(v.string(), v.regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)))),
+  /** Who serves the game; `platform` needs an uploaded build. */
+  hosting: v.optional(v.picklist(['team', 'platform'])),
 });
 
 @Controller('admin/games')
