@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { AdminGame, ServerKeyView } from '~~/shared/types/admin';
+  import type { AdminGame } from '~~/shared/types/admin';
   import type { PlayInfo } from '~~/shared/types/play';
 
   definePageMeta({ middleware: 'admin' });
@@ -13,9 +13,6 @@
     name: game.value?.name ?? '',
     description: game.value?.description ?? '',
   });
-  const { data: keys, refresh: refreshKeys } = await useFetch<{ items: ServerKeyView[] }>(
-    `/api/admin/games/${id}/server-keys`,
-  );
   const { data: members, refresh: refreshMembers } = await useFetch<{
     items: { user: { id: string; nickname: string }; role: string }[];
   }>(`/api/admin/games/${id}/members`, { default: () => ({ items: [] }) });
@@ -26,8 +23,6 @@
     min: game.value?.scoreMin ?? null,
     max: game.value?.scoreMax ?? null,
   });
-  const newKey = ref<string | null>(null);
-  const keyLabel = ref('');
 
   useHead({ title: () => `${game.value?.name ?? id} · 관리` });
 
@@ -71,24 +66,10 @@
     await refreshGame();
   }
 
-  async function issueKey() {
-    const res = await call<{ key: string }>('POST', `games/${id}/server-keys`, {
-      label: keyLabel.value,
-    });
-    newKey.value = res?.key ?? null;
-    keyLabel.value = '';
-    await refreshKeys();
-  }
-
-  async function rotateKey(keyId: string) {
-    const res = await call<{ key: string }>('POST', `games/${id}/server-keys/${keyId}/rotate`);
-    newKey.value = res?.key ?? null;
-    await refreshKeys();
-  }
-
-  async function revokeKey(keyId: string) {
-    await call('DELETE', `games/${id}/server-keys/${keyId}`);
-    await refreshKeys();
+  /** Back to team hosting: the team's site is served again, uploads stay for a later switch. */
+  async function hostByTeam() {
+    await call('PATCH', `games/${id}`, { hosting: 'team' });
+    await refreshGame();
   }
 </script>
 
@@ -116,9 +97,30 @@
       <template v-else> · 아직 읽지 못함</template>
     </p>
     <p v-if="game.manifestError" class="notice">마지막 읽기 실패: {{ game.manifestError }}</p>
+    <p class="muted">
+      호스팅:
+      <strong>{{
+        game.hosting === 'platform' ? '플랫폼 (업로드한 빌드)' : '팀 (직접 호스팅)'
+      }}</strong>
+    </p>
     <div class="row">
-      <button type="button" class="button button--ghost" :disabled="busy" @click="refreshManifest">
+      <button
+        v-if="game.hosting === 'team'"
+        type="button"
+        class="button button--ghost"
+        :disabled="busy"
+        @click="refreshManifest"
+      >
         game.json 다시 읽기
+      </button>
+      <button
+        v-else
+        type="button"
+        class="button button--ghost"
+        :disabled="busy"
+        @click="hostByTeam"
+      >
+        팀 호스팅으로 전환
       </button>
       <NuxtLink :to="`/game/${game.id}/play?preview=1`" class="button button--ghost">
         미리보기
@@ -206,48 +208,14 @@
       <button class="button" type="submit" :disabled="busy">저장</button>
     </form>
 
+    <h2>업로드 호스팅</h2>
+    <DeployPanel
+      :base="`/api/admin/games/${game.id}`"
+      :hosting="game.hosting"
+      @changed="refreshGame"
+    />
+
     <h2>게임 서버 키</h2>
-    <p v-if="newKey" class="notice">
-      새 키 (지금만 표시됩니다): <code>{{ newKey }}</code>
-    </p>
-    <table class="table">
-      <tbody>
-        <tr v-for="k in keys?.items ?? []" :key="k.id">
-          <td>
-            <code>{{ k.prefix }}…</code>
-          </td>
-          <td>{{ k.label }}</td>
-          <td>마지막 사용 {{ k.lastUsedAt?.slice(0, 10) ?? '—' }}</td>
-          <td class="actions">
-            <span v-if="k.revokedAt" class="muted">폐기됨</span>
-            <span v-else-if="k.expiresAt" class="muted"
-              >{{ k.expiresAt.slice(0, 16).replace('T', ' ') }} 만료</span
-            >
-            <button
-              v-if="!k.revokedAt && !k.expiresAt"
-              type="button"
-              class="button button--ghost"
-              :disabled="busy"
-              @click="rotateKey(k.id)"
-            >
-              회전
-            </button>
-            <button
-              v-if="!k.revokedAt"
-              type="button"
-              class="button button--ghost"
-              :disabled="busy"
-              @click="revokeKey(k.id)"
-            >
-              폐기
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <form class="row" @submit.prevent="issueKey">
-      <input v-model="keyLabel" class="input" placeholder="라벨 (예: game-server)" />
-      <button class="button" type="submit" :disabled="busy">서버 키 발급</button>
-    </form>
+    <ServerKeysPanel :game-id="game.id" />
   </section>
 </template>

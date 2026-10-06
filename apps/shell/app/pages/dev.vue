@@ -6,7 +6,7 @@
   if (!me.value.user) {
     await navigateTo(loginHref(route.fullPath), { external: true });
   }
-  const { data } = await useFetch<{ items: MyGame[] }>('/api/me/games', {
+  const { data, refresh } = await useFetch<{ items: MyGame[] }>('/api/me/games', {
     headers: useRequestHeaders(['cookie']),
     default: () => ({ items: [] }),
   });
@@ -33,6 +33,15 @@
       <ul v-if="g.warnings.length" class="dev-game__warnings">
         <li v-for="w in g.warnings" :key="w">{{ w }}</li>
       </ul>
+      <details class="dev-game__deploys">
+        <summary>
+          업로드 호스팅
+          <span class="muted">
+            · {{ g.hosting === 'platform' ? '플랫폼이 서비스 중' : '팀이 직접 호스팅' }}
+          </span>
+        </summary>
+        <DeployPanel :base="`/api/me/games/${g.id}`" :hosting="g.hosting" @changed="refresh()" />
+      </details>
     </article>
   </section>
 </template>
