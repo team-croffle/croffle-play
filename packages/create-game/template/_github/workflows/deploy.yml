@@ -1,0 +1,38 @@
+# Uploads the build to Croffle Play (platform hosting) on every push to main.
+#
+# Needed once, in the repository settings:
+#   - secret   CROFFLE_DEPLOY_KEY  the game's deploy key (cdk_…), issued on the portal
+#   - variable CROFFLE_PLAY_API    the platform API, e.g. https://api.croffle-play.link
+# Without the variable the job is skipped, so team-hosted games can keep this file.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.CROFFLE_PLAY_API != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Upload to the platform
+        run: pnpm exec play-cli deploy dist
+        env:
+          CROFFLE_PLAY_API: ${{ vars.CROFFLE_PLAY_API }}
+          CROFFLE_DEPLOY_KEY: ${{ secrets.CROFFLE_DEPLOY_KEY }}

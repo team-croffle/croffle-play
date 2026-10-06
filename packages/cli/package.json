@@ -34,7 +34,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@croffledev/play-protocol": "workspace:^"
+    "@croffledev/play-protocol": "workspace:^",
+    "fflate": "^0.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",

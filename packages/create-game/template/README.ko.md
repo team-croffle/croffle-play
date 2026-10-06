@@ -11,11 +11,23 @@
 
 ## 호스팅
 
-게임은 직접 호스팅한다. 주소는 `https://<id>.play.croffle-play.link/`이다(이 이름을 내 호스트로 연결해
-달라고 플랫폼 관리자에게 요청). 정적 호스팅이면 무엇이든 된다. 여기 있는 `Dockerfile` + `Caddyfile`은 그중
-한 방법이다.
+게임 주소는 `https://<id>.play.croffle-play.link/`이다. 올리는 방법은 두 가지다.
 
-호스트가 지켜야 할 것:
+- **플랫폼 호스팅** — 빌드를 올리면 플랫폼이 서빙한다. 관리자(또는 포털 `/dev`에서 게임 멤버)에게
+  *배포 키*를 받은 뒤:
+
+  ```bash
+  pnpm build
+  CROFFLE_DEPLOY_KEY=cdk_… CROFFLE_PLAY_API=https://api.croffle-play.link pnpm deploy:play
+  ```
+
+  저장소에 secret `CROFFLE_DEPLOY_KEY`와 variable `CROFFLE_PLAY_API`를 넣으면
+  `.github/workflows/deploy.yml`이 `main`에 push할 때마다 같은 일을 한다. 없으면 건너뛴다.
+
+- **팀 호스팅** — 직접 호스팅한다(이 이름을 내 호스트로 연결해 달라고 플랫폼 관리자에게 요청). 정적
+  호스팅이면 무엇이든 된다. 여기 있는 `Dockerfile` + `Caddyfile`은 그중 한 방법이다.
+
+팀 호스팅 사이트가 지켜야 할 것:
 
 - `dist/`를 origin 루트에서 서빙하고 `game.json`도 포함한다(포털이 읽는다).
 - 포털이 게임을 iframe에 띄울 수 있게 한다: `Content-Security-Policy: frame-ancestors https://game.croffle-play.link`
@@ -36,13 +48,14 @@ SDK 업데이트는 Renovate가 올린다. 새 SDK 메이저에는 마이그레�
 
 ## 명령
 
-| 명령             | 하는 일                                                 |
-| ---------------- | ------------------------------------------------------- |
-| `pnpm dev`       | SDK mock 호스트로 단독 실행                             |
-| `pnpm build`     | `dist/` 빌드, `dist/game.json` 작성                     |
-| `pnpm preview`   | `dist/`를 로컬에서 서빙                                 |
-| `pnpm typecheck` | TypeScript 검사                                         |
-| `pnpm validate`  | `play-cli validate dist`: game.json, 엔트리, SDK 메이저 |
+| 명령               | 하는 일                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | SDK mock 호스트로 단독 실행                                                                           |
+| `pnpm build`       | `dist/` 빌드, `dist/game.json` 작성                                                                   |
+| `pnpm preview`     | `dist/`를 로컬에서 서빙                                                                               |
+| `pnpm typecheck`   | TypeScript 검사                                                                                       |
+| `pnpm validate`    | `play-cli validate dist`: game.json, 엔트리, SDK 메이저                                               |
+| `pnpm deploy:play` | `play-cli deploy dist`: 플랫폼 호스팅으로 빌드 업로드 (`CROFFLE_DEPLOY_KEY`, `CROFFLE_PLAY_API` 필요) |
 
 ## 문서
 
