@@ -65,6 +65,10 @@ jobs:
               - 'apps/rooms/**'
               - 'packages/**'
               - 'pnpm-lock.yaml'
+            games:
+              - 'apps/games/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
 
       # Apps to docker-build: changed AND have a Dockerfile.
       - id: apps
@@ -73,12 +77,14 @@ jobs:
           SHELL_CHANGED: ${{ steps.filter.outputs.shell }}
           API_CHANGED: ${{ steps.filter.outputs.api }}
           ROOMS_CHANGED: ${{ steps.filter.outputs.rooms }}
+          GAMES_CHANGED: ${{ steps.filter.outputs.games }}
         run: |
           set -euo pipefail
           APPS=()
           [[ "$SHELL_CHANGED" == "true" && -f apps/shell/Dockerfile ]] && APPS+=(shell)
           [[ "$API_CHANGED" == "true" && -f apps/api/Dockerfile ]] && APPS+=(api)
           [[ "$ROOMS_CHANGED" == "true" && -f apps/rooms/Dockerfile ]] && APPS+=(rooms)
+          [[ "$GAMES_CHANGED" == "true" && -f apps/games/Dockerfile ]] && APPS+=(games)
           JSON=$(printf '%s\n' "${APPS[@]:-}" | { grep -v '^$' || true; } | jq -R . | jq -cs .)
           echo "apps=$JSON" >> "$GITHUB_OUTPUT"
           echo "Docker builds: $JSON"
