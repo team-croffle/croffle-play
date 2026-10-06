@@ -1,10 +1,10 @@
 <script setup lang="ts">
-  import type { SdkInfo } from '~~/shared/types/sdk-admin';
+  import type { AdminSdkInfo } from '~~/shared/types/sdk-admin';
 
   definePageMeta({ middleware: 'admin' });
   useHead({ title: 'SDK · 관리 · Croffle Play' });
 
-  const { data } = await useFetch<{ items: SdkInfo[]; warnings: string[] }>('/api/admin/sdk', {
+  const { data } = await useFetch<{ items: AdminSdkInfo[]; warnings: string[] }>('/api/admin/sdk', {
     default: () => ({ items: [], warnings: [] }),
   });
   const when = (iso: string | null) => (iso ? iso.slice(0, 10) : '—');

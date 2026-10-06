@@ -1,7 +1,7 @@
-/** Admin view of an SDK major (API `SdkInfo` / `SdkDetail`). */
-export type SdkStatus = 'current' | 'lts' | 'old' | 'deprecated';
+import type { SdkStatus } from './play';
 
-export interface SdkInfo {
+/** Admin view of an SDK major (API `SdkInfo` / `SdkDetail`). */
+export interface AdminSdkInfo {
   major: number;
   status: SdkStatus;
   adapterUrl: string | null;
@@ -28,7 +28,7 @@ export interface SdkAdminEventView {
   at: string;
 }
 
-export interface SdkDetail extends SdkInfo {
+export interface SdkDetail extends AdminSdkInfo {
   adapters: AdapterVersionView[];
   events: SdkAdminEventView[];
   /** The api re-activates its image's bundle at every start. */
