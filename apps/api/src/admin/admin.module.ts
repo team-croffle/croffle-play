@@ -1,5 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
+import { DeploysModule } from '../deploys/deploys.module.js';
 import { GamesModule } from '../games/games.module.js';
 import { SdkModule } from '../sdk/sdk.module.js';
 import { AdminGamesController } from './admin-games.controller.js';
@@ -13,7 +14,7 @@ export class AdminModule {
   static forRoot(fetcher: ManifestFetcher = fetchManifest): DynamicModule {
     return {
       module: AdminModule,
-      imports: [GamesModule, SdkModule],
+      imports: [GamesModule, SdkModule, DeploysModule],
       controllers: [AdminGamesController],
       providers: [
         AdminGamesService,

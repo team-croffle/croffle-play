@@ -107,6 +107,8 @@ export const envSchema = v.object({
   UPLOAD_MAX_TOTAL_BYTES: bytes(UPLOAD_LIMITS.maxTotalBytes),
   UPLOAD_MAX_FILES: bytes(UPLOAD_LIMITS.maxFiles),
   UPLOAD_MAX_FILE_BYTES: bytes(UPLOAD_LIMITS.maxFileBytes),
+  /** How many uploads of a game to keep for rollback (the active one always stays). */
+  DEPLOY_KEEP: bytes(5),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),
