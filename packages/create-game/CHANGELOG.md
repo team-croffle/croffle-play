@@ -1,5 +1,13 @@
 # @croffledev/create-play-game
 
+## 0.2.2
+
+### Patch Changes
+
+- 13ef7cf: Generated games get a `deploy:play` script and an optional `deploy.yml` workflow that uploads the build for platform hosting when `CROFFLE_DEPLOY_KEY` and `CROFFLE_PLAY_API` are set.
+- Updated dependencies [c2424e5]
+  - @croffledev/play-protocol@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

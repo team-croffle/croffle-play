@@ -1,5 +1,16 @@
 # @croffledev/play-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- 13ef7cf: Add `play-cli pack` (validate a build and zip it against the platform's upload limits) and `play-cli deploy` (upload a build for platform hosting with the game's deploy key from `CROFFLE_DEPLOY_KEY`).
+
+### Patch Changes
+
+- Updated dependencies [c2424e5]
+  - @croffledev/play-protocol@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
