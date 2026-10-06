@@ -23,6 +23,9 @@ export interface AdminGame {
   scorePolicy: 'client' | 'server';
   scoreMin: number | null;
   scoreMax: number | null;
+  /** `team`: the team serves the game; `platform`: an uploaded build is served. */
+  hosting: 'team' | 'platform';
+  activeDeployId: string | null;
   createdAt: string;
   updatedAt: string;
 }

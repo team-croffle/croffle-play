@@ -3,7 +3,8 @@ export interface MyGame {
   name: string;
   role: 'owner' | 'developer';
   listed: boolean;
-  /** Where the team hosts the game. */
+  hosting: 'team' | 'platform';
+  /** Where the game is served (by the team or by the platform). */
   url: string;
   manifestFetchedAt: string | null;
   sdk: { major: number; status: string; deprecatedAt: string | null } | null;

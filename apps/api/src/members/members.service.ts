@@ -15,7 +15,8 @@ export interface MyGame {
   name: string;
   role: MemberRole;
   listed: boolean;
-  /** Where the team hosts the game. */
+  hosting: 'team' | 'platform';
+  /** Where the game is served (by the team or by the platform). */
   url: string;
   manifestFetchedAt: string | null;
   sdk: { major: number; status: SdkStatus; deprecatedAt: string | null } | null;
@@ -93,6 +94,7 @@ export class MembersService {
         name: r.game.name,
         role: r.role,
         listed: r.game.listed,
+        hosting: r.game.hosting,
         url: gameUrl(this.env.GAME_ORIGIN_TEMPLATE, r.game.id, r.game.manifest?.entry ?? ''),
         manifestFetchedAt: r.game.manifestFetchedAt?.toISOString() ?? null,
         sdk,
