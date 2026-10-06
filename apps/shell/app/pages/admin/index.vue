@@ -19,6 +19,7 @@
 <template>
   <section class="admin">
     <h1 class="page-title">게임 관리</h1>
+    <p><NuxtLink to="/admin/sdk">SDK · 어댑터 관리 →</NuxtLink></p>
     <table class="table">
       <thead>
         <tr>
