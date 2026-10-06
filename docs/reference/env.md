@@ -98,6 +98,13 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 | openssl pkcs8 -
 | `GITHUB_NOTIFY_TOKEN`            |      |                                  | **비밀**. 게임 저장소에 이슈를 여는 fine-grained 토큰(Issues: write). 없으면 로그만 남긴다 |
 | `GITHUB_API_URL`                 |      | `https://api.github.com`         | GitHub Enterprise일 때                                                                     |
 
+### 호스트 어댑터
+
+| 이름                    | 기본값          | 설명                                                                                                      |
+| ----------------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
+| `ADAPTER_AUTO_REGISTER` | `true`          | 시작할 때 이미지에 든 어댑터 번들을 활성화한다(이미지 버전 우선). `false`면 관리자가 고른 버전이 유지된다 |
+| `ADAPTER_BUNDLE_DIR`    | `/app/adapters` | 번들 위치(`v<N>/<버전>/index.js`, `manifest.json`). 없으면 건너뛴다                                       |
+
 ### 기타
 
 | 이름          | 기본값 | 설명                                                       |
@@ -173,4 +180,4 @@ Logto 앱 설정: 리디렉트 URI `<NUXT_SITE_URL>/auth/callback`, 로그아웃
 - shell: 별도 경로 없음. 이미지의 `HEALTHCHECK`는 `/`가 500 미만인지 본다
 - 네 이미지 모두 `HEALTHCHECK`가 들어 있다
 
-어댑터 등록(`sdk:register`)과 운영 절차는 [관리자 가이드](../guide/admin.md)에 있다.
+어댑터는 api가 시작할 때 이미지에서 등록된다. 수동 등록(`sdk:register`)과 운영 절차는 [관리자 가이드](../guide/admin.md)에 있다.
