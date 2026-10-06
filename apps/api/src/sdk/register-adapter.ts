@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { eq } from 'drizzle-orm';
 import * as v from 'valibot';
 
 import type { Db } from '../db/db.js';
-import { sdkAdapterVersions } from '../db/schema-sdk.js';
+import { sdkAdapterVersions, sdkAdminEvents } from '../db/schema-sdk.js';
 import { sdkVersions } from '../db/schema.js';
 import { IMMUTABLE_CACHE_CONTROL, type Storage } from '../storage/storage.js';
 
@@ -37,14 +38,22 @@ export type AdapterSource = (typeof sdkAdapterVersions.$inferSelect)['source'];
 /**
  * Points SDK major `manifest.major` at an adapter bundle and records the version. Creates the
  * major as `current` if it does not exist; never changes the lifecycle status of an existing one.
+ * The switch is recorded in `sdk_admin_events` (`actor` null: register-cli or the api at boot).
+ * The row is locked first, so two api instances booting at once record one switch, not two.
  */
 export async function registerAdapter(
   db: Db,
   manifest: AdapterManifest,
   adapterUrl: string,
   source: AdapterSource = 'cli',
+  actor: string | null = null,
 ): Promise<{ major: number; adapterUrl: string; sri: string }> {
   await db.transaction(async (tx) => {
+    const [prev] = await tx
+      .select({ adapterUrl: sdkVersions.adapterUrl })
+      .from(sdkVersions)
+      .where(eq(sdkVersions.major, manifest.major))
+      .for('update');
     await tx
       .insert(sdkVersions)
       .values({ major: manifest.major, adapterUrl, sri: manifest.integrity })
@@ -65,6 +74,15 @@ export async function registerAdapter(
         target: [sdkAdapterVersions.major, sdkAdapterVersions.version],
         set: { url: adapterUrl, sri: manifest.integrity, source, registeredAt: new Date() },
       });
+    if (prev?.adapterUrl !== adapterUrl) {
+      await tx.insert(sdkAdminEvents).values({
+        major: manifest.major,
+        kind: 'adapter_activated',
+        from: { adapterUrl: prev?.adapterUrl ?? null },
+        to: { adapterUrl, version: manifest.version, source },
+        actor,
+      });
+    }
   });
   return { major: manifest.major, adapterUrl, sri: manifest.integrity };
 }

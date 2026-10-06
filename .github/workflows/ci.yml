@@ -59,6 +59,7 @@ jobs:
               - 'pnpm-lock.yaml'
             api:
               - 'apps/api/**'
+              - 'apps/adapters/**'
               - 'packages/**'
               - 'pnpm-lock.yaml'
             rooms:
