@@ -1,3 +1,4 @@
+import { UPLOAD_LIMITS } from '@croffledev/play-protocol';
 import * as v from 'valibot';
 
 const port = v.pipe(
@@ -7,6 +8,9 @@ const port = v.pipe(
   v.minValue(1),
   v.maxValue(65535),
 );
+
+const bytes = (fallback: number) =>
+  v.pipe(v.optional(v.string(), String(fallback)), v.transform(Number), v.integer(), v.minValue(1));
 
 const bool = (fallback: 'true' | 'false') =>
   v.pipe(
@@ -98,6 +102,11 @@ export const envSchema = v.object({
   GITHUB_API_URL: v.optional(v.pipe(v.string(), v.url()), 'https://api.github.com'),
   /** Per-player / per-key request limits on write routes (`false` only for tests). */
   RATE_LIMITS: bool('true'),
+  /** Platform hosting: limits on an uploaded game build (defaults from `UPLOAD_LIMITS`). */
+  UPLOAD_MAX_ZIP_BYTES: bytes(UPLOAD_LIMITS.maxZipBytes),
+  UPLOAD_MAX_TOTAL_BYTES: bytes(UPLOAD_LIMITS.maxTotalBytes),
+  UPLOAD_MAX_FILES: bytes(UPLOAD_LIMITS.maxFiles),
+  UPLOAD_MAX_FILE_BYTES: bytes(UPLOAD_LIMITS.maxFileBytes),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),

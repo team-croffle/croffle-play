@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { type AppOptions, AppModule } from './app.module.js';
+import { ENV } from './config/config.module.js';
+import type { Env } from './config/env.js';
 
 /** Builds the application without listening. Shared by `main.ts` and tests. */
 export async function createApp(options: AppOptions = {}): Promise<NestFastifyApplication> {
@@ -21,6 +23,15 @@ export async function createApp(options: AppOptions = {}): Promise<NestFastifyAp
     .addContentTypeParser(
       ['image/png', 'image/jpeg', 'image/webp'],
       { parseAs: 'buffer', bodyLimit: 512 * 1024 },
+      (_req, body, done) => done(null, body),
+    );
+  // Game builds for platform hosting arrive as one zip (checked entry by entry, deploys/).
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(
+      'application/zip',
+      { parseAs: 'buffer', bodyLimit: app.get<Env>(ENV).UPLOAD_MAX_ZIP_BYTES },
       (_req, body, done) => done(null, body),
     );
   // A JSON API: nothing to render, frame, or sniff. No CORS — browsers reach it only through the
