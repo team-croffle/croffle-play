@@ -75,8 +75,8 @@ export const gameDeploys = pgTable(
       .references(() => games.id, { onDelete: 'cascade' }),
     /** Null when uploaded with a deploy key (CI) rather than by a signed-in member. */
     uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
-    /** The deploy key used, when any (deploy keys arrive in a later migration). */
-    deployKeyId: uuid('deploy_key_id'),
+    /** The deploy key used, when any (CI uploads). */
+    deployKeyId: uuid('deploy_key_id').references(() => deployKeys.id, { onDelete: 'set null' }),
     /** Total bytes and file count after extraction. */
     size: integer('size').notNull(),
     fileCount: integer('file_count').notNull(),
@@ -179,6 +179,24 @@ export const serverKeys = pgTable('server_keys', {
 });
 
 /**
+ * Per-game credential for uploading builds without a browser session (`cdk_…`): a game
+ * repository's CI or `play-cli deploy`. Same shape as `serverKeys`; only the hash is stored.
+ */
+export const deployKeys = pgTable('deploy_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  gameId: text('game_id')
+    .notNull()
+    .references(() => games.id, { onDelete: 'cascade' }),
+  keyHash: text('key_hash').notNull().unique(),
+  prefix: text('prefix').notNull(),
+  label: text('label').notNull().default(''),
+  createdAt: timestamps.createdAt,
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
+
+/**
  * SDK major lifecycle (docs/sdk-lifecycle.md). Data, not code: policy changes are row edits.
  * `old`: no new games or updates on it; `deprecated`: games on it no longer run.
  */
@@ -230,6 +248,7 @@ export const schema = {
   sdkVersions,
   sdkStatus,
   serverKeys,
+  deployKeys,
   users,
   userRole,
   scores,

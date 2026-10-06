@@ -11,92 +11,90 @@ import {
 } from '../common/game-keys.js';
 import { sha256Hex } from '../common/secret.js';
 import { DB, type Db } from '../db/db.js';
-import { games, serverKeys } from '../db/schema.js';
+import { deployKeys, games } from '../db/schema.js';
 
-export type ServerKey = typeof serverKeys.$inferSelect;
-export type ServerKeyView = GameKeyView;
+export type DeployKey = typeof deployKeys.$inferSelect;
+export type DeployKeyView = GameKeyView;
 
-const KIND = 'csk';
+const KIND = 'cdk';
 
 /**
- * Per-game keys for the game's own server (`csk_<game>_<random>`): it submits verified scores with
- * them. Only the SHA-256 is stored; the raw key is shown once, at issue.
+ * Per-game keys for uploading builds without a browser session (`cdk_<game>_<random>`): a game
+ * repository's CI or `play-cli deploy` uses one. A key uploads to its own game only. Only the
+ * SHA-256 is stored; the raw key is shown once, at issue.
  */
 @Injectable()
-export class ServerKeysService {
+export class DeployKeysService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async issue(gameId: string, label = ''): Promise<{ key: string } & ServerKeyView> {
+  async issue(gameId: string, label = ''): Promise<{ key: string } & DeployKeyView> {
     await this.requireGame(gameId);
     const { key, row } = newGameKey(KIND, gameId, label);
     const [inserted] = await this.db
-      .insert(serverKeys)
+      .insert(deployKeys)
       .values({ gameId, ...row })
       .returning();
-    return { key, ...toKeyView(inserted as ServerKey) };
+    return { key, ...toKeyView(inserted as DeployKey) };
   }
 
-  async list(gameId: string): Promise<ServerKeyView[]> {
+  async list(gameId: string): Promise<DeployKeyView[]> {
     await this.requireGame(gameId);
     const rows = await this.db
       .select()
-      .from(serverKeys)
-      .where(eq(serverKeys.gameId, gameId))
-      .orderBy(desc(serverKeys.createdAt));
+      .from(deployKeys)
+      .where(eq(deployKeys.gameId, gameId))
+      .orderBy(desc(deployKeys.createdAt));
     return rows.map(toKeyView);
   }
 
   async revoke(gameId: string, id: string): Promise<void> {
     const rows = await this.db
-      .update(serverKeys)
+      .update(deployKeys)
       .set({ revokedAt: new Date() })
-      .where(and(eq(serverKeys.gameId, gameId), eq(serverKeys.id, id)))
-      .returning({ id: serverKeys.id });
+      .where(and(eq(deployKeys.gameId, gameId), eq(deployKeys.id, id)))
+      .returning({ id: deployKeys.id });
     if (rows.length === 0) {
-      throw new NotFoundException('Server key not found');
+      throw new NotFoundException('Deploy key not found');
     }
   }
 
-  /**
-   * Issues a replacement (same label) and lets the old key keep working for `graceHours` so the
-   * game server's secret can be swapped without downtime.
-   */
+  /** A replacement (same label); the old key keeps working for `graceHours` while CI is updated. */
   async rotate(
     gameId: string,
     id: string,
     graceHours = 24,
-  ): Promise<{ key: string } & ServerKeyView> {
+  ): Promise<{ key: string } & DeployKeyView> {
     const [old] = await this.db
       .select()
-      .from(serverKeys)
-      .where(and(eq(serverKeys.gameId, gameId), eq(serverKeys.id, id)));
+      .from(deployKeys)
+      .where(and(eq(deployKeys.gameId, gameId), eq(deployKeys.id, id)));
     if (!old || old.revokedAt) {
-      throw new NotFoundException('Active server key not found');
+      throw new NotFoundException('Active deploy key not found');
     }
     const until = graceUntil(graceHours);
     if (!old.expiresAt || old.expiresAt > until) {
-      await this.db.update(serverKeys).set({ expiresAt: until }).where(eq(serverKeys.id, id));
+      await this.db.update(deployKeys).set({ expiresAt: until }).where(eq(deployKeys.id, id));
     }
     return this.issue(gameId, old.label);
   }
 
-  /** The active key row for a raw key, or null (unknown, revoked, expired). */
-  async verify(raw: string): Promise<ServerKey | null> {
+  /** The active key row for a raw key, or null (unknown kind, revoked, expired). */
+  async verify(raw: string): Promise<DeployKey | null> {
     if (!hasKind(raw, KIND)) {
       return null;
     }
     const [row] = await this.db
       .select()
-      .from(serverKeys)
-      .where(eq(serverKeys.keyHash, sha256Hex(raw)));
+      .from(deployKeys)
+      .where(eq(deployKeys.keyHash, sha256Hex(raw)));
     const now = Date.now();
     if (!row || !isActiveKey(row, now)) {
       return null;
     }
     await this.db
-      .update(serverKeys)
+      .update(deployKeys)
       .set({ lastUsedAt: new Date(now) })
-      .where(eq(serverKeys.id, row.id));
+      .where(eq(deployKeys.id, row.id));
     return row;
   }
 

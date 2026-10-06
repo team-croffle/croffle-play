@@ -8,6 +8,7 @@ import { ConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.js';
 import type { Db } from './db/db.js';
 import { DbModule } from './db/db.module.js';
+import { DeployKeysModule } from './deploy-keys/deploy-keys.module.js';
 import { DeploysModule } from './deploys/deploys.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthController } from './health/health.controller.js';
@@ -59,6 +60,7 @@ export class AppModule {
         TokensModule,
         MembersModule,
         DeploysModule,
+        DeployKeysModule,
         NotifyModule.forRoot(options.notifier),
       ],
       controllers: [HealthController],
