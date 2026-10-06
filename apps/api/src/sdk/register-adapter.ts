@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import * as v from 'valibot';
 
 import type { Db } from '../db/db.js';
+import { sdkAdapterVersions } from '../db/schema-sdk.js';
 import { sdkVersions } from '../db/schema.js';
 import { IMMUTABLE_CACHE_CONTROL, type Storage } from '../storage/storage.js';
 
@@ -31,22 +32,40 @@ export function adapterPath(major: number, version: string): string {
   return `/adapters/v${major}/${version}/index.js`;
 }
 
+export type AdapterSource = (typeof sdkAdapterVersions.$inferSelect)['source'];
+
 /**
- * Points SDK major `manifest.major` at an adapter bundle. Creates the major as `current` if it
- * does not exist; never changes the lifecycle status of an existing one.
+ * Points SDK major `manifest.major` at an adapter bundle and records the version. Creates the
+ * major as `current` if it does not exist; never changes the lifecycle status of an existing one.
  */
 export async function registerAdapter(
   db: Db,
   manifest: AdapterManifest,
   adapterUrl: string,
+  source: AdapterSource = 'cli',
 ): Promise<{ major: number; adapterUrl: string; sri: string }> {
-  await db
-    .insert(sdkVersions)
-    .values({ major: manifest.major, adapterUrl, sri: manifest.integrity })
-    .onConflictDoUpdate({
-      target: sdkVersions.major,
-      set: { adapterUrl, sri: manifest.integrity },
-    });
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(sdkVersions)
+      .values({ major: manifest.major, adapterUrl, sri: manifest.integrity })
+      .onConflictDoUpdate({
+        target: sdkVersions.major,
+        set: { adapterUrl, sri: manifest.integrity },
+      });
+    await tx
+      .insert(sdkAdapterVersions)
+      .values({
+        major: manifest.major,
+        version: manifest.version,
+        url: adapterUrl,
+        sri: manifest.integrity,
+        source,
+      })
+      .onConflictDoUpdate({
+        target: [sdkAdapterVersions.major, sdkAdapterVersions.version],
+        set: { url: adapterUrl, sri: manifest.integrity, source, registeredAt: new Date() },
+      });
+  });
   return { major: manifest.major, adapterUrl, sri: manifest.integrity };
 }
 
@@ -54,7 +73,12 @@ export async function registerAdapter(
  * Release path: uploads `<dir>/index.js` (from `apps/adapters/dist/v<N>/<version>/`) to storage
  * after checking it against the manifest's SRI hash, then registers it.
  */
-export async function publishAdapterDir(db: Db, storage: Storage, dir: string) {
+export async function publishAdapterDir(
+  db: Db,
+  storage: Storage,
+  dir: string,
+  source: AdapterSource = 'cli',
+) {
   const manifest = v.parse(
     adapterManifestSchema,
     JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf8')),
@@ -75,7 +99,7 @@ export async function publishAdapterDir(db: Db, storage: Storage, dir: string) {
     contentType: 'text/javascript; charset=utf-8',
     cacheControl: IMMUTABLE_CACHE_CONTROL,
   });
-  return registerAdapter(db, manifest, adapterPath(manifest.major, manifest.version));
+  return registerAdapter(db, manifest, adapterPath(manifest.major, manifest.version), source);
 }
 
 /** Development path: an adapter already served elsewhere (`pnpm dev:games`), by manifest URL. */
@@ -85,5 +109,5 @@ export async function registerAdapterUrl(db: Db, manifestUrl: string) {
     throw new Error(`GET ${manifestUrl} → ${res.status}`);
   }
   const manifest = v.parse(adapterManifestSchema, await res.json());
-  return registerAdapter(db, manifest, new URL(manifest.file, manifestUrl).href);
+  return registerAdapter(db, manifest, new URL(manifest.file, manifestUrl).href, 'dev');
 }

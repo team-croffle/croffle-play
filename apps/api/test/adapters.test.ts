@@ -3,8 +3,10 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { sdkAdapterVersions } from '../src/db/schema-sdk.js';
 import { publishAdapterDir } from '../src/sdk/register-adapter.js';
 import { FakeStorage } from './support/fake-storage.js';
 import { createTestApp, type TestApp } from './support/test-app.js';
@@ -58,6 +60,13 @@ describe('host adapters from storage', () => {
     expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.body).toBe(code);
+    const versions = await t.db
+      .select()
+      .from(sdkAdapterVersions)
+      .where(eq(sdkAdapterVersions.major, 1));
+    expect(versions.map((v) => [v.version, v.source, v.sri])).toEqual([
+      ['0.10.0-rc.1', 'cli', sri],
+    ]);
   });
 
   it('refuses a bundle that does not match its manifest', async () => {
