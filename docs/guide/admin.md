@@ -72,29 +72,45 @@
 - **교체(rotate)**: 새 키를 바로 주고, 이전 키는 24시간 뒤 만료된다. 그 사이 팀이 서버 설정을 바꾼다.
 - **폐기**: 즉시 무효. 유출이 의심되면 폐기 후 새로 발급한다.
 
-## SDK 메이저 수명주기
+## SDK 메이저 수명주기 (`/admin/sdk`)
 
 메이저는 `current → lts → old → deprecated` 순서로만 움직인다. 상태별 효과와 일정 원칙은
 [sdk-lifecycle.md](../sdk-lifecycle.md)에 있다.
 
-- 상태와 `old_at`·`deprecated_at` 날짜는 DB(`sdk_versions`) 데이터다. 관리 API는 조회만 한다(`GET /v1/admin/sdk`).
-  바꿀 때는 의도적으로, 기록을 남기고 SQL로 한다. **deprecated는 되돌릴 수 없고, 그 메이저의 게임은 실행이
-  멈춘다.**
-- 날짜를 정해 두면 그 시각부터 적용되고, api가 `SDK_LIFECYCLE_INTERVAL_SECONDS`(기본 1시간)마다 저장값을 맞추며
-  알린다(GitHub 이슈는 `GITHUB_NOTIFY_TOKEN`이 있을 때).
+- `/admin/sdk`에 메이저별 상태·예정 날짜·활성 어댑터가 보이고, `/admin/sdk/<N>`에서 바꾼다. 상태는 앞으로만
+  고를 수 있고, `old`·`deprecated` 시작 날짜(UTC)를 정해 두면 그 시각부터 적용된다(api가
+  `SDK_LIFECYCLE_INTERVAL_SECONDS`마다 저장값을 맞추고, 저장 직후에도 한 번 맞춘다). 알림은 GitHub 이슈
+  (`GITHUB_NOTIFY_TOKEN`이 있을 때)와 `/dev` 경고.
+- **deprecated는 되돌릴 수 없고 그 메이저의 게임은 실행이 멈춘다.** 그래서 화면이 메이저 번호를 다시 입력받고,
+  API도 `confirm: <메이저>` 없이는 거부한다.
+- 바꾼 것은 모두 변경 기록(누가·언제·무엇)에 남는다. DB를 직접 고치지 않는다.
 - 동시에 실행 가능한(current·lts·old) 메이저가 3개를 넘으면 경고가 뜬다.
 
-## 호스트 어댑터 등록
+## 호스트 어댑터
 
 포털은 게임이 핸드셰이크로 알리는 SDK 메이저에 맞는 어댑터를 실행 중에 불러온다. 어댑터 번들은 스토리지
 (`adapters/v<N>/<버전>/index.js`)에 있고 API가 서빙, 포털이 같은 출처(`/adapters/…`)로 중계하며 SRI로 검사한다.
-새 플랫폼 릴리스마다 어댑터를 등록하면 포털 배포 없이 바뀐다.
+
+### 릴리스마다: 이미지 교체면 끝
+
+api 이미지에는 그 릴리스의 어댑터 번들이 들어 있고(`/app/adapters/v<N>/<버전>/`), api가 시작할 때 활성
+어댑터가 아니면 스토리지에 올리고 활성화한다(`ADAPTER_AUTO_REGISTER`, 기본 켜짐). 그래서 새 플랫폼 릴리스는
+**이미지 교체**로 끝난다. 어댑터를 되돌리는 정식 방법도 **이전 api 이미지로 되돌리기**다.
+
+- `/admin/sdk/<N>`에 등록된 어댑터 버전 목록이 보이고 다른 버전으로 전환할 수 있다. 다만 이미지의 버전이
+  우선이라 **다음 api 시작 때 이미지 버전으로 돌아간다**(화면에도 표시). 급한 임시 조치에만 쓴다.
+- 자동 등록을 끄면(`ADAPTER_AUTO_REGISTER=false`) 관리자가 고른 버전이 유지된다. 그때는 아래 수동 등록으로
+  올린다.
+- 메이저가 처음 등록되면 `current`로 생기고, 있는 메이저의 수명주기 상태는 건드리지 않는다.
+- deprecated 메이저의 어댑터 파일은 지우지 않는다(실행 차단은 상태가 한다).
+
+### 수동 등록 (이미지와 별개로 올릴 때)
 
 플랫폼 릴리스(GitHub Releases)에는 메이저별 어댑터 번들 `adapters-v<N>-<버전>.tar.gz`와 `.sha256`이 첨부된다.
 api 이미지 안의 등록 도구로 올린다. 도구는 api와 **같은 env와 네트워크**가 필요하다(DB·스토리지에 접속):
 
 ```bash
-V=0.12.0
+V=0.13.0
 curl -fLO https://github.com/team-croffle/croffle-play/releases/download/v$V/adapters-v1-$V.tar.gz
 curl -fLO https://github.com/team-croffle/croffle-play/releases/download/v$V/adapters-v1-$V.tar.gz.sha256
 sha256sum -c adapters-v1-$V.tar.gz.sha256
@@ -112,17 +128,16 @@ docker compose run --rm --no-deps -v "$PWD/v1:/adapters/v1:ro,z" \
 - `:z`는 SELinux가 켜진 호스트(Fedora·RHEL 계열)에서 컨테이너가 마운트한 파일을 읽게 해 준다. 빠지면 파일
   권한이 맞아도 `EACCES`가 난다. SELinux가 없는 호스트에서는 무시된다.
 - 도구는 시작할 때 DB 마이그레이션을 확인한다. `schema "drizzle" already exists, skipping` 같은 NOTICE는 정상.
-- 도구는 `index.js`를 `manifest.json`의 SRI와 대조한 뒤 스토리지에 올리고, 그 메이저의 어댑터 주소를 바꾼다.
-  메이저가 없으면 `current`로 만들고, 있는 메이저의 수명주기 상태는 건드리지 않는다.
+- 도구는 `index.js`를 `manifest.json`의 SRI와 대조한 뒤 스토리지에 올리고, 그 메이저의 어댑터 주소를 바꾸며
+  변경 기록(`cli`)을 남긴다. 자동 등록이 켜져 있으면 다음 api 시작 때 이미지 버전으로 돌아간다.
 - 저장소에서 직접 빌드할 수도 있다:
   `VERSION=$V pnpm --filter @croffledev/play-adapters build` →
   `pnpm --filter @croffledev/play-api sdk:register apps/adapters/dist/v1/$V`.
-- 되돌리기: 이전 버전 번들로 같은 명령을 다시 실행한다. 번들 경로가 버전별이라 이전 파일은 그대로 남아 있다.
 
 ## 점검 목록
 
 - 새 게임(팀 호스팅): 등록 → 주소 연결 → `play-cli check` → 다시 읽기 → 미리보기 → 공개
 - 새 게임(플랫폼 호스팅): 등록 → 배포 키 발급 또는 zip 업로드 → 미리보기 → 공개
-- 새 플랫폼 릴리스: 이미지 교체(api·rooms·shell) → 어댑터 등록 → 게임 하나 플레이해 보기
+- 새 플랫폼 릴리스: 이미지 교체(api·rooms·shell·games) → `/admin/sdk`에서 활성 어댑터가 새 버전인지 확인 → 게임 하나 플레이해 보기
 - 서버 키 유출 의심: 폐기 → 새로 발급 → 팀에 전달
-- 새 SDK 메이저: 어댑터 등록 → 이전 메이저 일정(`lts`·`old_at`·`deprecated_at`) 결정 → 공지
+- 새 SDK 메이저: 새 api 이미지(어댑터 포함) → `/admin/sdk`에서 이전 메이저 일정(`lts`·old·deprecated 날짜) 결정 → 공지

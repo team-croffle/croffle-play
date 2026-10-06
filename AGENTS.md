@@ -49,9 +49,12 @@ and are never checked in here.
   `games/<id>/<deploy>/` and served by `apps/games` at the same origin). The platform keeps the
   last `DEPLOY_KEEP` uploads for rollback and takes `game.json` from the zip; it tracks no other
   game versions.
-- Host adapters are uploaded to storage (`sdk:register <dist dir>`), served by the API at
-  `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked). Each
-  platform release attaches the bundles (`adapters-v<N>-<version>.tar.gz`) for admins to register.
+- Host adapters ship inside the api image (`/app/adapters/v<N>/<version>/`) and are registered
+  to storage when the api starts (`ADAPTER_AUTO_REGISTER`; the image's version wins), served by
+  the API at `/v1/adapters/…` and relayed by the portal at `/adapters/…` (same origin,
+  SRI-checked). Registered versions and admin changes are recorded (`sdk_adapter_versions`,
+  `sdk_admin_events`); admins switch versions and move the lifecycle at `/admin/sdk`. Releases
+  still attach the bundles (`adapters-v<N>-<version>.tar.gz`) for `register-cli`.
 - Game servers are hosted by their teams and declared in `game.json` (`server: { url, protocol }`);
   the platform issues game tokens (JWKS) and server keys (`csk_`) for verified scores, nothing more.
 - Players: dashboard `/me` (nickname, avatar upload — stored as `avatars/<user>/<hash>.<ext>`, served
