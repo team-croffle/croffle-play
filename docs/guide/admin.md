@@ -67,7 +67,7 @@
 새 플랫폼 릴리스마다 어댑터를 등록하면 포털 배포 없이 바뀐다.
 
 플랫폼 릴리스(GitHub Releases)에는 메이저별 어댑터 번들 `adapters-v<N>-<버전>.tar.gz`와 `.sha256`이 첨부된다.
-api 이미지 안의 등록 도구로 올린다:
+api 이미지 안의 등록 도구로 올린다. 도구는 api와 **같은 env와 네트워크**가 필요하다(DB·스토리지에 접속):
 
 ```bash
 V=0.12.0
@@ -76,12 +76,18 @@ curl -fLO https://github.com/team-croffle/croffle-play/releases/download/v$V/ada
 sha256sum -c adapters-v1-$V.tar.gz.sha256
 tar xzf adapters-v1-$V.tar.gz                      # → v1/$V/index.js, manifest.json
 
-docker run --rm --env-file api.env -v "$PWD/v1:/adapters/v1:ro" \
-  ghcr.io/team-croffle/croffle-play/api:$V node dist/sdk/register-cli.js /adapters/v1/$V
+# api를 Docker Compose 서비스(api)로 운영할 때: 그 서비스의 env·네트워크를 그대로 쓴다
+docker compose run --rm --no-deps -v "$PWD/v1:/adapters/v1:ro,z" \
+  api node dist/sdk/register-cli.js /adapters/v1/$V
 # SDK v1 → /adapters/v1/<버전>/index.js (sha384-…)
 ```
 
-- `api.env`는 api와 같은 env(최소 `DATABASE_URL`, `S3_*`). 마이그레이션이 필요하면 api가 시작할 때 이미 적용된다.
+- Compose 없이 띄울 때는 `docker run --rm --env-file <api env 파일> --network <api가 붙은 네트워크> …`로 같은
+  조건을 맞춘다. env가 compose 파일의 `environment:`에만 있으면 env 파일에는 빠져 있으니 주의(최소
+  `DATABASE_URL`, `S3_*`).
+- `:z`는 SELinux가 켜진 호스트(Fedora·RHEL 계열)에서 컨테이너가 마운트한 파일을 읽게 해 준다. 빠지면 파일
+  권한이 맞아도 `EACCES`가 난다. SELinux가 없는 호스트에서는 무시된다.
+- 도구는 시작할 때 DB 마이그레이션을 확인한다. `schema "drizzle" already exists, skipping` 같은 NOTICE는 정상.
 - 도구는 `index.js`를 `manifest.json`의 SRI와 대조한 뒤 스토리지에 올리고, 그 메이저의 어댑터 주소를 바꾼다.
   메이저가 없으면 `current`로 만들고, 있는 메이저의 수명주기 상태는 건드리지 않는다.
 - 저장소에서 직접 빌드할 수도 있다:
