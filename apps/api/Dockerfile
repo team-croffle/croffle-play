@@ -8,11 +8,16 @@ RUN corepack enable
 WORKDIR /repo
 
 FROM base AS build
+ARG VERSION=dev
 COPY . .
 # Root `prepare` installs git hooks; there is no git here.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts --filter @croffledev/play-api...
+    pnpm install --frozen-lockfile --ignore-scripts \
+      --filter @croffledev/play-api... --filter @croffledev/play-adapters...
 RUN pnpm --filter @croffledev/play-api... run build
+# The host adapters of this release ride along: the api registers them at boot
+# (ADAPTER_AUTO_REGISTER), so a platform release is an image swap and nothing more.
+RUN VERSION=$VERSION pnpm --filter @croffledev/play-adapters run build
 RUN pnpm --filter @croffledev/play-api deploy --prod --ignore-scripts /out
 
 FROM node:24-alpine AS runtime
@@ -23,6 +28,7 @@ LABEL org.opencontainers.image.source="https://github.com/team-croffle/croffle-p
 ENV NODE_ENV=production APP_VERSION=${VERSION} PORT=3001
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
+COPY --from=build --chown=node:node /repo/apps/adapters/dist ./adapters
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \

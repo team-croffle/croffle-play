@@ -109,6 +109,12 @@ export const envSchema = v.object({
   UPLOAD_MAX_FILE_BYTES: bytes(UPLOAD_LIMITS.maxFileBytes),
   /** How many uploads of a game to keep for rollback (the active one always stays). */
   DEPLOY_KEEP: bytes(5),
+  /**
+   * Register the host adapter bundles shipped inside this image at boot (`ADAPTER_BUNDLE_DIR`),
+   * making them the active adapters. The image's version wins over a version an admin picked.
+   */
+  ADAPTER_AUTO_REGISTER: bool('true'),
+  ADAPTER_BUNDLE_DIR: v.optional(v.string(), '/app/adapters'),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),
