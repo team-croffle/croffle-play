@@ -106,8 +106,26 @@ pnpm exec play-cli validate dist --api https://api.croffle-play.link   # SDK 메
 
 ## 5. 호스팅
 
-게임 주소는 `https://<id>.play.croffle-play.link/`이다. 이 이름을 내 호스트로 연결하는 것은 관리자에게 요청한다.
-정적 호스팅이면 무엇이든 된다. 호스트가 지켜야 할 것:
+게임 주소는 `https://<id>.play.croffle-play.link/`이다. 두 방법 중 하나를 고른다.
+
+### 5a. 플랫폼 호스팅 — zip 업로드
+
+서버도 DNS도 없이, 빌드만 올린다. 관리자(또는 포털 `/dev`에서 게임 멤버인 나)가 **배포 키**를 발급한다. 키는
+발급할 때 한 번만 보이고, 이 게임에만 올릴 수 있다.
+
+```bash
+pnpm build
+CROFFLE_DEPLOY_KEY=cdk_… CROFFLE_PLAY_API=https://api.croffle-play.link pnpm deploy:play
+```
+
+`deploy:play`는 `play-cli deploy dist`다: 빌드를 검사하고 zip으로 묶어 올리면 바로 그 빌드가 서비스된다.
+템플릿의 `.github/workflows/deploy.yml`은 저장소 secret `CROFFLE_DEPLOY_KEY`와 variable `CROFFLE_PLAY_API`가
+있으면 `main`에 push할 때마다 같은 일을 하고, 없으면 건너뛴다. 포털 `/dev`에서도 zip을 직접 올리고, 이전
+빌드로 되돌릴 수 있다. 규칙과 상한은 [game-hosting.md](../game-hosting.md).
+
+### 5b. 팀 호스팅 — 직접 서빙
+
+이 이름을 내 호스트로 연결하는 것은 관리자에게 요청한다. 정적 호스팅이면 무엇이든 된다. 호스트가 지켜야 할 것:
 
 - `dist/`를 origin 루트에서 서빙한다. `<origin>/game.json`이 열려야 한다.
 - 포털만 iframe을 허용한다: `Content-Security-Policy: frame-ancestors https://game.croffle-play.link`.
@@ -130,6 +148,9 @@ docker run -p 8080:8080 -e PORTAL_ORIGIN=https://game.croffle-play.link my-game
 pnpm exec play-cli check https://my-game.play.croffle-play.link/ --portal https://game.croffle-play.link
 ```
 
+팀 호스팅이면 꼭 돈다. 플랫폼 호스팅은 플랫폼이 헤더를 붙이므로 업로드가 성공하면 끝이지만, 같은 명령으로 확인해
+볼 수 있다.
+
 `check`는 포털이 쓰는 방식 그대로 본다: https, 엔트리 200, 포털이 iframe에 띄울 수 있는지(`frame-ancestors`),
 `game.json`이 유효하고 id가 호스트 이름과 같은지.
 
@@ -138,17 +159,20 @@ pnpm exec play-cli check https://my-game.play.croffle-play.link/ --portal https:
 관리자에게 다음을 전한다:
 
 - 게임 id와 이름, 저장소 주소
-- `play-cli check`가 통과한 주소
+- 팀 호스팅: `play-cli check`가 통과한 주소 / 플랫폼 호스팅: 배포 키 발급 요청(관리자가 발급하거나, 멤버로 추가되면
+  `/dev`에서 직접 발급)
 - (있으면) 자체 서버 여부와 점수 정책(브라우저 점수 / 서버 점수만)
 - 함께 개발할 팀원(포털 계정) — 게임 멤버로 추가되면 포털 `/dev`에서 내 게임의 상태를 본다
 
-관리자가 등록 → `game.json` 읽기 → 미리보기 → 공개하면 카탈로그에 나온다([관리자 가이드](./admin.md)).
-읽기에 실패하면 사유가 `/dev`에 보인다.
+관리자가 등록 → `game.json` 읽기(팀 호스팅) 또는 업로드 → 미리보기 → 공개하면 카탈로그에 나온다([관리자
+가이드](./admin.md)). 읽기에 실패하면 사유가 `/dev`에 보인다.
 
 ## 8. 그다음
 
-- **콘텐츠 업데이트**: 다시 배포하면 끝. 플랫폼은 게임 버전을 추적하지 않는다.
-- **SDK 업데이트**: Renovate가 PR을 연다. 메이저를 올렸으면 관리자에게 `game.json` 다시 읽기를 요청한다.
+- **콘텐츠 업데이트**: 다시 배포하거나(팀 호스팅) 다시 올리면(플랫폼 호스팅) 끝. 플랫폼 호스팅은 최근 5개
+  업로드를 보관해 `/dev`에서 되돌릴 수 있다.
+- **SDK 업데이트**: Renovate가 PR을 연다. 메이저를 올렸으면 팀 호스팅은 관리자에게 `game.json` 다시 읽기를
+  요청하고, 플랫폼 호스팅은 새로 올리면 된다.
   쓰던 메이저가 old가 되면 GitHub 이슈와 `/dev` 경고가 오고, deprecated가 되면 게임이 실행되지 않는다 —
   [sdk-lifecycle.md](../sdk-lifecycle.md).
 - **멀티플레이**: 공용 룸 서버 — [multiplayer.md](../multiplayer.md).

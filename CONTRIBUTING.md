@@ -45,7 +45,7 @@ fixture games) is described in the [README](./README.md#development).
    ```
 
    Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `build`, `ci`, `style`,
-   `revert`, `release`. Scopes: `shell`, `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`,
+   `revert`, `release`. Scopes: `shell`, `api`, `rooms`, `games`, `adapters`, `protocol`, `sdk`, `cli`,
    `create-game`, `ci`, `docs` (omit for repository-wide changes).
 
 4. **Keep the hooks on.** They format, lint, typecheck, and scan for secret files. Never use

@@ -7,12 +7,14 @@ Working agreement for AI agents on `croffle-play`.
 **Croffle Play** — a web game platform run by Team Croffle. One account plays every game, like a
 Steam account: the portal provides sign-in, the catalog, a dashboard, scores, saves, and
 multiplayer rooms, and shows each game in its own iframe. Team members build games in their own
-repositories, with any engine, and **host them themselves**.
+repositories, with any engine, and either **host them themselves** or **upload a build** for the
+platform's game host to serve.
 
 ```
 [Portal: Nuxt, www.<domain>] ── catalog / sign-in / dashboard / play page (common UI)
-     │ iframe   https://<game>.play.<domain>/<entry>     (hosted by the game's team, anywhere)
-[Game site] ── built and deployed by the team; serves game.json and allows the portal to frame it
+     │ iframe   https://<game>.play.<domain>/<entry>     (team's own host, or the platform's game host)
+[Game site] ── built by the team; serves game.json and allows the portal to frame it
+             (team hosting: anywhere; platform hosting: apps/games serves the uploaded zip from storage)
      │ postMessage (SDK protocol, pinned at build time)
 [Host adapter vN] ── one per SDK major, picked from the game's __hello, loaded at runtime
      │ Core API (small, rarely changes)
@@ -36,11 +38,17 @@ and are never checked in here.
   registry and lifecycle, scores, saves, game tokens + JWKS, server keys, members),
   `apps/shell` (Nuxt 4; catalog, detail, play page with runtime adapter loading, admin and
   developer pages), `apps/adapters` (v1), `apps/rooms` (shared WebSocket relay), `packages/protocol`,
-  `packages/sdk` (+ `/mock`), `packages/cli` (`validate`, `check`), `packages/create-game`.
+  `apps/games` (game host for uploaded builds), `packages/sdk` (+ `/mock`), `packages/cli`
+  (`validate`, `check`, `pack`, `deploy`), `packages/create-game`.
   Accounts: Logto (OIDC), admin by role. Per-subject rate limits, score trust policy.
 - Games are registered by id; their origin comes from `GAME_ORIGIN_TEMPLATE`
   (`https://{id}.play.croffle-play.link`). The API reads `<origin>/game.json` on registration and
-  refresh; `listed` decides catalog visibility. There are no uploads or versions.
+  refresh; `listed` decides catalog visibility.
+- Hosting is per game: `team` (the default; the team serves the site) or `platform` (a zip
+  uploaded by an admin, a game member, or CI with a deploy key `cdk_` is stored under
+  `games/<id>/<deploy>/` and served by `apps/games` at the same origin). The platform keeps the
+  last `DEPLOY_KEEP` uploads for rollback and takes `game.json` from the zip; it tracks no other
+  game versions.
 - Host adapters are uploaded to storage (`sdk:register <dist dir>`), served by the API at
   `/v1/adapters/…`, and relayed by the portal at `/adapters/…` (same origin, SRI-checked). Each
   platform release attaches the bundles (`adapters-v<N>-<version>.tar.gz`) for admins to register.
@@ -70,6 +78,7 @@ and are never checked in here.
 | `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private   |
 | `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private   |
 | `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private   |
+| `apps/games`           | `@croffledev/play-games`       | Docker image (GHCR), private   |
 | `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage (API) |
 | `packages/protocol`    | `@croffledev/play-protocol`    | npm                            |
 | `packages/sdk`         | `@croffledev/play-sdk`         | npm                            |
@@ -87,7 +96,7 @@ packages typecheck and test against each other's source without a build. Builds 
 - Portal: Nuxt (SSR for catalog/detail pages). API: NestJS on Fastify. Rooms: custom WebSocket
   server (`ws`, relay only).
 - Data: PostgreSQL via Drizzle (migrations in `apps/api/drizzle`). Storage: **S3 API only**, one
-  bucket for platform files (`adapters/`, `avatars/`).
+  bucket for platform files (`adapters/`, `avatars/`) and uploaded game builds (`games/`).
 - Validation: valibot (env, protocol messages, manifests). Identity: Logto (OIDC).
 - The code depends on protocols (PostgreSQL, S3 API, OIDC, Redis protocol when used), never on a
   particular product or host. How and where it runs is decided outside this repository.
@@ -139,9 +148,13 @@ Changing any of these requires a decision entry in `.ai/history/`.
    `https://<id>.play.<domain>/`, built from one `{id}` template. Portal bundle size and deploy
    frequency are independent of the number of games. Games are registered through the API, never
    through a portal release.
-2. **Games are hosted by their teams.** The platform stores no game files and tracks no game
-   versions. What it keeps is the registration (id, name, listing) and the game's `game.json`, read
-   from `<origin>/game.json`; whether a game is shown is the `listed` flag.
+2. **Games are served at their own origin, by their team or by the platform.** Team hosting: the
+   platform stores nothing and reads `game.json` from `<origin>/game.json`. Platform hosting: the
+   team uploads a build (zip) and `apps/games` serves it from storage at the same
+   `<id>.play.<domain>` origin, taking `game.json` from the zip. Either way the platform keeps the
+   registration (id, name, listing, hosting mode), the manifest, and — for platform hosting — the
+   last few uploads for rollback; it tracks no other game versions. Whether a game is shown is the
+   `listed` flag.
 3. **Games are same-site, so the portal defends itself.** The portal session cookie is host-only
    (`__Host-`), state-changing portal requests must come from the portal's own origin, and the API
    authenticates with tokens, never cookies. Games must allow the portal in `frame-ancestors`; the
@@ -164,8 +177,10 @@ Changing any of these requires a decision entry in `.ai/history/`.
    players by game tokens verified against the JWKS, and submits verified scores with a per-game
    server key. The platform never runs, networks with, or grants database access to game servers.
    Default multiplayer is the shared rooms server.
-8. **Storage through the S3 API only**, for platform-owned files (host adapters, avatars) in one
-   bucket. No storage credentials leave the platform; browsers never reach storage directly.
+8. **Storage through the S3 API only**, in one bucket: platform-owned files (host adapters,
+   avatars) and the uploaded builds of platform-hosted games (`games/<id>/…`). No storage
+   credentials leave the platform; browsers never reach storage directly — `apps/games` reads
+   the bucket and serves the files itself.
 9. **Monorepo for the platform, one repository per game.** Game engines, build tools, hosting, and
    release cadence are the game team's choice; the platform constrains only the game contract
    (`game.json` at the origin root, an entry the portal may frame, an SDK major that is not old or
@@ -177,9 +192,11 @@ Changing any of these requires a decision entry in `.ai/history/`.
   (default `index.html`), `thumbnail`, `orientation`, `server` (`url`, `protocol`).
 - Reserved game ids: `www`, `api`, `admin`, `cdn`, `play`, `rooms`, `auth`, `static`
   (`RESERVED_GAME_IDS` in `packages/protocol`).
-- Registration flow: admin registers an id → the team deploys at `<id>.play.<domain>` →
-  `play-cli check <url>` → admin refreshes `game.json` (id must match, SDK major current or lts) →
-  admin lists the game.
+- Registration flow: admin registers an id → either the team deploys at `<id>.play.<domain>` →
+  `play-cli check <url>` → admin refreshes `game.json` (id must match, SDK major current or lts),
+  or the team uploads a build (`play-cli deploy` with a deploy key, or the portal) → admin lists
+  the game. Platform-hosted games cannot be refreshed from the origin; a new upload replaces the
+  manifest, `…/deploys/:id/activate` rolls back.
 - Rooms (WebSocket): auth as the **first message** after connect, `Origin` check against the
   game origin template, 30 s ping, exponential-backoff reconnect with room re-join handled inside
   the SDK.
@@ -202,7 +219,7 @@ Changing any of these requires a decision entry in `.ai/history/`.
   onto `master`, never commit on `master`.
 - Commits: `type(scope): title` (≤72 chars, enforced by the hook), one-line
   summary, bulleted details, `Co-Authored-By` footer only. Scopes: `shell`,
-  `api`, `rooms`, `adapters`, `protocol`, `sdk`, `cli`, `create-game`, `ci`,
+  `api`, `rooms`, `games`, `adapters`, `protocol`, `sdk`, `cli`, `create-game`, `ci`,
   `docs` (omit when repo-wide). Human-facing version of these rules:
   `CONTRIBUTING.md` (+ `.ko.md`); keep them in sync.
 - `packages/*` change → add a Changeset in the same commit series.
