@@ -13,6 +13,10 @@ rooms:
   - changed-files:
       - any-glob-to-any-file: apps/rooms/**
 
+games:
+  - changed-files:
+      - any-glob-to-any-file: apps/games/**
+
 adapters:
   - changed-files:
       - any-glob-to-any-file: apps/adapters/**
