@@ -1,32 +1,39 @@
-# Release — one container image per app to GHCR + draft GitHub Release.
+# Release — one app at a time: its container image to GHCR + a draft GitHub Release.
 #
-# Version source of truth is the git tag (`vX.Y.Z[-rc.N]`); nothing in the
-# tree is bumped, so there is no bot commit on master. Each app's Dockerfile
-# receives the version through the `VERSION` build arg.
+# Every app (api, rooms, shell, games) has its own version line. The source of
+# truth is the git tag `<app>-vX.Y.Z[-rc.N]`; nothing in the tree is bumped, so
+# there is no bot commit on master. The app's Dockerfile receives the version
+# through the `VERSION` build arg. (Tags `vX.Y.Z` up to v0.13.0 are the earlier
+# platform-wide line and are not compared against.)
 #
 # Trigger (from master only):
-#   gh workflow run release.yml --ref master -f version=0.1.0-rc.1 [-f dry_run=true]
+#   gh workflow run release.yml --ref master -f app=api -f version=0.14.0-rc.1 [-f dry_run=true]
 #
+#   - app:     which app to release (apps/<app>/Dockerfile).
 #   - version: exact semver without `v`. `X.Y.Z-rc.N` = pre-release,
-#              `X.Y.Z` = stable (moves `latest` and `X.Y`).
-#   - dry_run: build the images only — no push, no tag, no release.
+#              `X.Y.Z` = stable (moves `latest` and `X.Y` for that app).
+#   - dry_run: build the image only — no push, no tag, no release.
 #
-# Images: ghcr.io/<owner>/<repo>/<app>:<version> for every apps/<app>/Dockerfile.
-# Assets: adapters-v<N>-<version>.tar.gz (+ .sha256) per SDK major — the host
-# adapter bundles an admin registers with the api image (docs/guide/admin.md).
-# Order: validate → gate → build/push images + adapter bundles → tag + draft release.
+# Image: ghcr.io/<owner>/<repo>/<app>:<version>.
+# Assets (api only): adapters-v<N>-<version>.tar.gz (+ .sha256) per SDK major —
+# the host adapter bundles also shipped inside the api image (docs/guide/admin.md).
+# Order: validate → gate → build/push image (+ adapter bundles) → tag + draft release.
 # Release notes are filled in afterwards with `gh release edit --notes-file`.
 #
-# Not here: npm packages (`Publish Packages` workflow via Changesets) and
-# uploading adapters to storage (an admin runs `register-cli` from the api image).
+# Not here: npm packages (`Publish Packages` workflow via Changesets).
 
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
+      app:
+        description: App to release
+        required: true
+        type: choice
+        options: [api, rooms, shell, games]
       version:
-        description: Exact version without leading v (e.g. 0.1.0-rc.1 or 0.1.0)
+        description: Exact version without leading v (e.g. 0.14.0-rc.1 or 0.14.0)
         required: true
         type: string
       dry_run:
@@ -40,7 +47,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: release
+  group: release-${{ inputs.app }}
   cancel-in-progress: false
 
 env:
@@ -51,6 +58,7 @@ jobs:
     name: Resolve version
     runs-on: ubuntu-latest
     outputs:
+      app: ${{ inputs.app }}
       version: ${{ steps.calc.outputs.version }}
       tag: ${{ steps.calc.outputs.tag }}
       minor: ${{ steps.calc.outputs.minor }}
@@ -64,10 +72,16 @@ jobs:
       - id: calc
         shell: bash
         env:
+          APP: ${{ inputs.app }}
           INPUT_VERSION: ${{ inputs.version }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
+
+          if [[ ! -f "apps/$APP/Dockerfile" ]]; then
+            echo "::error::apps/$APP/Dockerfile not found."
+            exit 1
+          fi
 
           if [[ "$GITHUB_REF" != "refs/heads/master" ]]; then
             echo "::error::Run releases from master (got $GITHUB_REF)."
@@ -82,17 +96,18 @@ jobs:
           MINOR="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
           IS_PRE=false
           [[ -n "${BASH_REMATCH[4]}" ]] && IS_PRE=true
-          TAG="v$V"
+          TAG="$APP-v$V"
 
           # Sort key: stable sorts after every rc of the same core.
           key() {
-            [[ "$1" =~ ^v?([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$ ]] || return 1
-            printf '%06d.%06d.%06d.%06d\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" \
-              "$([[ -n "${BASH_REMATCH[5]}" ]] && echo "${BASH_REMATCH[5]}" || echo 999999)"
+            [[ "$1" =~ ^([a-z]+-)?v?([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$ ]] || return 1
+            printf '%06d.%06d.%06d.%06d\n' "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" \
+              "$([[ -n "${BASH_REMATCH[6]}" ]] && echo "${BASH_REMATCH[6]}" || echo 999999)"
           }
 
+          # Only this app's line; the earlier platform-wide `v*` tags are not compared.
           LATEST=""
-          for t in $(git tag --list 'v*'); do
+          for t in $(git tag --list "$APP-v*"); do
             k=$(key "$t") || continue
             if [[ -z "$LATEST" || "$k" > "$(key "$LATEST")" ]]; then LATEST="$t"; fi
           done
@@ -106,7 +121,7 @@ jobs:
             echo "::error::$TAG is not newer than $LATEST."
             exit 1
           fi
-          if [[ "$IS_PRE" == "false" ]] && ! git tag --list "v$V-rc.*" | grep -q .; then
+          if [[ "$IS_PRE" == "false" ]] && ! git tag --list "$APP-v$V-rc.*" | grep -q .; then
             echo "::warning::Stable $TAG has no rc before it."
           fi
 
@@ -119,17 +134,12 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - id: apps
-        name: Find apps with a Dockerfile
+        name: The app as a one-element matrix
         shell: bash
+        env:
+          APP: ${{ inputs.app }}
         run: |
-          set -euo pipefail
-          JSON=$(ls apps/*/Dockerfile 2>/dev/null | sed -E 's#^apps/([^/]+)/Dockerfile$#\1#' | jq -R . | jq -cs .)
-          if [[ "$JSON" == "[]" ]]; then
-            echo "::error::No apps/*/Dockerfile found; nothing to release."
-            exit 1
-          fi
-          echo "apps=$JSON" >> "$GITHUB_OUTPUT"
-          echo "Apps: $JSON"
+          echo "apps=$(jq -cn --arg a "$APP" '[$a]')" >> "$GITHUB_OUTPUT"
 
   check:
     name: Gate (lefthook check)
@@ -204,9 +214,11 @@ jobs:
           path: digests/*.txt
           retention-days: 1
 
+  # Only the api carries host adapters (they also ship inside its image).
   adapters:
     name: Adapter bundles
     needs: [resolve, check]
+    if: ${{ inputs.app == 'api' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -249,7 +261,7 @@ jobs:
   release:
     name: Tag and draft release
     needs: [resolve, image, adapters]
-    if: ${{ !inputs.dry_run }}
+    if: ${{ !inputs.dry_run && !cancelled() && needs.image.result == 'success' && (needs.adapters.result == 'success' || needs.adapters.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -258,7 +270,8 @@ jobs:
           path: digests
           merge-multiple: true
 
-      - uses: actions/download-artifact@v4
+      - if: ${{ inputs.app == 'api' }}
+        uses: actions/download-artifact@v4
         with:
           name: adapters
           path: assets
@@ -281,11 +294,15 @@ jobs:
           while read -r app digest; do
             NOTES+=$(printf -- '- `%s/%s:%s` — `%s`' "$REPO" "$app" "$VERSION" "$digest")$'\n'
           done < <(cat digests/*.txt)
-          NOTES+=$'\n'"Host adapter bundles (register with the api image, see docs/guide/admin.md):"$'\n'
-          for f in assets/*.tar.gz; do
-            NOTES+="- \`${f#assets/}\`"$'\n'
-          done
+          ASSETS=()
+          if compgen -G "assets/*.tar.gz" >/dev/null; then
+            NOTES+=$'\n'"Host adapter bundles (also inside the api image; see docs/guide/admin.md):"$'\n'
+            for f in assets/*.tar.gz; do
+              NOTES+="- \`${f#assets/}\`"$'\n'
+            done
+            ASSETS=(assets/*)
+          fi
           ARGS=(--draft --title "$TITLE" --notes "$NOTES" --target "$GITHUB_SHA")
           [[ "$IS_PRE" == "true" ]] && ARGS+=(--prerelease)
-          gh release create "$TAG" assets/* "${ARGS[@]}" --repo "$GITHUB_REPOSITORY"
+          gh release create "$TAG" "${ASSETS[@]}" "${ARGS[@]}" --repo "$GITHUB_REPOSITORY"
           echo "Draft $TAG created at $GITHUB_SHA"
