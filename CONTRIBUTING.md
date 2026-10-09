@@ -65,8 +65,10 @@ fixture games) is described in the [README](./README.md#development).
   review thread before merging.
 - **Rebase and merge** only; history on `master` stays linear. Keep your branch rebased on
   `master` rather than merging it in.
-- Releases are cut from `master` by maintainers (git tags `vX.Y.Z-rc.N` → `vX.Y.Z`). Deploying
-  and operating the platform is outside this repository.
+- Releases are cut from `master` by maintainers, one app at a time: git tags
+  `<app>-vX.Y.Z-rc.N` → `<app>-vX.Y.Z` for `api`, `rooms`, `shell` and `games`, each with its own
+  version line (all from `0.14.0`; the earlier `vX.Y.Z` tags were platform-wide). npm packages are
+  released through Changesets. Deploying and operating the platform is outside this repository.
 
 ## Rules that need extra care
 

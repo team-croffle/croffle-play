@@ -10,7 +10,9 @@ them themselves or upload a build for the platform to serve; the portal shows ea
 > Status: **pre-release.** Portal (catalog, play page, player dashboard, admin and developer pages), SDK v1, runtime
 > host adapters, game registration by `game.json`, accounts (sign-in, scores, leaderboards, saves),
 > and multiplayer rooms work; see the [roadmap](./docs/ROADMAP.md). Design record:
-> [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md). Each app is released on its own version line
+> (`ghcr.io/team-croffle/croffle-play/api:0.14.0`, `…/shell:0.14.0`, …); the packages follow npm
+> semver. Which versions fit together: [app environment reference](./docs/reference/env.md).
 
 ## Documentation
 

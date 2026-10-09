@@ -2,7 +2,8 @@
 
 플랫폼 이미지 네 개(`api`, `rooms`, `shell`, `games`)가 받는 환경 변수 전부와, 앱 사이에 서로 맞아야 하는 값을 정리한다.
 compose·프록시·DNS 같은 배포 설정은 이 저장소 밖의 일이라 다루지 않는다. 이미지는
-`ghcr.io/team-croffle/croffle-play/<app>:<version>`이다.
+`ghcr.io/team-croffle/croffle-play/<app>:<version>`이고, 앱마다 버전이 따로 간다(태그 `<app>-vX.Y.Z`, 모두 0.14.0부터;
+그 전 `vX.Y.Z`는 네 앱이 같은 버전이었다). 어떤 버전끼리 맞는지는 아래 [앱 사이 호환](#앱-사이-호환).
 
 예시 도메인: 포털 `game.croffle-play.link`, API `api.croffle-play.link`, 룸 `rooms.croffle-play.link`, 로그인(Logto)
 `auth.croffle-play.link`, 게임 `<id>.play.croffle-play.link`. 코드는 도메인을 env로만 받는다.
@@ -171,6 +172,20 @@ Logto 앱 설정: 리디렉트 URI `<NUXT_SITE_URL>/auth/callback`, 로그아웃
 | 포털 → API         | shell `NUXT_API_BASE` → api `HOST`·`PORT`                                                                                                       |
 | 포털 → 룸          | shell `NUXT_ROOMS_URL` → rooms 공개 주소                                                                                                        |
 | 게임 → 포털        | 게임 호스트의 `frame-ancestors`에 `NUXT_SITE_URL`의 origin ([game-hosting.md](../game-hosting.md))                                              |
+
+## 앱 사이 호환
+
+앱은 각자 릴리스되므로 서로 기대하는 것을 적어 둔다. 여기 적힌 것이 바뀌면 바꾸는 앱의 **메이저**를 올리고 이 표를 고친다.
+그 전까지는 어떤 버전 조합도 함께 돈다. 한 변경이 여러 앱에 걸치면 api → games/rooms → shell 순서로 올린다.
+
+| 사이         | 무엇                                                                                                      | 바뀌면                                         |
+| ------------ | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| shell → api  | `/v1/*` 경로와 응답 모양(BFF가 중계). 추가는 자유, 제거·의미 변경은 api 메이저                            | api 메이저 ↑, shell은 그 뒤에                  |
+| rooms → api  | `/.well-known/jwks.json`, 게임 토큰의 `iss`·`aud: game:<id>`·`sub`·`nickname` claim                       | api 메이저 ↑, rooms 같이                       |
+| games ↔ api  | 버킷 레이아웃 `games/<id>/<deploy>/<path>`, 포인터 `games/<id>/current.json` `{ deployId, entry }`        | api 메이저 ↑, games 먼저(둘 다 읽게) 또는 같이 |
+| shell → api  | 어댑터 중계 `/v1/adapters/v<N>/<버전>/index.js`, `GET /v1/sdk/:major`의 `adapterUrl`·`sri`                | api 메이저 ↑                                   |
+| sdk ↔ 어댑터 | SDK 메이저 N의 메시지 ↔ 어댑터 `v<N>`. 어댑터가 쓰는 api 엔드포인트는 어댑터 manifest `requiresApi`(예정) | 어댑터 패키지 메이저 = SDK 메이저              |
+| 모두         | `GAME_ORIGIN_TEMPLATE`·`PORTAL_ORIGIN`·`S3_*`·OIDC 값은 [위 표](#앱-사이에-맞아야-하는-값)                | —                                              |
 
 ## 상태 확인
 

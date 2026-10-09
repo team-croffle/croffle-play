@@ -76,18 +76,18 @@ and are never checked in here.
 
 ### Planned layout
 
-| Path                   | Package                        | Ships as                       |
-| ---------------------- | ------------------------------ | ------------------------------ |
-| `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private   |
-| `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private   |
-| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private   |
-| `apps/games`           | `@croffledev/play-games`       | Docker image (GHCR), private   |
-| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage (API) |
-| `packages/protocol`    | `@croffledev/play-protocol`    | npm                            |
-| `packages/sdk`         | `@croffledev/play-sdk`         | npm                            |
-| `packages/cli`         | `@croffledev/play-cli`         | npm                            |
-| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)             |
-| `docs`                 | `@croffledev/play-docs`        | GitHub Pages (VitePress)       |
+| Path                   | Package                        | Ships as                       | Version line                   |
+| ---------------------- | ------------------------------ | ------------------------------ | ------------------------------ |
+| `apps/shell`           | `@croffledev/play-shell`       | Docker image (GHCR), private   | `shell-v*`                     |
+| `apps/api`             | `@croffledev/play-api`         | Docker image (GHCR), private   | `api-v*`                       |
+| `apps/rooms`           | `@croffledev/play-rooms`       | Docker image (GHCR), private   | `rooms-v*`                     |
+| `apps/games`           | `@croffledev/play-games`       | Docker image (GHCR), private   | `games-v*`                     |
+| `apps/adapters`        | `@croffledev/play-adapters`    | Static bundles → storage (API) | with api (npm package planned) |
+| `packages/protocol`    | `@croffledev/play-protocol`    | npm                            | Changesets                     |
+| `packages/sdk`         | `@croffledev/play-sdk`         | npm                            | Changesets                     |
+| `packages/cli`         | `@croffledev/play-cli`         | npm                            | Changesets                     |
+| `packages/create-game` | `@croffledev/create-play-game` | npm (`npm create`)             | Changesets                     |
+| `docs`                 | `@croffledev/play-docs`        | GitHub Pages (VitePress)       | —                              |
 
 `apps/*` are `"private": true`. Workspace packages export a `"@croffledev/source"` condition
 pointing at `src/`; `tsconfig.base.json` (`customConditions`) and each vitest config resolve it, so
@@ -130,9 +130,13 @@ cause. `pnpm check` is the same gate CI runs.
 
 ### Versioning
 
-- **Platform (`apps/*`)**: git tags `vX.Y.Z` / `vX.Y.Z-rc.N` are the source of truth; nothing in the
-  tree is bumped. The release workflow builds one image per app
-  (`ghcr.io/team-croffle/croffle-play/<app>:<version>`).
+- **Apps (`apps/*`)**: every app has its own version line. Git tags `<app>-vX.Y.Z` /
+  `<app>-vX.Y.Z-rc.N` (`api-v0.14.0-rc.1`) are the source of truth; nothing in the tree is bumped.
+  The release workflow takes `app` and `version` and builds that one image
+  (`ghcr.io/team-croffle/croffle-play/<app>:<version>`; stable releases also move `X.Y` and
+  `latest` for that app). The platform-wide tags `vX.Y.Z` up to `v0.13.0` are the earlier line;
+  every app line starts at `0.14.0`. When one change spans apps, release api first, then
+  games/rooms, then shell, and keep the compatibility table in `docs/reference/env.md` true.
 - **Packages (`packages/*`)**: independent semver via Changesets, published to npm by the
   `Publish Packages` workflow through npm trusted publishing (OIDC). The workflow only stages
   versions (`npm stage publish`); a maintainer approves them with 2FA (`npm stage approve`) to go
@@ -215,7 +219,10 @@ Changing any of these requires a decision entry in `.ai/history/`.
   `docs/ROADMAP.md` must stay free of internal status, names, and schedules.
 - Loop: work from the current `.ai/work/` checklist → commit each finished
   sub-task → `pnpm check` before reporting done → write `.ai/history/` and
-  delete the work file when the checklist is finished.
+  delete the work file when the checklist is finished. Plans, work files and
+  releases belong to a **line** (`api | rooms | shell | games | packages`):
+  `ROADMAP.<line>.local.md`, `plan/<line>-<version>_…`, and every loop
+  command takes the line (`/plan-next api`, `/work-cicd-to api-0.14.0-rc.1`).
 - Before a non-trivial decision, check prior ones:
   `grep -l 'decisions:.*<keyword>' .ai/history/*`.
 - Branches: base is `master`; work on `type/topic` feature branches, rebase
