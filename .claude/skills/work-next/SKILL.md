@@ -1,15 +1,17 @@
 ---
 name: work-next
 description: Do the next pending work item (lowest number whose dependencies are finished) of the current work version, then stop. Use for "다음 작업", "work next".
-argument-hint: '[N]'
+argument-hint: '[<line>-<version>] [N]'
 ---
 
 Read `.claude/skills/play-workflow/SKILL.md` first and follow it.
 
 Optional item number: $ARGUMENTS
 
-1. Find the current work version and its first `status: todo` work file whose
-   dependencies are finished, lowest number first (or item `N`).
+1. Find the current work version — of the given `<line>-<version>`, or of
+   the line implied by the current branch's work files; if neither, ask —
+   and its first `status: todo` work file whose dependencies are finished,
+   lowest number first (or item `N`).
    - No work file at all: say the next version needs `/plan-next` +
      `/gen-work` and stop.
    - Everything left is blocked: list the blockers and stop.

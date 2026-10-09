@@ -11,28 +11,42 @@ instructions. `.ai/` is gitignored and written in **Korean**; code, commit
 messages, PRs, and release notes on GitHub are English unless a template says
 otherwise. Nothing from `.ai/` is copied into committed files.
 
-## Versions
+## Lines and versions
 
-Two version lines exist. The loop below tracks the **platform** line.
+Every app has its own version line, and the packages form one more. A
+**line** is `api | rooms | shell | games | packages`. Every command of the
+loop takes the line it works on; when a command needs a line and none is
+given or implied (by the branch's work files), **ask** rather than guess.
 
-- **Platform (`apps/*`)**: git tags `vX.Y.Z` or `vX.Y.Z-rc.N` are the source
-  of truth. Nothing in the tree holds the version; each Dockerfile gets it
-  through the `VERSION` build arg. Order: `X.Y.Z-rc.1 < … < X.Y.Z`.
-- **Packages (`packages/*`)**: independent semver via Changesets. A work item
-  that touches a publishable package adds a changeset; the `Publish Packages`
-  workflow versions and publishes after merge. Package versions never appear
-  in roadmap headings.
-- **SDK majors** (`packages/sdk` major = `apps/adapters/v<N>`) are tracked in
-  the roadmap as features ("SDK v2"), their lifecycle in the database.
-- **Released version**: highest platform tag after `git fetch --tags` (none →
-  `0.0.0`). **Stable version**: highest tag without `-rc`.
-- **Roadmap versions**: `### vX.Y` or `### vX.Y.Z` headings in
-  `.ai/ROADMAP.local.md`. `vX.Y` means `X.Y.0`.
-- **Next version**: first roadmap version (semver order) above the released
-  core that has no plan file.
-- **Current work version**: lowest version that still has a file under
-  `.ai/work/` (work files are deleted when finished).
-- File names carry versions without `v` (`0.1.0`, `0.1.0-rc.2`).
+- **App lines (`apps/<line>`)**: git tags `<line>-vX.Y.Z` or
+  `<line>-vX.Y.Z-rc.N` are the source of truth (`api-v0.14.0-rc.1`). Nothing
+  in the tree holds the version; the Dockerfile gets it through the `VERSION`
+  build arg. Order: `X.Y.Z-rc.1 < … < X.Y.Z`. The platform-wide tags
+  `vX.Y.Z` (up to `v0.13.0`) are history: every app line starts at `0.14.0`
+  and never compares against them.
+- **packages line (`packages/*`)**: independent semver via Changesets. A work
+  item that touches a publishable package adds a changeset; the `Publish
+Packages` workflow versions and publishes after merge. Package versions
+  never appear in roadmap headings; the packages roadmap lists features, and
+  its plans are named by a label (`packages-adapter-v1_…`), not a version.
+- **SDK majors** (`packages/sdk` major = `packages/adapter-v<N>`) are tracked
+  in the packages roadmap as features ("SDK v2"), their lifecycle in the
+  database.
+- **Released version** of an app line: its highest `<line>-v*` tag after
+  `git fetch --tags` (none → `0.13.0`, the last platform-wide core).
+  **Stable version**: highest such tag without `-rc`.
+- **Roadmap versions** of a line: `### vX.Y` or `### vX.Y.Z` headings in
+  `.ai/ROADMAP.<line>.local.md`. `vX.Y` means `X.Y.0`.
+- **Next version** of a line: first roadmap version (semver order) above the
+  line's released core that has no plan file.
+- **Current work version**: per line, the lowest version that still has a
+  file under `.ai/work/` (work files are deleted when finished).
+- Several lines in one PR: allowed when the change needs it; release them in
+  the order **api → games/rooms → shell** (the API first, its callers after),
+  checking the compatibility table (`docs/reference/env.md`, 앱 사이 호환).
+- File names carry `<line>-<version>` without `v` (`api-0.14.0`,
+  `shell-0.14.0-rc.2`). Files of the platform-wide era keep their old
+  `<version>_…` names; nothing is renamed.
 - Non-version plans (`plan/0_<slug>.md` and similar) are outside this loop.
 
 ## Work numbers vs. rc labels
@@ -51,22 +65,23 @@ Two version lines exist. The loop below tracks the **platform** line.
 ```
 .ai/
   README.md                               layout + current position (session start)
-  ROADMAP.local.md                        internal versioned roadmap (planning source)
-  plan/<version>_<slug>.md                one plan per version
-  work/<version>_<N>_<slug>.md            one item per file; deleted when finished
+  ROADMAP.local.md                        shared: current state, principles, open questions, line index
+  ROADMAP.<line>.local.md                 one versioned roadmap per line (api, rooms, shell, games, packages)
+  plan/<line>-<version>_<slug>.md         one plan per line version
+  work/<line>-<version>_<N>_<slug>.md     one item per file; deleted when finished
   history/<YYYY-MM-DD-HHmm>_<task>.md     first line `decisions: …` or `decisions: none`
-  test/<YYYY-MM-DD-HHmm>_<version>.md     test run report
+  test/<YYYY-MM-DD-HHmm>_<line>-<version>.md   test run report
   pr/<branch>.md                          PR body draft
-  release/<version>_<Release|Pre-Release>.md   GitHub release note body
+  release/<line>-<version>_<Release|Pre-Release>.md   GitHub release note body
 ```
 
 ## Plan file — `.ai/plan/<version>_<slug>.md`
 
 ```
-# <version> 계획 — <주제>
-기준: ROADMAP.local.md `### v<X.Y>` (갱신 <date>)
+# <line> <version> 계획 — <주제>
+기준: ROADMAP.<line>.local.md `### v<X.Y>` (갱신 <date>)
 상태: draft | ready | in-progress | done
-브랜치: feat/<version>-<slug>
+브랜치: feat/<line>-<version>-<slug>
 
 ## 목표
 ## 조사            로드맵 항목이 닿는 코드와 현재 사실 (파일 경로)
@@ -92,14 +107,15 @@ end with a `docs` item when `README*.md` / `docs/` change. Items that change
 
 ```
 ---
+line: <line>
 version: <version>
 id: <N>
-release: <version>-rc.A
+release: <line>-<version>-rc.A
 title: <제목>
 area: <area>
-depends: []          # [1, 2] same version, ["0.1.0_3"] other version
+depends: []          # [1, 2] same plan, ["api-0.14.0_3"] another plan
 status: todo | doing | blocked
-branch: feat/<version>-<slug>
+branch: feat/<line>-<version>-<slug>
 ---
 ## 목적
 ## 현재 코드          파일 경로 + 핵심 사실
@@ -190,30 +206,38 @@ express conflicting intent and nothing in plan/history/instructions settles it.
 
 ## Release workflow (rc)
 
+One rc = one app line. A PR that touched several lines gets one release per
+line, in the order api → games/rooms → shell; the packages line is released
+by `Publish Packages` (Changesets) on merge, never here.
+
 1. Preconditions: PR merged, local `master` == `origin/master`, clean tree,
-   every work item whose `release` is this rc finished, the rc tag does not
-   exist yet, at least one `apps/*/Dockerfile` exists.
-2. `gh workflow run release.yml --ref master -f version=X.Y.Z-rc.A -f dry_run=false`,
+   every work item whose `release` is this rc finished, the tag
+   `<line>-vX.Y.Z-rc.A` does not exist yet, `apps/<line>/Dockerfile` exists.
+2. `gh workflow run release.yml --ref master -f app=<line> -f version=X.Y.Z-rc.A -f dry_run=false`,
    find the run (`gh run list --workflow release.yml -L 1`), then
    `gh run watch <id> --exit-status`.
-3. Write `.ai/release/X.Y.Z-rc.A_Pre-Release.md` from
-   [release-notes.md](./release-notes.md), publish:
-   `gh release edit vX.Y.Z-rc.A --notes-file <file> --draft=false --prerelease`.
-4. Verify `gh release view vX.Y.Z-rc.A --json name,isDraft,isPrerelease`.
+3. Write `.ai/release/<line>-X.Y.Z-rc.A_Pre-Release.md` from
+   [release-notes.md](./release-notes.md). Its changelog is built by hand,
+   since GitHub's generated notes are not per app:
+   `git log <previous tag of the line>..<line>-vX.Y.Z-rc.A --format='* %s' -- apps/<line>`
+   (plus `packages/` and root changes that affect the line). Publish:
+   `gh release edit <line>-vX.Y.Z-rc.A --notes-file <file> --draft=false --prerelease`.
+4. Verify `gh release view <line>-vX.Y.Z-rc.A --json name,isDraft,isPrerelease`.
    Record the run URL in `.ai/history/`, update `.ai/README.md` 현재 위치.
 5. Deployment to the server is **not** part of the workflow yet (pull the
    image and restart via Compose by hand). Ask before adding any deploy step.
 
 ## Stable release (release-prod)
 
-Only when the user explicitly asks for a stable release in the current
-conversation. Preconditions: plan `상태: done`, no work file of the version,
-the last rc released and confirmed by the user, synced clean `master`, public
-docs updated (`README*.md`, `docs/ROADMAP.md` without internal status). Run
-the workflow with `-f version=X.Y.Z`; notes from the stable template; publish
-with `--draft=false --latest`. Then move the version's roadmap section to a
-`## 완료` block in `ROADMAP.local.md`. If anything is uncertain, run with
-`dry_run=true` first.
+Only when the user explicitly asks for a stable release of a line in the
+current conversation. Preconditions: the line's plan `상태: done`, no work
+file of that version, the last rc released and confirmed by the user, synced
+clean `master`, public docs updated (`README*.md`, `docs/ROADMAP.md` without
+internal status). Run the workflow with `-f app=<line> -f version=X.Y.Z`;
+notes from the stable template; publish with `--draft=false --latest`. Then
+mark the version's section in `ROADMAP.<line>.local.md` as released in its
+place (sections stay in version order; nothing moves to a separate block).
+If anything is uncertain, run with `dry_run=true` first.
 
 ## Error handling and limits
 
@@ -224,6 +248,8 @@ with `--draft=false --latest`. Then move the version's roadmap section to a
   branch, deleting or moving a published tag, a stable release that was not
   explicitly requested, rewriting `master`, publishing an npm package, any
   change to `sdk_versions` lifecycle data, deleting data.
+- A command run without its line when the line cannot be inferred from the
+  branch's work files is a question to the user, not a guess.
 - Push, PR, merge, and release happen only inside the skills whose job they
   are (`go-ci`, `go-cicd`, `release`, `release-prod`, `work-cicd-to`,
   `workflow`). Those skills are user-invoked only
