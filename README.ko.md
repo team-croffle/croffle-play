@@ -8,7 +8,9 @@
 
 > 상태: **정식 출시 전.** 포털(카탈로그, 실행 페이지, 플레이어 대시보드, 관리자·개발자 화면), SDK v1, 런타임 호스트 어댑터,
 > `game.json` 기반 게임 등록, 계정(로그인, 점수, 리더보드, 저장), 멀티플레이 룸이 동작한다.
-> [로드맵](./docs/ROADMAP.md) 참고. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> [로드맵](./docs/ROADMAP.md) 참고. 설계 기록: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md). 앱은 각자 버전으로
+> 릴리스된다(`ghcr.io/team-croffle/croffle-play/api:0.14.0`, `…/shell:0.14.0` …), 패키지는 npm semver. 어떤 버전끼리
+> 맞는지는 [앱 환경 변수 레퍼런스](./docs/reference/env.md).
 
 ## 문서
 

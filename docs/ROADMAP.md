@@ -41,6 +41,7 @@
 - 게임을 zip으로 올리면 플랫폼이 `<game>.play.croffle-play.link`에서 서빙 (팀 호스팅과 공존)
 - 배포 기록과 롤백
 - 호스트 어댑터 자동 등록, 관리자 화면에서 SDK 수명주기·어댑터 버전 관리
+- 앱(api·rooms·shell·games)과 패키지의 독립 버전·릴리스
 
 ## Phase 8 — 공개 런칭
 

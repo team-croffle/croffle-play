@@ -59,8 +59,9 @@ Docker 없이 로컬에서 플랫폼 실행하기(임베디드 PostgreSQL, 로�
 - 필수 체크: **CI result**, **TruffleHog**, **Gitleaks**. 빨간 체크는 머지하지 않는다.
 - 코드 오너(`.github/CODEOWNERS`)에게 리뷰가 자동 요청된다. 머지 전에 모든 리뷰 스레드를 해결한다.
 - **Rebase and merge**만 쓴다. `master` 이력은 일직선. 브랜치는 `master`를 merge하지 말고 rebase한다.
-- 릴리스는 관리자가 `master`에서 만든다(git 태그 `vX.Y.Z-rc.N` → `vX.Y.Z`). 플랫폼 배포와 운영은 이
-  저장소 밖의 일이다.
+- 릴리스는 관리자가 `master`에서 앱 하나씩 만든다(git 태그 `<app>-vX.Y.Z-rc.N` → `<app>-vX.Y.Z`,
+  `api`·`rooms`·`shell`·`games` 각자 버전, 모두 `0.14.0`부터. 이전 `vX.Y.Z` 태그는 플랫폼 공동 버전). npm
+  패키지는 Changesets로 낸다. 플랫폼 배포와 운영은 이 저장소 밖의 일이다.
 
 ## 특히 조심할 규칙
 
