@@ -8,17 +8,22 @@ Read `.claude/skills/play-workflow/SKILL.md` first and follow it.
 
 Request: $ARGUMENTS (required; if empty, ask what to add and stop).
 
-1. Read `.ai/ROADMAP.local.md`, the latest tags (`git tag --list 'v*'`), and
-   existing plans under `.ai/plan/`.
-2. Decide placement:
+1. Read `.ai/ROADMAP.local.md` (shared: state, principles, open questions,
+   line index) and the `ROADMAP.<line>.local.md` of every line the request
+   touches, the latest tags (`git tag --list '<line>-v*'`), and existing plans
+   under `.ai/plan/`.
+2. Decide the line first (`api | rooms | shell | games | packages`; a
+   cross-cutting item goes to the line that owns the behaviour, with a
+   one-line pointer in the others), then placement:
    - Fits an unplanned version's theme → add bullets there.
    - Belongs to a version that already has a plan → add bullets to the
      roadmap **and** note in the report that `/plan-next` or `/gen-work` must
      pick them up (do not edit the plan silently).
    - Bug fix or small follow-up to a released version → a patch heading
      (`### vX.Y.Z`) right after its minor version.
-   - New theme → a new `### vX.Y — <title>` in semver order, same format as
-     the others (bullets, `기대 결과`, `예상 이슈`).
+   - New theme → a new `### vX.Y — <title>` in semver order in that line's
+     file, same format as the others (bullets, `기대 결과`, `예상 이슈`). The
+     packages line uses `### <feature>` headings (no versions).
    - A protocol/SDK breaking change → goes under the version that introduces
      the next SDK major; say so explicitly in the bullet.
 3. Check every new bullet against the AGENTS.md design invariants. A
