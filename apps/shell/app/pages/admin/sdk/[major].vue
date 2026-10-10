@@ -13,6 +13,10 @@
     if (e.kind === 'adapter_activated') {
       return `어댑터 ${to.version ?? to.adapterUrl} 활성 (${to.source ?? '?'})`;
     }
+    if (e.kind === 'adapter_removed') {
+      const from = e.from as Record<string, string | null> | null;
+      return `어댑터 ${from?.version ?? '?'} 삭제`;
+    }
     if (e.kind === 'status_changed') {
       return `상태 → ${to.status}`;
     }
