@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
@@ -16,6 +17,7 @@ import { AdminGuard } from '../auth/admin.guard.js';
 import { CurrentUser } from '../auth/user.guard.js';
 import { ValibotPipe } from '../common/valibot.pipe.js';
 import type { User } from '../users/users.service.js';
+import type { SyncResult } from './adapter-install.service.js';
 import { MAX_PLAYABLE_MAJORS, PLAYABLE_STATUSES } from './lifecycle.js';
 import { type SdkDetail, SdkAdminService } from './sdk-admin.service.js';
 import { type SdkInfo, SdkService } from './sdk.service.js';
@@ -52,13 +54,41 @@ export class SdkAdminController {
     };
   }
 
-  /** One major: lifecycle, registered adapter versions, recent admin changes. */
+  /** Installs the newest compatible adapter release of every playable major, now. */
+  @Post('sync')
+  @HttpCode(200)
+  async sync(): Promise<{ results: SyncResult[] }> {
+    return { results: await this.admin.syncNow() };
+  }
+
+  /** One major: lifecycle, registered adapter versions, what npm offers, recent admin changes. */
   @Get(':major')
   detail(@Param('major', ParseIntPipe) major: number): Promise<SdkDetail> {
     return this.admin.detail(major);
   }
 
-  /** Serve a registered adapter version (rollback); undone by the next api start when the image wins. */
+  /** Installs a release from npm and serves it. */
+  @Post(':major/adapters')
+  @HttpCode(200)
+  install(
+    @Param('major', ParseIntPipe) major: number,
+    @Body(new ValibotPipe(adapterSchema)) body: v.InferOutput<typeof adapterSchema>,
+    @CurrentUser() user: User,
+  ): Promise<SdkDetail> {
+    return this.admin.installAdapter(major, body.version, user.id);
+  }
+
+  /** Removes an inactive registered version. */
+  @Delete(':major/adapters/:version')
+  remove(
+    @Param('major', ParseIntPipe) major: number,
+    @Param('version') version: string,
+    @CurrentUser() user: User,
+  ): Promise<SdkDetail> {
+    return this.admin.removeAdapter(major, version, user.id);
+  }
+
+  /** Serve an already registered adapter version again (rollback). */
   @Post(':major/adapter')
   @HttpCode(200)
   activate(

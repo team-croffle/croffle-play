@@ -134,6 +134,13 @@
       "when": 1791619193775,
       "tag": "0018_adapter_source_npm",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791619484845,
+      "tag": "0019_adapter_removed_event",
+      "breakpoints": true
     }
   ]
 }

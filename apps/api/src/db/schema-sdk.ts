@@ -37,6 +37,7 @@ export const sdkAdapterVersions = pgTable(
 /** What an admin (or the api at boot, `actor` null) changed about a major, for the audit trail. */
 export const sdkAdminEventKind = pgEnum('sdk_admin_event_kind', [
   'adapter_activated',
+  'adapter_removed',
   'status_changed',
   'schedule_changed',
 ]);

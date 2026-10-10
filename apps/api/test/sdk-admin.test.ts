@@ -15,7 +15,6 @@ interface Detail {
   adapterUrl: string | null;
   oldAt: string | null;
   deprecatedAt: string | null;
-  imageWins: boolean;
   adapters: { version: string; active: boolean; source: string }[];
   events: { kind: string; actor: string | null; to: Record<string, unknown> }[];
 }
@@ -59,7 +58,6 @@ describe('admin SDK management', () => {
       ['dev', 'dev', true],
     ]);
     expect(d.events.filter((e) => e.kind === 'adapter_activated')).toHaveLength(3);
-    expect(d.imageWins).toBe(true);
     expect((await call('GET', '/v1/admin/sdk/9')).statusCode).toBe(404);
   });
 
