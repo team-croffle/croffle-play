@@ -1,6 +1,6 @@
 {
   "name": "@croffledev/play-sdk",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "SDK for Croffle Play games: handshake with the platform, scores, saves, user",
   "license": "MIT",
   "repository": {
