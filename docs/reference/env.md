@@ -101,10 +101,13 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 | openssl pkcs8 -
 
 ### 호스트 어댑터
 
-| 이름                    | 기본값          | 설명                                                                                                      |
-| ----------------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
-| `ADAPTER_AUTO_REGISTER` | `true`          | 시작할 때 이미지에 든 어댑터 번들을 활성화한다(이미지 버전 우선). `false`면 관리자가 고른 버전이 유지된다 |
-| `ADAPTER_BUNDLE_DIR`    | `/app/adapters` | 번들 위치(`v<N>/<버전>/index.js`, `manifest.json`). 없으면 건너뛴다                                       |
+| 이름                            | 기본값                       | 설명                                                                                                          |
+| ------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `ADAPTER_AUTO_REGISTER`         | `true`                       | 시작할 때, 어댑터가 하나도 없는 메이저에 이미지에 든 번들을 등록한다(처음 한 번). 그 뒤는 npm 동기화가 맡는다 |
+| `ADAPTER_BUNDLE_DIR`            | `/app/adapters`              | 번들 위치(`v<N>/<버전>/index.js`, `manifest.json`). 없으면 건너뛴다                                           |
+| `APP_VERSION`                   | 이미지가 설정                | 이 api의 버전. 어댑터의 `requiresApi`와 대조한다(`dev`면 모두 호환)                                           |
+| `NPM_REGISTRY_URL`              | `https://registry.npmjs.org` | 어댑터 패키지 `@croffledev/play-adapter-v<N>`를 읽는 레지스트리                                               |
+| `ADAPTER_SYNC_INTERVAL_SECONDS` | `3600`                       | 가장 새 호환 어댑터를 npm에서 받아 활성화하는 주기. `0`이면 끈다(폐쇄망: 이미지 번들·register-cli)            |
 
 ### 기타
 
@@ -178,14 +181,14 @@ Logto 앱 설정: 리디렉트 URI `<NUXT_SITE_URL>/auth/callback`, 로그아웃
 앱은 각자 릴리스되므로 서로 기대하는 것을 적어 둔다. 여기 적힌 것이 바뀌면 바꾸는 앱의 **메이저**를 올리고 이 표를 고친다.
 그 전까지는 어떤 버전 조합도 함께 돈다. 한 변경이 여러 앱에 걸치면 api → games/rooms → shell 순서로 올린다.
 
-| 사이         | 무엇                                                                                                      | 바뀌면                                         |
-| ------------ | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| shell → api  | `/v1/*` 경로와 응답 모양(BFF가 중계). 추가는 자유, 제거·의미 변경은 api 메이저                            | api 메이저 ↑, shell은 그 뒤에                  |
-| rooms → api  | `/.well-known/jwks.json`, 게임 토큰의 `iss`·`aud: game:<id>`·`sub`·`nickname` claim                       | api 메이저 ↑, rooms 같이                       |
-| games ↔ api  | 버킷 레이아웃 `games/<id>/<deploy>/<path>`, 포인터 `games/<id>/current.json` `{ deployId, entry }`        | api 메이저 ↑, games 먼저(둘 다 읽게) 또는 같이 |
-| shell → api  | 어댑터 중계 `/v1/adapters/v<N>/<버전>/index.js`, `GET /v1/sdk/:major`의 `adapterUrl`·`sri`                | api 메이저 ↑                                   |
-| sdk ↔ 어댑터 | SDK 메이저 N의 메시지 ↔ 어댑터 `v<N>`. 어댑터가 쓰는 api 엔드포인트는 어댑터 manifest `requiresApi`(예정) | 어댑터 패키지 메이저 = SDK 메이저              |
-| 모두         | `GAME_ORIGIN_TEMPLATE`·`PORTAL_ORIGIN`·`S3_*`·OIDC 값은 [위 표](#앱-사이에-맞아야-하는-값)                | —                                              |
+| 사이         | 무엇                                                                                                                       | 바뀌면                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| shell → api  | `/v1/*` 경로와 응답 모양(BFF가 중계). 추가는 자유, 제거·의미 변경은 api 메이저                                             | api 메이저 ↑, shell은 그 뒤에                  |
+| rooms → api  | `/.well-known/jwks.json`, 게임 토큰의 `iss`·`aud: game:<id>`·`sub`·`nickname` claim                                        | api 메이저 ↑, rooms 같이                       |
+| games ↔ api  | 버킷 레이아웃 `games/<id>/<deploy>/<path>`, 포인터 `games/<id>/current.json` `{ deployId, entry }`                         | api 메이저 ↑, games 먼저(둘 다 읽게) 또는 같이 |
+| shell → api  | 어댑터 중계 `/v1/adapters/v<N>/<버전>/index.js`, `GET /v1/sdk/:major`의 `adapterUrl`·`sri`                                 | api 메이저 ↑                                   |
+| sdk ↔ 어댑터 | SDK 메이저 N의 메시지 ↔ `@croffledev/play-adapter-v<N>`. 어댑터가 쓰는 api 엔드포인트는 manifest `requiresApi`(api가 대조) | 어댑터 패키지 메이저 = SDK 메이저              |
+| 모두         | `GAME_ORIGIN_TEMPLATE`·`PORTAL_ORIGIN`·`S3_*`·OIDC 값은 [위 표](#앱-사이에-맞아야-하는-값)                                 | —                                              |
 
 ## 상태 확인
 
@@ -195,4 +198,4 @@ Logto 앱 설정: 리디렉트 URI `<NUXT_SITE_URL>/auth/callback`, 로그아웃
 - shell: 별도 경로 없음. 이미지의 `HEALTHCHECK`는 `/`가 500 미만인지 본다
 - 네 이미지 모두 `HEALTHCHECK`가 들어 있다
 
-어댑터는 api가 시작할 때 이미지에서 등록된다. 수동 등록(`sdk:register`)과 운영 절차는 [관리자 가이드](../guide/admin.md)에 있다.
+어댑터는 api가 npm에서 받아 등록한다(처음 한 번은 이미지에서). 수동 등록(`sdk:register`)과 운영 절차는 [관리자 가이드](../guide/admin.md)에 있다.
