@@ -1,5 +1,5 @@
 // Usage:
-//   node dist/sdk/register-cli.js <dir>   upload apps/adapters/dist/v<N>/<version>/ to storage, register
+//   node dist/sdk/register-cli.js <dir>   upload a bundle dir (index.js + manifest.json) to storage, register
 //   node dist/sdk/register-cli.js <url>   register a manifest.json served elsewhere (development)
 import { parseEnv } from '../config/env.js';
 import { connect } from '../db/connect.js';

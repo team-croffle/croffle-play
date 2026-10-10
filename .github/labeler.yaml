@@ -19,7 +19,7 @@ games:
 
 adapters:
   - changed-files:
-      - any-glob-to-any-file: apps/adapters/**
+      - any-glob-to-any-file: packages/adapter-v*/**
 
 protocol:
   - changed-files:

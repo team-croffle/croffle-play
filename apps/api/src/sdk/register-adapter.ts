@@ -13,13 +13,15 @@ import { IMMUTABLE_CACHE_CONTROL, type Storage } from '../storage/storage.js';
 /** Adapter release names: `1.0.0`, `0.10.0-rc.1`. */
 export const ADAPTER_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
 
-/** `manifest.json` written next to each adapter bundle by `apps/adapters`. */
+/** `manifest.json` next to each adapter bundle (`packages/adapter-v<N>`, `dist/manifest.json`). */
 export const adapterManifestSchema = v.object({
   major: v.pipe(v.number(), v.integer(), v.minValue(1)),
   /** Release name; `dev` for local builds (`pnpm dev:games`). */
   version: v.pipe(v.string(), v.minLength(1)),
   file: v.string(),
   integrity: v.pipe(v.string(), v.startsWith('sha384-')),
+  /** Platform api versions this adapter can talk to (semver range); absent = any. */
+  requiresApi: v.optional(v.string()),
 });
 export type AdapterManifest = v.InferOutput<typeof adapterManifestSchema>;
 
@@ -88,7 +90,7 @@ export async function registerAdapter(
 }
 
 /**
- * Release path: uploads `<dir>/index.js` (from `apps/adapters/dist/v<N>/<version>/`) to storage
+ * Release path: uploads `<dir>/index.js` (an adapter package's `dist/`, or the image's bundle dir) to storage
  * after checking it against the manifest's SRI hash, then registers it.
  */
 export async function publishAdapterDir(

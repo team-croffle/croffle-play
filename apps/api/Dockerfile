@@ -13,11 +13,16 @@ COPY . .
 # Root `prepare` installs git hooks; there is no git here.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts \
-      --filter @croffledev/play-api... --filter @croffledev/play-adapters...
+      --filter @croffledev/play-api... --filter "@croffledev/play-adapter-v*..."
 RUN pnpm --filter @croffledev/play-api... run build
-# The host adapters of this release ride along: the api registers them at boot
-# (ADAPTER_AUTO_REGISTER), so a platform release is an image swap and nothing more.
-RUN VERSION=$VERSION pnpm --filter @croffledev/play-adapters run build
+# The host adapter packages ride along as the offline bootstrap: the api registers them at boot
+# when a major has no adapter yet (ADAPTER_AUTO_REGISTER); newer ones come from npm.
+RUN pnpm --filter "@croffledev/play-adapter-v*" run build \
+ && for d in packages/adapter-v*; do \
+      v=$(node -p "require('./$d/package.json').version"); \
+      m=$(node -p "require('./$d/package.json').croffle.sdkMajor"); \
+      mkdir -p "/adapters/v$m/$v" && cp "$d"/dist/index.js "$d"/dist/manifest.json "/adapters/v$m/$v/"; \
+    done
 RUN pnpm --filter @croffledev/play-api deploy --prod --ignore-scripts /out
 
 FROM node:24-alpine AS runtime
@@ -28,7 +33,7 @@ LABEL org.opencontainers.image.source="https://github.com/team-croffle/croffle-p
 ENV NODE_ENV=production APP_VERSION=${VERSION} PORT=3001
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
-COPY --from=build --chown=node:node /repo/apps/adapters/dist ./adapters
+COPY --from=build --chown=node:node /adapters ./adapters
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \

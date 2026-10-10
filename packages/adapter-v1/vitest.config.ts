@@ -6,5 +6,5 @@ const conditions = ['@croffledev/source', ...defaultServerConditions];
 export default defineConfig({
   resolve: { conditions },
   ssr: { resolve: { conditions } },
-  test: { include: ['v*/test/**/*.test.ts'] },
+  test: { include: ['test/**/*.test.ts'] },
 });

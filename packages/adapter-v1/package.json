@@ -1,0 +1,36 @@
+{
+  "name": "@croffledev/play-adapter-v1",
+  "version": "0.0.0",
+  "description": "Croffle Play host adapter for SDK major 1: the bundle the portal loads to talk to games built on @croffledev/play-sdk 1.x",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/team-croffle/croffle-play.git",
+    "directory": "packages/adapter-v1"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown && node scripts/write-manifest.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "croffle": {
+    "sdkMajor": 1,
+    "requiresApi": ">=0.14.0-rc.1"
+  },
+  "devDependencies": {
+    "@croffledev/play-protocol": "workspace:^",
+    "@types/node": "^24.19.1",
+    "tsdown": "^0.23.0",
+    "typescript": "~6.0.3",
+    "valibot": "^1.5.0",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
