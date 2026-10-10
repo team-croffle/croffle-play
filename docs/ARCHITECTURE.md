@@ -69,9 +69,11 @@ adapter.mount({ core, port, sdkVersion: hello.sdk });
 - 포털: iframe의 `contentWindow` **그리고** 게임 origin에서 온 메시지만 받고, 게임 origin으로만 보낸다.
   hello의 게임 id가 등록된 id와 다르면 실행하지 않는다.
 - 어댑터: `import()`는 integrity를 지원하지 않으므로 포털이 번들을 받아 `sdk_versions.sri`(SHA-384)와 비교한
-  뒤 Blob URL로 import한다. 릴리스의 어댑터 번들은 api 이미지에 들어 있고, api가 시작할 때 스토리지
-  (`adapters/v<N>/<버전>/index.js`)에 올리고 활성화한다(이미지 버전 우선; `register-cli`로 따로 올릴 수도 있다).
-  등록된 버전은 `sdk_adapter_versions`에 남고 관리자가 `/admin/sdk`에서 전환할 수 있다. API가 `/v1/adapters/…`로 서빙하고 포털이 같은 origin
+  뒤 Blob URL로 import한다. 어댑터는 npm 패키지 `@croffledev/play-adapter-v<N>`(메이저당 하나, SDK와 linked)다:
+  api가 레지스트리에서 **이 api와 호환되는(manifest `requiresApi`) 가장 새 릴리스**를 받아(sha512·sha384 검증)
+  스토리지(`adapters/v<N>/<버전>/index.js`)에 올리고 활성화한다 — 시작 때와 주기적으로. 그래서 어댑터 릴리스에는
+  포털도 api도 배포하지 않는다. 처음 띄울 때만 이미지에 든 번들을 쓴다. 등록된 버전은 `sdk_adapter_versions`에
+  남고 관리자가 `/admin/sdk`에서 설치·전환·삭제한다. API가 `/v1/adapters/…`로 서빙하고 포털이 같은 origin
   `/adapters/…`로 중계하므로 브라우저에는 CORS도, 스토리지 주소도 없다.
 - iframe: `sandbox="allow-scripts allow-same-origin allow-pointer-lock"`, `allow="fullscreen; autoplay;
 gamepad"`. `allow-same-origin`은 게임 자신의 origin이다(게임 origin ≠ 포털 origin).

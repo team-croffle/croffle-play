@@ -91,34 +91,40 @@
 포털은 게임이 핸드셰이크로 알리는 SDK 메이저에 맞는 어댑터를 실행 중에 불러온다. 어댑터 번들은 스토리지
 (`adapters/v<N>/<버전>/index.js`)에 있고 API가 서빙, 포털이 같은 출처(`/adapters/…`)로 중계하며 SRI로 검사한다.
 
-### 릴리스마다: 이미지 교체면 끝
+어댑터는 **npm 패키지 `@croffledev/play-adapter-v<N>`**(메이저당 하나, SDK와 함께 버전이 오름)다. api가 npm에서
+받아 등록하므로 **어댑터 릴리스에 포털·api 배포가 필요 없다.**
 
-api 이미지에는 그 릴리스의 어댑터 번들이 들어 있고(`/app/adapters/v<N>/<버전>/`), api가 시작할 때 활성
-어댑터가 아니면 스토리지에 올리고 활성화한다(`ADAPTER_AUTO_REGISTER`, 기본 켜짐). 그래서 새 플랫폼 릴리스는
-**이미지 교체**로 끝난다. 어댑터를 되돌리는 정식 방법도 **이전 api 이미지로 되돌리기**다.
+### 자동: 가장 새 호환 버전
 
-- `/admin/sdk/<N>`에 등록된 어댑터 버전 목록이 보이고 다른 버전으로 전환할 수 있다. 다만 이미지의 버전이
-  우선이라 **다음 api 시작 때 이미지 버전으로 돌아간다**(화면에도 표시). 급한 임시 조치에만 쓴다.
-- 자동 등록을 끄면(`ADAPTER_AUTO_REGISTER=false`) 관리자가 고른 버전이 유지된다. 그때는 아래 수동 등록으로
-  올린다.
-- 메이저가 처음 등록되면 `current`로 생기고, 있는 메이저의 수명주기 상태는 건드리지 않는다.
-- deprecated 메이저의 어댑터 파일은 지우지 않는다(실행 차단은 상태가 한다).
+api는 시작할 때와 `ADAPTER_SYNC_INTERVAL_SECONDS`(기본 1시간)마다 레지스트리(`NPM_REGISTRY_URL`)를 읽고, 실행 가능한
+(current·lts·old) 메이저마다 **이 api 버전과 호환되는 가장 새 릴리스**를 받아 활성화한다. 호환은 패키지가 선언한
+`requiresApi` 범위를 api의 `APP_VERSION`과 대조해 정한다. 받은 tarball은 npm의 sha512, 번들은 manifest의 sha384와
+대조한 뒤에만 저장한다. deprecated 메이저는 건너뛴다.
 
-### 수동 등록 (이미지와 별개로 올릴 때)
+- 새 SDK 기능이 새 api 엔드포인트를 쓰면 그 어댑터의 `requiresApi`가 올라간다 → **api 이미지를 먼저 올리고**
+  나면 다음 동기화가 어댑터를 받는다. 그 전까지는 이전 어댑터가 그대로 서비스된다.
+- 처음 띄우는 api(해당 메이저의 어댑터가 하나도 없을 때)는 이미지에 든 번들(`ADAPTER_BUNDLE_DIR`)을 먼저 등록한다
+  (`ADAPTER_AUTO_REGISTER`). 그 뒤로 이미지 번들은 쓰이지 않는다.
 
-플랫폼 릴리스(GitHub Releases)에는 메이저별 어댑터 번들 `adapters-v<N>-<버전>.tar.gz`와 `.sha256`이 첨부된다.
-api 이미지 안의 등록 도구로 올린다. 도구는 api와 **같은 env와 네트워크**가 필요하다(DB·스토리지에 접속):
+### 화면 (`/admin/sdk/<N>`)
+
+- **npm에 있는 버전**: 버전·`requiresApi`·호환 여부. 호환되는 버전은 **설치하고 활성화**할 수 있다. 되돌리기도 여기서
+  (이전 버전 설치) — 다만 동기화가 켜져 있으면 더 새 호환 버전이 나올 때 다시 올라간다.
+- **등록된 버전**: 활성·보관, 출처(`npm`·`image`·`cli`·`dev`), SRI. 보관 중인 버전은 **전환**(다시 활성)하거나 **삭제**
+  (파일과 기록 제거)할 수 있다. 활성 버전은 삭제할 수 없다.
+- **지금 동기화**: 주기를 기다리지 않고 바로 받는다. 마지막 실행 시각과 결과가 보인다.
+- 모든 변경은 변경 기록에 남는다(누가·언제·무엇; 자동은 "api (자동)").
+
+### 폐쇄망·수동 등록
+
+npm에 닿을 수 없는 운영 환경이면 `ADAPTER_SYNC_INTERVAL_SECONDS=0`으로 끄고, 이미지에 든 번들(처음 한 번) 또는
+`register-cli`로 올린다. 등록 도구는 api와 **같은 env와 네트워크**가 필요하다(DB·스토리지에 접속). 번들은
+`@croffledev/play-adapter-v<N>` 패키지의 `dist/`(`npm pack`으로 받은 tarball 안 `package/dist/`)다:
 
 ```bash
-V=0.13.0
-curl -fLO https://github.com/team-croffle/croffle-play/releases/download/v$V/adapters-v1-$V.tar.gz
-curl -fLO https://github.com/team-croffle/croffle-play/releases/download/v$V/adapters-v1-$V.tar.gz.sha256
-sha256sum -c adapters-v1-$V.tar.gz.sha256
-tar xzf adapters-v1-$V.tar.gz                      # → v1/$V/index.js, manifest.json
-
 # api를 Docker Compose 서비스(api)로 운영할 때: 그 서비스의 env·네트워크를 그대로 쓴다
-docker compose run --rm --no-deps -v "$PWD/v1:/adapters/v1:ro,z" \
-  api node dist/sdk/register-cli.js /adapters/v1/$V
+docker compose run --rm --no-deps -v "$PWD/dist:/adapters/v1/x:ro,z" \
+  api node dist/sdk/register-cli.js /adapters/v1/x
 # SDK v1 → /adapters/v1/<버전>/index.js (sha384-…)
 ```
 
@@ -128,16 +134,14 @@ docker compose run --rm --no-deps -v "$PWD/v1:/adapters/v1:ro,z" \
 - `:z`는 SELinux가 켜진 호스트(Fedora·RHEL 계열)에서 컨테이너가 마운트한 파일을 읽게 해 준다. 빠지면 파일
   권한이 맞아도 `EACCES`가 난다. SELinux가 없는 호스트에서는 무시된다.
 - 도구는 시작할 때 DB 마이그레이션을 확인한다. `schema "drizzle" already exists, skipping` 같은 NOTICE는 정상.
-- 도구는 `index.js`를 `manifest.json`의 SRI와 대조한 뒤 스토리지에 올리고, 그 메이저의 어댑터 주소를 바꾸며
-  변경 기록(`cli`)을 남긴다. 자동 등록이 켜져 있으면 다음 api 시작 때 이미지 버전으로 돌아간다.
-- 저장소에서 직접 빌드할 수도 있다:
-  `VERSION=$V pnpm --filter @croffledev/play-adapters build` →
-  `pnpm --filter @croffledev/play-api sdk:register apps/adapters/dist/v1/$V`.
+- 메이저가 처음 등록되면 `current`로 생기고, 있는 메이저의 수명주기 상태는 건드리지 않는다. deprecated 메이저의
+  어댑터 파일은 지우지 않는다(실행 차단은 상태가 한다).
 
 ## 점검 목록
 
 - 새 게임(팀 호스팅): 등록 → 주소 연결 → `play-cli check` → 다시 읽기 → 미리보기 → 공개
 - 새 게임(플랫폼 호스팅): 등록 → 배포 키 발급 또는 zip 업로드 → 미리보기 → 공개
-- 새 플랫폼 릴리스: 이미지 교체(api·rooms·shell·games) → `/admin/sdk`에서 활성 어댑터가 새 버전인지 확인 → 게임 하나 플레이해 보기
+- 앱 릴리스: 그 앱 이미지 교체 → 게임 하나 플레이해 보기. api를 올렸으면 `/admin/sdk`에서 다음 동기화가 새 어댑터를 받는지 확인
 - 서버 키 유출 의심: 폐기 → 새로 발급 → 팀에 전달
-- 새 SDK 메이저: 새 api 이미지(어댑터 포함) → `/admin/sdk`에서 이전 메이저 일정(`lts`·old·deprecated 날짜) 결정 → 공지
+- 새 SDK 메이저: `play-adapter-v<N>` publish → (필요하면 api 먼저) → `/admin/sdk`에서 설치 확인, 이전 메이저 일정(`lts`·old·deprecated 날짜) 결정 → 공지
+- 새 어댑터 릴리스(같은 메이저): npm publish만. 동기화가 받는다 — `requiresApi`가 높으면 api 먼저

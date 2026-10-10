@@ -49,12 +49,14 @@ and are never checked in here.
   `games/<id>/<deploy>/` and served by `apps/games` at the same origin). The platform keeps the
   last `DEPLOY_KEEP` uploads for rollback and takes `game.json` from the zip; it tracks no other
   game versions.
-- Host adapters ship inside the api image (`/app/adapters/v<N>/<version>/`) and are registered
-  to storage when the api starts (`ADAPTER_AUTO_REGISTER`; the image's version wins), served by
-  the API at `/v1/adapters/…` and relayed by the portal at `/adapters/…` (same origin,
-  SRI-checked). Registered versions and admin changes are recorded (`sdk_adapter_versions`,
-  `sdk_admin_events`); admins switch versions and move the lifecycle at `/admin/sdk`. Releases
-  still attach the bundles (`adapters-v<N>-<version>.tar.gz`) for `register-cli`.
+- Host adapters are npm packages `@croffledev/play-adapter-v<N>` (`packages/adapter-v<N>`, one
+  per SDK major, versioned with the SDK through a Changesets linked group). The api installs the
+  newest release compatible with its `APP_VERSION` (manifest `requiresApi`) from
+  `NPM_REGISTRY_URL` at boot and every `ADAPTER_SYNC_INTERVAL_SECONDS`, verifying npm's sha512
+  and the bundle's SRI, and serves it at `/v1/adapters/…` (relayed by the portal at
+  `/adapters/…`). The image's bundle (`/app/adapters/`) is only the first adapter of a major.
+  Registered versions and admin changes are recorded (`sdk_adapter_versions`,
+  `sdk_admin_events`); admins install, switch, remove and move the lifecycle at `/admin/sdk`.
 - Game servers are hosted by their teams and declared in `game.json` (`server: { url, protocol }`);
   the platform issues game tokens (JWKS) and server keys (`csk_`) for verified scores, nothing more.
 - Players: dashboard `/me` (nickname, avatar upload — stored as `avatars/<user>/<hash>.<ext>`, served
@@ -176,8 +178,10 @@ Changing any of these requires a decision entry in `.ai/history/`.
    comparison.
 6. **One host adapter per SDK major, loaded at runtime** with SRI verification. The portal picks
    it from the major in the game's `__hello`, fetches it from its own origin (`/adapters/…`, served
-   by the API from storage), and exposes only `identity`, `api()`, `ui`, `lifecycle`. A new SDK
-   feature is an API endpoint plus an adapter release — not a portal release. `old` SDK majors
+   by the API from storage), and exposes only `identity`, `api()`, `ui`, `lifecycle`. Adapters are
+   npm packages (`@croffledev/play-adapter-v<N>`) that the api installs from the registry when
+   they are compatible with it (`requiresApi`); a new SDK feature is an adapter release, plus an
+   API endpoint when it needs one — never a portal release. `old` SDK majors
    cannot be newly listed or refreshed; `deprecated` majors cannot be played.
 7. **Game servers are untrusted and outside the platform.** A game declares its own server in
    `game.json`; its team hosts it. It reaches the platform only through the public API, identifies

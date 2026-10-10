@@ -46,5 +46,6 @@ pnpm add @croffledev/play-sdk@^2
 
 - 상태·날짜 변경은 `/admin/sdk/<N>`에서 한다. 모든 변경은 누가·언제·무엇을 바꿨는지 기록된다(`sdk_admin_events`).
   DB를 직접 고치지 않는다.
-- 새 메이저 출시 = `packages/sdk` 메이저 + `apps/adapters/v<N>` + 그 어댑터가 든 api 이미지 릴리스. api가 시작할 때
-  어댑터를 등록하므로 포털 배포도, 수동 등록도 필요 없다([관리자 가이드](./guide/admin.md)).
+- 새 메이저 출시 = `packages/sdk` 메이저 + `packages/adapter-v<N>` 패키지(`@croffledev/play-adapter-v<N>`) publish. api가
+  npm에서 호환되는 어댑터를 받아 등록하므로 포털 배포도, api 배포도, 수동 등록도 필요 없다(새 엔드포인트가 필요한
+  어댑터는 `requiresApi`로 api 먼저). [관리자 가이드](./guide/admin.md).
