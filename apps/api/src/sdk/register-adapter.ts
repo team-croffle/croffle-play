@@ -98,6 +98,7 @@ export async function publishAdapterDir(
   storage: Storage,
   dir: string,
   source: AdapterSource = 'cli',
+  actor: string | null = null,
 ) {
   const manifest = v.parse(
     adapterManifestSchema,
@@ -119,7 +120,13 @@ export async function publishAdapterDir(
     contentType: 'text/javascript; charset=utf-8',
     cacheControl: IMMUTABLE_CACHE_CONTROL,
   });
-  return registerAdapter(db, manifest, adapterPath(manifest.major, manifest.version), source);
+  return registerAdapter(
+    db,
+    manifest,
+    adapterPath(manifest.major, manifest.version),
+    source,
+    actor,
+  );
 }
 
 /** Development path: an adapter already served elsewhere (`pnpm dev:games`), by manifest URL. */

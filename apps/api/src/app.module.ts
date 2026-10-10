@@ -17,6 +17,7 @@ import type { Notifier } from './notify/notifier.js';
 import { NotifyModule } from './notify/notify.module.js';
 import { SavesModule } from './saves/saves.module.js';
 import { ScoresModule } from './scores/scores.module.js';
+import { NPM_FETCH } from './sdk/npm-registry.js';
 import { SdkModule } from './sdk/sdk.module.js';
 import { ServerKeysModule } from './server-keys/server-keys.module.js';
 import type { Storage } from './storage/storage.js';
@@ -37,6 +38,8 @@ export interface AppOptions {
   notifier?: Notifier;
   /** Reads games' `game.json` (tests); otherwise fetches it from the game origin. */
   fetchManifest?: ManifestFetcher;
+  /** Talks to the npm registry for adapter packages (tests); otherwise global `fetch`. */
+  registryFetch?: typeof fetch;
 }
 
 @Module({})
@@ -64,6 +67,9 @@ export class AppModule {
         NotifyModule.forRoot(options.notifier),
       ],
       controllers: [HealthController],
+      providers: [{ provide: NPM_FETCH, useValue: options.registryFetch ?? fetch }],
+      exports: [NPM_FETCH],
+      global: true,
     };
   }
 }

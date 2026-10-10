@@ -27,6 +27,8 @@ export async function createTestApp(
     notifier?: Notifier;
     /** `game.json` by URL; anything else is unreachable (the tests never touch the network). */
     manifests?: Record<string, unknown>;
+    /** npm registry responses (adapter packages); default: nothing published. */
+    registryFetch?: typeof fetch;
   } = {},
 ): Promise<TestApp> {
   const { db, close: closeDb } = await createTestDb();
@@ -40,6 +42,7 @@ export async function createTestApp(
     ...(opts.storage ? { storage: opts.storage } : {}),
     ...(opts.notifier ? { notifier: opts.notifier } : {}),
     fetchManifest: fakeManifests(opts.manifests ?? {}),
+    registryFetch: opts.registryFetch ?? (async () => new Response('{}', { status: 404 })),
   });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();

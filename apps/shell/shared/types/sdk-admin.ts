@@ -14,7 +14,7 @@ export interface AdapterVersionView {
   version: string;
   url: string;
   sri: string;
-  source: 'image' | 'cli' | 'dev';
+  source: 'image' | 'cli' | 'dev' | 'npm';
   registeredAt: string;
   active: boolean;
 }

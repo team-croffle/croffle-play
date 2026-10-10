@@ -115,6 +115,17 @@ export const envSchema = v.object({
    */
   ADAPTER_AUTO_REGISTER: bool('true'),
   ADAPTER_BUNDLE_DIR: v.optional(v.string(), '/app/adapters'),
+  /** This api's version (set by the image); adapters declare the api versions they need. */
+  APP_VERSION: v.optional(v.string(), 'dev'),
+  /** Where adapter packages (`@croffledev/play-adapter-v<N>`) are read from. */
+  NPM_REGISTRY_URL: v.optional(v.pipe(v.string(), v.url()), 'https://registry.npmjs.org'),
+  /** How often to install the newest compatible adapter from npm (seconds); 0 disables it. */
+  ADAPTER_SYNC_INTERVAL_SECONDS: v.pipe(
+    v.optional(v.string(), '3600'),
+    v.transform(Number),
+    v.integer(),
+    v.minValue(0),
+  ),
   /** How often the SDK lifecycle sync runs (seconds); 0 disables it. */
   SDK_LIFECYCLE_INTERVAL_SECONDS: v.pipe(
     v.optional(v.string(), '3600'),
