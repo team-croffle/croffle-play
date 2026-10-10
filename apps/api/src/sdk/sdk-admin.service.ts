@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -12,6 +13,13 @@ import type { Env } from '../config/env.js';
 import { DB, type Db } from '../db/db.js';
 import { sdkAdapterVersions, sdkAdminEvents } from '../db/schema-sdk.js';
 import { sdkVersions } from '../db/schema.js';
+import { STORAGE, type Storage } from '../storage/storage.js';
+import {
+  AdapterInstallService,
+  type AvailableAdapter,
+  type SyncResult,
+} from './adapter-install.service.js';
+import { AdapterSyncService, type SyncStatus } from './adapter-sync.service.js';
 import { effectiveStatus, type SdkStatus } from './lifecycle.js';
 import { SdkLifecycleService } from './lifecycle.service.js';
 import { registerAdapter } from './register-adapter.js';
@@ -28,7 +36,7 @@ export interface AdapterVersionView {
 
 export interface SdkAdminEventView {
   id: string;
-  kind: 'adapter_activated' | 'status_changed' | 'schedule_changed';
+  kind: 'adapter_activated' | 'adapter_removed' | 'status_changed' | 'schedule_changed';
   from: Record<string, unknown> | null;
   to: Record<string, unknown>;
   actor: string | null;
@@ -38,8 +46,11 @@ export interface SdkAdminEventView {
 export interface SdkDetail extends SdkInfo {
   adapters: AdapterVersionView[];
   events: SdkAdminEventView[];
-  /** The api re-activates its image's bundle at every start, so a switch here is temporary. */
-  imageWins: boolean;
+  /** Releases on npm, newest first; null when the registry could not be read (`availableError`). */
+  available: AvailableAdapter[] | null;
+  availableError: string | null;
+  /** The periodic install of the newest compatible release. */
+  sync: SyncStatus;
 }
 
 export interface LifecyclePatch {
@@ -64,6 +75,9 @@ export class SdkAdminService {
     @Inject(ENV) private readonly env: Env,
     @Inject(SdkService) private readonly sdk: SdkService,
     @Inject(SdkLifecycleService) private readonly lifecycle: SdkLifecycleService,
+    @Inject(STORAGE) private readonly storage: Storage,
+    @Inject(AdapterInstallService) private readonly installer: AdapterInstallService,
+    @Inject(AdapterSyncService) private readonly syncJob: AdapterSyncService,
   ) {}
 
   async detail(major: number): Promise<SdkDetail> {
@@ -79,6 +93,13 @@ export class SdkAdminService {
       .where(eq(sdkAdminEvents.major, major))
       .orderBy(desc(sdkAdminEvents.at))
       .limit(50);
+    let available: AvailableAdapter[] | null = null;
+    let availableError: string | null = null;
+    try {
+      available = await this.installer.available(major);
+    } catch (err) {
+      availableError = err instanceof Error ? err.message : String(err);
+    }
     return {
       ...info,
       adapters: adapters.map((a) => ({
@@ -97,11 +118,56 @@ export class SdkAdminService {
         actor: e.actor,
         at: e.at.toISOString(),
       })),
-      imageWins: this.env.ADAPTER_AUTO_REGISTER,
+      available,
+      availableError,
+      sync: this.syncJob.status(),
     };
   }
 
-  /** Serves a registered bundle (not a dev one) again. Temporary while the image wins. */
+  /** Installs a release from npm and makes it active (the next sync may move on to a newer one). */
+  async installAdapter(major: number, version: string, actor: string): Promise<SdkDetail> {
+    await this.sdk.get(major);
+    await this.installer.install(major, version, actor);
+    return this.detail(major);
+  }
+
+  /** Removes an inactive registered version: its files and its record. */
+  async removeAdapter(major: number, version: string, actor: string): Promise<SdkDetail> {
+    const info = await this.sdk.get(major);
+    const [row] = await this.db
+      .select()
+      .from(sdkAdapterVersions)
+      .where(and(eq(sdkAdapterVersions.major, major), eq(sdkAdapterVersions.version, version)));
+    if (!row) {
+      throw new NotFoundException(`SDK v${major} has no registered adapter ${version}`);
+    }
+    if (row.url === info.adapterUrl) {
+      throw new ConflictException(`adapter ${version} is active; activate another one first`);
+    }
+    if (row.url.startsWith('/adapters/')) {
+      await this.storage.delete([row.url.replace(/^\//, '')]);
+    }
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(sdkAdapterVersions)
+        .where(and(eq(sdkAdapterVersions.major, major), eq(sdkAdapterVersions.version, version)));
+      await tx.insert(sdkAdminEvents).values({
+        major,
+        kind: 'adapter_removed',
+        from: { version, source: row.source },
+        to: {},
+        actor,
+      });
+    });
+    return this.detail(major);
+  }
+
+  /** Runs the npm sync now. */
+  syncNow(): Promise<SyncResult[]> {
+    return this.syncJob.runOnce();
+  }
+
+  /** Serves a registered bundle (not a dev one) again; the next sync may move on to a newer one. */
   async activateAdapter(major: number, version: string, actor: string): Promise<SdkDetail> {
     await this.sdk.get(major);
     const [row] = await this.db

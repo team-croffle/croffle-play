@@ -1,0 +1,1 @@
+ALTER TYPE "public"."sdk_admin_event_kind" ADD VALUE 'adapter_removed' BEFORE 'status_changed';
