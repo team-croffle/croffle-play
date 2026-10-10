@@ -18,9 +18,10 @@ import { SdkService } from './sdk.service.js';
 
 /**
  * Registers the host adapter bundles shipped inside the api image (`ADAPTER_BUNDLE_DIR`, laid
- * out as `v<N>/<version>/{index.js,manifest.json}`) when the api starts, so a platform release
- * is an image swap and nothing more. The image's version wins: a version an admin picked lasts
- * until the next start. Nothing here can stop the api from starting.
+ * out as `v<N>/<version>/{index.js,manifest.json}`) when the api starts — but only for a major
+ * that has no adapter yet. It is the offline bootstrap; from then on the newest compatible
+ * release from npm wins (AdapterSyncService), and an admin's choice is kept. Nothing here can
+ * stop the api from starting.
  */
 @Injectable()
 export class AdapterBootstrapService implements OnApplicationBootstrap {
@@ -47,13 +48,13 @@ export class AdapterBootstrapService implements OnApplicationBootstrap {
     }
   }
 
-  /** Activates every release bundle under `dir` that is not the active one. Returns how many. */
+  /** Registers each bundle under `dir` whose major has no active adapter. Returns how many. */
   async register(dir: string): Promise<number> {
     let count = 0;
     for (const bundle of await this.bundles(dir)) {
       const target = adapterPath(bundle.major, bundle.version);
       const current = await this.sdk.find(bundle.major);
-      if (current?.adapterUrl === target) {
+      if (current?.adapterUrl) {
         continue;
       }
       await publishAdapterDir(this.db, this.storage, bundle.dir, 'image');

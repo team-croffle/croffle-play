@@ -16,7 +16,7 @@ import {
 import { sdkVersions, users } from './schema.js';
 
 /** Where an adapter bundle came from: the api image at boot, `register-cli`, or a dev manifest URL. */
-export const adapterSource = pgEnum('adapter_source', ['image', 'cli', 'dev']);
+export const adapterSource = pgEnum('adapter_source', ['image', 'cli', 'dev', 'npm']);
 
 /** Every adapter bundle registered for a major (the active one is `sdkVersions.adapterUrl`). */
 export const sdkAdapterVersions = pgTable(

@@ -70,7 +70,7 @@ describe('adapter bundles shipped in the api image', () => {
     expect(await events()).toHaveLength(1);
   });
 
-  it('returns to the image version after an admin picked another one', async () => {
+  it('keeps the version an admin picked (the image bundle is only the first adapter)', async () => {
     const other = 'export const v = "0.12.0";';
     await registerAdapter(
       t.db,
@@ -85,10 +85,9 @@ describe('adapter bundles shipped in the api image', () => {
       null,
     );
     expect(await active()).toBe('/adapters/v1/0.12.0/index.js');
-    expect(await t.app.get(AdapterBootstrapService).register(dir)).toBe(1);
-    expect(await active()).toBe('/adapters/v1/0.13.0/index.js');
-    const kinds = (await events()).map((e) => e.to);
-    expect(kinds).toHaveLength(3);
+    expect(await t.app.get(AdapterBootstrapService).register(dir)).toBe(0);
+    expect(await active()).toBe('/adapters/v1/0.12.0/index.js');
+    expect(await events()).toHaveLength(2);
   });
 
   it('is skipped when disabled or when the directory is missing', async () => {

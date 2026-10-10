@@ -1,0 +1,1 @@
+ALTER TYPE "public"."adapter_source" ADD VALUE 'npm';
