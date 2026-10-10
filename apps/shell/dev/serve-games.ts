@@ -1,7 +1,7 @@
 // `pnpm dev:games` — builds the fixture games and the host adapters, then serves them the way
 // self-hosted games are served in production, one origin per game:
 //   http://<game>.localhost:4100/…              fixture sites (dev/games/<game>, with game.json)
-//   http://localhost:4100/adapters/v<N>/<ver>/… apps/adapters/dist (development adapter host)
+//   http://localhost:4100/adapters/v<N>/<any>/… packages/adapter-v<N>/dist (development adapter host)
 // Chrome and Firefox resolve *.localhost to loopback; Safari needs hosts-file entries.
 import { execFileSync } from 'node:child_process';
 import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
@@ -13,12 +13,12 @@ import { build } from 'vite';
 const port = Number(process.env.GAMES_PORT ?? 4100);
 const here = import.meta.dirname;
 const out = join(here, '.out');
-const adaptersDist = resolve(here, '../../adapters/dist');
+const packagesDir = resolve(here, '../../../packages');
 // Like a real game host: only the portal may frame the game.
 const PORTAL_ORIGIN = process.env.PORTAL_ORIGIN ?? 'http://localhost:3000';
 
 // pnpm is a .cmd shim on Windows: spawn it through the shell there.
-execFileSync('pnpm', ['--filter', '@croffledev/play-adapters', 'build'], {
+execFileSync('pnpm', ['--filter', '@croffledev/play-adapter-v*', 'build'], {
   stdio: 'inherit',
   shell: process.platform === 'win32',
 });
@@ -52,8 +52,15 @@ createServer((req, res) => {
     res.writeHead(404).end('not found');
     return;
   }
-  const root = isAdapter ? adaptersDist : join(out, game ?? '');
-  let file = join(root, isAdapter ? path.slice('/adapters'.length) : path);
+  // /adapters/v1/<anything>/<file> → packages/adapter-v1/dist/<file>: the version segment is
+  // whatever the manifest says; development never pins one.
+  const adapter = isAdapter ? /^\/adapters\/(v\d+)\/[^/]+\/(.*)$/.exec(path) : null;
+  if (isAdapter && !adapter) {
+    res.writeHead(404).end('not found');
+    return;
+  }
+  const root = adapter ? join(packagesDir, `adapter-${adapter[1]}`, 'dist') : join(out, game ?? '');
+  let file = join(root, adapter ? adapter[2] : path);
   if (!file.startsWith(root)) {
     res.writeHead(400).end();
     return;

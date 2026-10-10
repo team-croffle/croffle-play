@@ -29,11 +29,12 @@ const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
   })
   .filter(({ manifest }) => !manifest.private);
 
-// The SDK package major is the SDK major games announce; the platform needs its host adapter.
+// The SDK package major is the SDK major games announce; the platform needs its host adapter
+// package (`packages/adapter-v<major>`, published alongside).
 function assertSdkAdapter({ name, version }) {
   const major = version.split('.')[0];
-  if (name === '@croffledev/play-sdk' && !existsSync(join(root, 'apps', 'adapters', `v${major}`))) {
-    throw new Error(`${name}@${version}: no apps/adapters/v${major} for SDK v${major}`);
+  if (name === '@croffledev/play-sdk' && !existsSync(join(root, 'packages', `adapter-v${major}`))) {
+    throw new Error(`${name}@${version}: no packages/adapter-v${major} for SDK v${major}`);
   }
 }
 

@@ -1,12 +1,10 @@
 import { defineConfig } from 'tsdown';
 
-/** Platform release version (git tag) or `dev`. Each build lands in its own immutable path. */
-const version = process.env.VERSION ?? 'dev';
-
-// One self-contained ES module per SDK major. Adapters run on the shell origin, so everything
-// (protocol, valibot) is bundled and nothing is fetched at runtime.
+// One self-contained ES module. Adapters run on the shell origin, so everything (protocol,
+// valibot) is bundled and nothing is fetched at runtime. The version is the package version:
+// Changesets bumps it together with @croffledev/play-sdk (linked).
 export default defineConfig({
-  entry: { [`v1/${version}/index`]: 'v1/src/index.ts' },
+  entry: { index: 'src/index.ts' },
   format: 'esm',
   outDir: 'dist',
   clean: true,
